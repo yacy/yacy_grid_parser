@@ -30,10 +30,11 @@ import org.apache.log4j.BasicConfigurator;
 
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.http.APIServer;
-import net.yacy.grid.loader.api.parser.ParserService;
 import net.yacy.grid.mcp.Data;
+import net.yacy.grid.mcp.MCP;
 import net.yacy.grid.mcp.api.info.ServicesService;
 import net.yacy.grid.mcp.api.info.StatusService;
+import net.yacy.grid.parser.api.ParserService;
 import net.yacy.grid.tools.MapUtil;
 
 
@@ -41,6 +42,15 @@ public class Parser {
     
     public final static String DATA_PATH = "data";
     public final static String APP_PATH = "parser";
+    
+    // define services
+    @SuppressWarnings("unchecked")
+    public final static Class<? extends Servlet>[] services = new Class[]{
+            // information services
+            ServicesService.class,
+            StatusService.class,
+            ParserService.class
+    };
     
     public static void main(String[] args) {
         // run in headless mode
@@ -73,18 +83,10 @@ public class Parser {
             e1.printStackTrace();
             System.exit(-1);
         }
-        
-        // define services
-        @SuppressWarnings("unchecked")
-        Class<? extends Servlet>[] services = new Class[]{
-                // information services
-                ServicesService.class,
-                StatusService.class,
-                ParserService.class
-        };
 
         // start server
-        APIServer.init(services);
+        APIServer.init(MCP.services);
+        APIServer.init(Parser.services);
         try {
             
             // find data path
