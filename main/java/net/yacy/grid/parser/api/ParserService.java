@@ -17,7 +17,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.yacy.grid.loader.api.parser;
+package net.yacy.grid.parser.api;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,6 +53,26 @@ import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.server.http.ChunkedInputStream;
 
 /**
+ * The parser transforms a given source file into a YaCy JSON
+ * The source must be defined as WARC file. There may be three sources for a WARC file:
+ * - (1) within the POST request
+ * - (2) as a source url, hosted somewhere .. maybe also within a file in the file system.
+ * - (3) as an asset, stored by the mcp
+ * 
+ * The target can be returned in several ways as well
+ * - (1) as the json result of the request
+ * - (2) stored within a remote storage location
+ * - (3) as an asset, stored by the mcp
+ * 
+ * The whole process may have a steering attached with actions that are used to
+ * store processes on the mcp queue.
+ * - All i/o combination mentioned above must be available in a queued process. 
+ * Possible post-process steps may be
+ * - send the result to an indexer
+ * - extract urls and store them in a crawl queue (including a link double-check)
+ * - tell a log client to print out the status of the operation
+ * - move the WARC file to an archive position
+ * 
  * test: call
  * http://127.0.0.1:8500/yacy/grid/yacyparser/parser.json?url=http://yacy.net
  */
@@ -64,7 +84,7 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
     
     @Override
     public String getAPIPath() {
-        return "/yacy/grid/yacyparser/" + NAME + ".json";
+        return "/yacy/grid/parser/" + NAME + ".json";
     }
     
     @Override
