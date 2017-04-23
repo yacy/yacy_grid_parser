@@ -49,8 +49,7 @@ import net.yacy.document.Parser;
 import net.yacy.document.TextParser;
 import net.yacy.grid.http.APIHandler;
 import net.yacy.grid.http.ClientIdentification;
-import net.yacy.grid.http.JSONAPIHandler;
-import net.yacy.grid.http.JSONObjectAPIHandler;
+import net.yacy.grid.http.ObjectAPIHandler;
 import net.yacy.grid.http.Query;
 import net.yacy.grid.http.ServiceResponse;
 import net.yacy.grid.http.RemoteAccess;
@@ -91,8 +90,14 @@ import net.yacy.server.http.ChunkedInputStream;
  * 
  * - then read the warc with
  * http://127.0.0.1:8500/yacy/grid/parser/parser.json?sourceurl=file:///Users/admin/Downloads/land.nrw.warc.gz
+ * 
+ * - to test with an asset, first store the warc to the asset store:
+ * curl --request POST --form "asset=@land.nrw.warc.gz;type=application/octet-stream" --form "path=/test/land.nrw.warc.gz" http://127.0.0.1:8500/yacy/grid/mcp/assets/store.json
+ * 
+ * - read the asset with
+ * http://127.0.0.1:8500/yacy/grid/parser/parser.json?sourceasset=test/land.nrw.warc.gz
  */
-public class ParserService extends JSONObjectAPIHandler implements APIHandler {
+public class ParserService extends ObjectAPIHandler implements APIHandler {
 
     private static final long serialVersionUID = 8578474303031749879L;
     public static final String NAME = "parser";
@@ -141,12 +146,13 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
         // 3) get the asset from the mcp asset store
         if (sourceStream == null) {
             // read asset from mcp
-            String sourcepath = call.get("sourceasset", "");
-            if (sourcepath.length() > 0) {
+            String sourceasset = call.get("sourceasset", "");
+            if (sourceasset.length() > 0) {
                 try {
-                    Asset<byte[]> asset = Data.gridStorage.load(sourcepath);
+                    Asset<byte[]> asset = Data.gridStorage.load(sourceasset);
                     source = asset.getPayload();
                     sourceStream = new ByteArrayInputStream(source);
+                    if (sourceasset.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
                 } catch (IOException e) {
                     Data.logger.error(e.getMessage(), e);
                 }
@@ -167,8 +173,8 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
         }
         
         if (sourceStream == null) {
-            json.put(JSONAPIHandler.SUCCESS_KEY, false);
-            json.put(JSONAPIHandler.COMMENT_KEY, "the request must contain either a sourcebytes, sourceasset or sourceurl attribute");
+            json.put(ObjectAPIHandler.SUCCESS_KEY, false);
+            json.put(ObjectAPIHandler.COMMENT_KEY, "the request must contain either a sourcebytes, sourceasset or sourceurl attribute");
             return new ServiceResponse(json);
         }
         
@@ -206,7 +212,7 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
         }
         */
 
-        json.put(JSONAPIHandler.SUCCESS_KEY, true);
+        json.put(ObjectAPIHandler.SUCCESS_KEY, true);
         return new ServiceResponse(json);
     }
     
