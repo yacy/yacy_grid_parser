@@ -27,8 +27,6 @@ import javax.servlet.Servlet;
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.mcp.MCP;
 import net.yacy.grid.mcp.Service;
-import net.yacy.grid.mcp.api.info.ServicesService;
-import net.yacy.grid.mcp.api.info.StatusService;
 import net.yacy.grid.parser.api.ParserService;
 
 
@@ -42,8 +40,6 @@ public class Parser {
     @SuppressWarnings("unchecked")
     public final static Class<? extends Servlet>[] PARSER_SERVICES = new Class[]{
             // information services
-            ServicesService.class,
-            StatusService.class,
             ParserService.class
     };
     
