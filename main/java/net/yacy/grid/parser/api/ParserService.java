@@ -19,11 +19,15 @@
 
 package net.yacy.grid.parser.api;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jwat.common.HeaderLine;
 import org.jwat.common.HttpHeader;
@@ -39,25 +43,30 @@ import net.yacy.cora.util.ByteBuffer;
 import net.yacy.crawler.retrieval.Request;
 import net.yacy.crawler.retrieval.Response;
 import net.yacy.document.Document;
+import net.yacy.document.Parser;
 import net.yacy.document.Parser.Failure;
 import net.yacy.document.TextParser;
 import net.yacy.grid.http.APIHandler;
+import net.yacy.grid.http.ClientConnection;
 import net.yacy.grid.http.JSONAPIHandler;
 import net.yacy.grid.http.JSONObjectAPIHandler;
 import net.yacy.grid.http.Query;
 import net.yacy.grid.http.ServiceResponse;
+import net.yacy.grid.http.RemoteAccess;
 import net.yacy.grid.io.assets.Asset;
-import net.yacy.grid.io.assets.StorageFactory;
 import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.MultiProtocolURL;
+import net.yacy.search.schema.CollectionConfiguration;
 import net.yacy.server.http.ChunkedInputStream;
 
 /**
  * The parser transforms a given source file into a YaCy JSON
  * The source must be defined as WARC file. There may be three sources for a WARC file:
  * - (1) within the POST request
- * - (2) as a source url, hosted somewhere .. maybe also within a file in the file system.
+ * - (2) within a GET request
  * - (3) as an asset, stored by the mcp
+ * - (4) as a source url, hosted somewhere .. maybe also within a file in the file system.
  * 
  * The target can be returned in several ways as well
  * - (1) as the json result of the request
@@ -80,34 +89,85 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
 
     private static final long serialVersionUID = 8578474303031749879L;
     public static final String NAME = "parser";
-    private final static byte[] EMPTY_ASSET = new byte[0];
     
     @Override
     public String getAPIPath() {
         return "/yacy/grid/parser/" + NAME + ".json";
     }
     
+    /**
+     * load a WARC from the sourcepath and store json flat file into targetpath
+     * source is given by one of the following attributes
+     * - sourcebytes: either a POSTed binary object of a WARC or called with GET of a WARC
+     * - sourceasset: a name of a MCP asset containing a WARC file
+     * - sourceurl: an url with a path of a hosted WARC file
+     */
     @Override
     public ServiceResponse serviceImpl(Query call, HttpServletResponse response) {
 
-        // load a WARC from the sourcepath and store json flat file into targetpath
-        String sourcepath = call.get("sourcepath", "");
-        byte[] sourceasset = call.get("sourceasset", EMPTY_ASSET);
-        String targetpath = call.get("targetpath", "");
-        if (sourcepath.length() > 0) {
-            try {
-                Asset<byte[]> asset = Data.gridStorage.load(sourcepath);
-                sourceasset = asset.getPayload();
+        JSONObject json = new JSONObject(true);
+        
+        // get the post map to read binaries from a POST call
+        Map<String, byte[]> postMap;
+        try {
+            postMap = RemoteAccess.getPostMap(call.getRequest());
+        } catch (IOException e) {
+            postMap = new HashMap<>();
+        }
+
+        // read the source asset. We have four options:
+        // 1) get the asset from the POST request in field 'sourceasset'
+        byte[] source = postMap.get("sourcebytes");
+        // 2) get the asset from a string in a GET request
+        if (source == null) {
+            String sas = call.get("sourcebytes");
+            if (sas != null) source = sas.getBytes(StandardCharsets.UTF_8);
+        }
+        // 3) get the asset from the mcp asset store
+        if (source == null) {
+            // read asset from mcp
+            String sourcepath = call.get("sourceasset", "");
+            if (sourcepath.length() > 0) {
+                try {
+                    Asset<byte[]> asset = Data.gridStorage.load(sourcepath);
+                    source = asset.getPayload();
+                } catch (IOException e) {
+                    Data.logger.error(e.getMessage(), e);
+                }
+            }
+        }
+       
+        // 4) get the asset from an external resource
+        if (source == null) {
+            // read from url
+            String url = call.get("sourceurl", "");
+            if (url.length() > 0) try {
+                source = ClientConnection.load(url);
             } catch (IOException e) {
                 Data.logger.error(e.getMessage(), e);
             }
         }
         
-        // compute targetasset
-        byte[] targetasset = new byte[0];
+        if (source == null) {
+            json.put(JSONAPIHandler.SUCCESS_KEY, false);
+            json.put(JSONAPIHandler.COMMENT_KEY, "the request must contain either a sourcebytes, sourceasset or sourceurl attribute");
+            return new ServiceResponse(json);
+        }
+        
+        // compute parsed documents
+        InputStream is = new ByteArrayInputStream(source);
+        JSONArray parsedDocuments;
+        try {
+            parsedDocuments = indexWarcRecords(is);
+        } catch (IOException e) {
+            e.printStackTrace();
+            parsedDocuments = new JSONArray();
+        }
         
         // store result and return success
-        JSONObject json = new JSONObject(true);
+        json.put("documents", parsedDocuments);
+        
+        /*
         if (targetasset.length > 0 && targetpath.length() > 0) {
             try {
                 StorageFactory<byte[]> factory = Data.gridStorage.store(targetpath, targetasset);
@@ -122,6 +182,9 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
             json.put(JSONAPIHandler.SUCCESS_KEY, false);
             json.put(JSONAPIHandler.COMMENT_KEY, "the request must contain a sourcepath or sourceasset and a targetpath");
         }
+        */
+
+        json.put(JSONAPIHandler.SUCCESS_KEY, true);
         return new ServiceResponse(json);
     }
     
@@ -130,8 +193,9 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
      * @param f
      * @throws IOException
      */
-    public void indexWarcRecords(InputStream f) throws IOException {
+    public JSONArray indexWarcRecords(InputStream f) throws IOException {
 
+        JSONArray parsedDocuments = new JSONArray();
         byte[] content;
         int cnt = 0;
 
@@ -191,21 +255,28 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
                                 content
                         );
 
-                        Document[] docs = new Document[0];
                         try {
-                            docs = TextParser.parseSource(location, responseHeader.get(HeaderFramework.CONTENT_ENCODING, ""), "UTF-8", null, 0, 0, content);
-                        } catch (Failure e) {
+                            // parse the source to get a YaCy document
+                            Document[] documents =
+                                TextParser.parseSource(
+                                    new AnchorURL(response.url()), // or just use "location"?
+                                    response.getMimeType(),
+                                    response.getCharacterEncoding(),
+                                    null, // no vocabulary scraper
+                                    0, // no timezone offset
+                                    response.depth(),
+                                    response.getContent());
+                            // transform the YaCy document into a JSON
+                            for (Document d: documents) {
+                                JSONObject json = CollectionConfiguration.yacy2solr(
+                                        null /* collections */, responseHeader,
+                                        d, requestHeader.referer(), null /* language */, false,
+                                        0 /* timezoneOffset */);
+                                parsedDocuments.put(json);
+                            }
+                        } catch (Parser.Failure e) {
                             e.printStackTrace();
                         }
-                        
-                        // debug code
-                        if (docs != null) {
-                            for (Document doc: docs) {
-                                System.out.println(doc.dc_title());
-                                
-                            }
-                        }
-                        //Switchboard.getSwitchboard().toIndexer(response);
                         cnt++;
                     }
                 }
@@ -214,6 +285,8 @@ public class ParserService extends JSONObjectAPIHandler implements APIHandler {
         }
         localwarcReader.close();
         Data.logger.info("WarcImporter", "Indexed " + cnt + " documents");
+        return parsedDocuments;
     }
-    
+
+
 }
