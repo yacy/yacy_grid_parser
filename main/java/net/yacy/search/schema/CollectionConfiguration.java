@@ -201,12 +201,12 @@ public class CollectionConfiguration implements Serializable {
             final Document document, final MultiProtocolURL referrerURL, final String language, final boolean setUnique,
             int timezoneOffset) {
         // we use the SolrCell design as index schema
-        final MultiProtocolURL MultiProtocolURL = document.dc_source();
+        final MultiProtocolURL digestURL = document.dc_source();
         JSONObject doc = new JSONObject(true);
-        String url = addURIAttributes(doc, MultiProtocolURL);
+        String url = addURIAttributes(doc, digestURL);
         add(doc, CollectionSchema.content_type, new String[]{document.dc_format()}); // content_type (mime) is defined a schema field and we rely on it in some queries like imagequery (makes it mandatory, no need to check)
 
-        String host = MultiProtocolURL.getHost();
+        String host = digestURL.getHost();
         
         int crawldepth = document.getDepth();
         add(doc, CollectionSchema.crawldepth_i, crawldepth);
@@ -263,7 +263,7 @@ public class CollectionConfiguration implements Serializable {
         add(doc, CollectionSchema.keywords, keywords);
 
         // unique-fields; these values must be corrected during postprocessing. (the following logic is !^ (not-xor) but I prefer to write it that way as it is)
-        add(doc, CollectionSchema.http_unique_b, setUnique || UNIQUE_HEURISTIC_PREFER_HTTPS ? MultiProtocolURL.isHTTPS() : MultiProtocolURL.isHTTP()); // this must be corrected afterwards during storage!
+        add(doc, CollectionSchema.http_unique_b, setUnique || UNIQUE_HEURISTIC_PREFER_HTTPS ? digestURL.isHTTPS() : digestURL.isHTTP()); // this must be corrected afterwards during storage!
         add(doc, CollectionSchema.www_unique_b, setUnique || host != null && (UNIQUE_HEURISTIC_PREFER_WWWPREFIX ? host.startsWith("www.") : !host.startsWith("www."))); // this must be corrected afterwards during storage!
         
         // get list of all links; they will be shrinked by urls that appear in other fields of the solr schema
@@ -477,7 +477,7 @@ public class CollectionConfiguration implements Serializable {
                 outboundLinks.remove(canonical);
                 add(doc, CollectionSchema.canonical_s, canonical.toNormalform(false));
                 // set a flag if this is equal to sku
-                add(doc, CollectionSchema.canonical_equal_sku_b, canonical.equals(MultiProtocolURL));
+                add(doc, CollectionSchema.canonical_equal_sku_b, canonical.equals(digestURL));
             }
 
             // meta refresh tag
@@ -485,7 +485,7 @@ public class CollectionConfiguration implements Serializable {
             if (refresh != null && refresh.length() > 0) {
                 MultiProtocolURL refreshURL;
                 try {
-                    refreshURL = refresh.startsWith("http") ? new MultiProtocolURL(html.getRefreshPath()) : new MultiProtocolURL(MultiProtocolURL, html.getRefreshPath());
+                    refreshURL = refresh.startsWith("http") ? new MultiProtocolURL(html.getRefreshPath()) : new MultiProtocolURL(digestURL, html.getRefreshPath());
                     if (refreshURL != null) {
                         inboundLinks.remove(refreshURL);
                         outboundLinks.remove(refreshURL);
@@ -570,7 +570,7 @@ public class CollectionConfiguration implements Serializable {
             }
 
             add(doc, CollectionSchema.images_text_t, content); // the content may contain the exif data from the image parser
-            content = MultiProtocolURL.toTokens(); // remove all other entry but the url tokens
+            content = digestURL.toTokens(); // remove all other entry but the url tokens
         }
 
         // content (must be written after special parser data, since this can influence the content)
@@ -591,8 +591,13 @@ public class CollectionConfiguration implements Serializable {
         add(doc, CollectionSchema.outboundlinkscount_i, outboundLinks.size());
         add(doc, CollectionSchema.outboundlinksnofollowcount_i, document.outboundLinkNofollowCount());
 
-        Subgraph subgraph = new Subgraph(inboundLinks.size(), outboundLinks.size());
         
+        // create a subgraph
+        Subgraph subgraph = new Subgraph(inboundLinks.size(), outboundLinks.size());
+        for (final AnchorURL target_url: document.getHyperlinks().keySet()) {
+            enrichSubgraph(subgraph, digestURL, target_url);
+        }
+       
         // attach the subgraph content
         add(doc, CollectionSchema.inboundlinks_protocol_sxt, protocolList2indexedList(subgraph.urlProtocols[0]));
         add(doc, CollectionSchema.inboundlinks_urlstub_sxt, subgraph.urlStubs[0]);
