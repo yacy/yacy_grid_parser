@@ -311,6 +311,7 @@ public final class TextParser {
                     failedParser.put(parser, e);
                     //log.logWarning("tried parser '" + parser.getName() + "' to parse " + location.toNormalform(true, false) + " but failed: " + e.getMessage(), e);
                 } catch (final Exception e) {
+                    Data.logger.warn("parser  failure", e);
                     failedParser.put(parser, new Parser.Failure(e.getMessage(), location));
                     //log.logWarning("tried parser '" + parser.getName() + "' to parse " + location.toNormalform(true, false) + " but failed: " + e.getMessage(), e);
                 } finally {

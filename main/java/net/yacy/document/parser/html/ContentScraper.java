@@ -395,7 +395,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
     private void checkOpts(Tag tag) {
         // vocabulary classes
         final String classprop = tag.opts.getProperty("class", EMPTY_STRING);
-        this.vocabularyScraper.check(this.root, classprop, tag.content);
+        if (this.vocabularyScraper != null) this.vocabularyScraper.check(this.root, classprop, tag.content);
         
         // itemprop (schema.org)
         String itemprop = tag.opts.getProperty("itemprop");
