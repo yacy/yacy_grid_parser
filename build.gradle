@@ -6,10 +6,10 @@ apply plugin: 'eclipse'
 sourceSets {
     main {
         java {
-            srcDirs 'src/main/java', 'submodules/yacy_grid_mcp/src/main/java'
+            srcDirs 'submodules/yacy_grid_mcp/src/main/java', 'src/main/java'
         }
     }
- }
+}
 
 mainClassName = "net.yacy.grid.parser.Parser"
 applicationDefaultJvmArgs = ["-Xmx1024m"]
@@ -53,6 +53,6 @@ dependencies {
     compile group: 'net.sourceforge.jchardet', name: 'jchardet', version: '1.+'
     compile group: 'com.twelvemonkeys.imageio', name: 'imageio-bmp', version: '3.+'
     compile group: 'org.jsoup', name: 'jsoup', version: '1.+'
-	compile group: 'xerces', name: 'xercesImpl', version: '2.11.0'
+    compile group: 'xerces', name: 'xercesImpl', version: '2.11.0'
     compile group: 'com.drewnoakes', name: 'metadata-extractor', version: '2.10.1'
 }
