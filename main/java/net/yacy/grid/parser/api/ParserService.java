@@ -64,9 +64,8 @@ import net.yacy.server.http.ChunkedInputStream;
  * The parser transforms a given source file into a YaCy JSON
  * The source must be defined as WARC file. There may be three sources for a WARC file:
  * - (1) within the POST request
- * - (2) within a GET request
- * - (3) as an asset, stored by the mcp
- * - (4) as a source url, hosted somewhere .. maybe also within a file in the file system.
+ * - (2) as an asset, stored by the mcp
+ * - (3) as a source url, hosted somewhere .. maybe also within a file in the file system.
  * 
  * The target can be returned in several ways as well
  * - (1) as the json result of the request
@@ -88,14 +87,24 @@ import net.yacy.server.http.ChunkedInputStream;
  * cd ~/Downloads
  * wget https://www.land.nrw/ --warc-file=land.nrw
  * 
- * - then read the warc with
- * http://127.0.0.1:8500/yacy/grid/parser/parser.json?sourceurl=file:///Users/admin/Downloads/land.nrw.warc.gz
+ * - (1) post the asset directly and parse it
+ * curl --request POST --form "sourcebytes=@land.nrw.warc.gz;type=application/octet-stream" http://127.0.0.1:8500/yacy/grid/parser/parser.json
  * 
- * - to test with an asset, first store the warc to the asset store:
+ * - (2) to test with an asset, first store the warc to the asset store:
  * curl --request POST --form "asset=@land.nrw.warc.gz;type=application/octet-stream" --form "path=/test/land.nrw.warc.gz" http://127.0.0.1:8500/yacy/grid/mcp/assets/store.json
  * 
- * - read the asset with
+ * - then read the asset with
  * http://127.0.0.1:8500/yacy/grid/parser/parser.json?sourceasset=test/land.nrw.warc.gz
+ * 
+ * - (3) read the warc with
+ * http://127.0.0.1:8500/yacy/grid/parser/parser.json?sourceurl=file:///Users/admin/Downloads/land.nrw.warc.gz
+ * 
+ * The result can be either a json object or a flat file. A flat file is a text file which has one json object per line.
+ * The flat file can be generated with the option flatfile=true
+ * Default is no flatfile which is a json object containing a JSONArray for the object key 'documents'.
+ * 
+ * Flatfile Example: save the json result as flat file to land.nrw.flatjson
+ * curl -X POST -F "sourcebytes=@land.nrw.warc.gz;type=application/octet-stream" -F "flatfile=true" -o land.nrw.flatjson http://127.0.0.1:8500/yacy/grid/parser/parser.json
  */
 public class ParserService extends ObjectAPIHandler implements APIHandler {
 
@@ -118,32 +127,17 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
     public ServiceResponse serviceImpl(Query call, HttpServletResponse response) {
 
         JSONObject json = new JSONObject(true);
+        boolean flat = call.get("flatfile", false); // if true, the result is a text file with one json object per line each
         
-        // get the post map to read binaries from a POST call
-        Map<String, byte[]> postMap;
-        try {
-            postMap = RemoteAccess.getPostMap(call.getRequest());
-        } catch (IOException e) {
-            postMap = new HashMap<>();
-        }
-
         InputStream sourceStream = null;
         
         // read the source asset. We have four options:
         // 1) get the asset from the POST request in field 'sourceasset'
-        byte[] source = postMap.get("sourcebytes");
-        if (source != null) {
+        byte[] source = call.get("sourcebytes", new byte[0]);
+        if (source.length > 0) {
             sourceStream = new ByteArrayInputStream(source);
         }
-        // 2) get the asset from a string in a GET request
-        if (sourceStream == null) {
-            String sas = call.get("sourcebytes");
-            if (sas != null) {
-                source = sas.getBytes(StandardCharsets.UTF_8);
-                sourceStream = new ByteArrayInputStream(source);
-            }
-        }
-        // 3) get the asset from the mcp asset store
+        // 2) get the asset from the mcp asset store
         if (sourceStream == null) {
             // read asset from mcp
             String sourceasset = call.get("sourceasset", "");
@@ -159,7 +153,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             }
         }
        
-        // 4) get the asset from an external resource
+        // 3) get the asset from an external resource
         if (sourceStream == null) {
             // read from url
             String urlstring = call.get("sourceurl", "");
@@ -190,6 +184,14 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                 sourceStream.close();
             } catch (IOException e) {
             }
+        }
+        
+        if (flat) {
+            StringBuffer sb = new StringBuffer(2048);
+            for (int i = 0; i < parsedDocuments.length(); i++) {
+                sb.append(parsedDocuments.getJSONObject(i).toString(0)).append("\n");
+            }
+            return new ServiceResponse(sb.toString());
         }
         
         // store result and return success
