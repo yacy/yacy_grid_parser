@@ -23,7 +23,7 @@ all OpenOffice and MS Office document formats and much more.
 ## Installation: Download, Build, Run
 At this time, yacy_grid_parser is not provided in compiled form, you easily build it yourself. It's not difficult and done in one minute! The source code is hosted at https://github.com/yacy/yacy_grid_parser, you can download it and run loklak with:
 
-    > git clone https://github.com/yacy/yacy_grid_parser.git
+    > git clone --recursive https://github.com/yacy/yacy_grid_parser.git
     > git submodule foreach git pull origin master
     > cd yacy_grid_parser
     > gradle run
