@@ -22,9 +22,6 @@ package net.yacy.grid.parser.api;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +35,9 @@ import org.jwat.warc.WarcReader;
 import org.jwat.warc.WarcReaderFactory;
 import org.jwat.warc.WarcRecord;
 
+import ai.susi.mind.SusiThought;
+import ai.susi.mind.SusiAction;
+import ai.susi.mind.SusiAction.RenderType;
 import net.yacy.cora.protocol.HeaderFramework;
 import net.yacy.cora.protocol.RequestHeader;
 import net.yacy.cora.protocol.ResponseHeader;
@@ -52,7 +52,6 @@ import net.yacy.grid.http.ClientIdentification;
 import net.yacy.grid.http.ObjectAPIHandler;
 import net.yacy.grid.http.Query;
 import net.yacy.grid.http.ServiceResponse;
-import net.yacy.grid.http.RemoteAccess;
 import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
@@ -126,7 +125,6 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
     @Override
     public ServiceResponse serviceImpl(Query call, HttpServletResponse response) {
 
-        JSONObject json = new JSONObject(true);
         boolean flat = call.get("flatfile", false); // if true, the result is a text file with one json object per line each
         
         InputStream sourceStream = null;
@@ -167,6 +165,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         }
         
         if (sourceStream == null) {
+            JSONObject json = new JSONObject(true);
             json.put(ObjectAPIHandler.SUCCESS_KEY, false);
             json.put(ObjectAPIHandler.COMMENT_KEY, "the request must contain either a sourcebytes, sourceasset or sourceurl attribute");
             return new ServiceResponse(json);
@@ -193,9 +192,14 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             }
             return new ServiceResponse(sb.toString());
         }
-        
+
         // store result and return success
-        json.put("documents", parsedDocuments);
+        SusiThought json = new SusiThought();
+        json.setProcess(NAME);
+        json.put(ObjectAPIHandler.SUCCESS_KEY, true);
+        json.setData(parsedDocuments);
+        json.setHits(parsedDocuments.length());
+        json.addAction(new SusiAction(new JSONObject().put("type", RenderType.indexer.name())));
         
         /*
         if (targetasset.length > 0 && targetpath.length() > 0) {
@@ -214,7 +218,6 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         }
         */
 
-        json.put(ObjectAPIHandler.SUCCESS_KEY, true);
         return new ServiceResponse(json);
     }
     
