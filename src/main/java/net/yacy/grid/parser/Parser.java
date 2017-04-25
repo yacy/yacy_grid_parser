@@ -32,9 +32,9 @@ import net.yacy.grid.parser.api.ParserService;
 
 public class Parser {
 
-    private final static YaCyServices SERVICE = YaCyServices.mcp;
+    private final static YaCyServices SERVICE = YaCyServices.yacyparser;
     private final static String DATA_PATH = "data";
-    private final static String APP_PATH = "mcp";
+    private final static String APP_PATH = "parser";
  
     // define services
     @SuppressWarnings("unchecked")
