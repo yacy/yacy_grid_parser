@@ -107,15 +107,13 @@ public class CollectionConfiguration implements Serializable {
     }
 
     public static class Subgraph {
-        public final ArrayList<String>[] urlProtocols, urlStubs, urlAnchorTexts;
+        public final ArrayList<String>[] urls;
+        public final ArrayList<String>[] urlAnchorTexts;
         @SuppressWarnings("unchecked")
         public Subgraph(int inboundSize, int outboundSize) {
-            this.urlProtocols = (ArrayList<String>[]) Array.newInstance(ArrayList.class, 2);
-            this.urlProtocols[0] = new ArrayList<String>(inboundSize);
-            this.urlProtocols[1] = new ArrayList<String>(outboundSize);
-            this.urlStubs = (ArrayList<String>[]) Array.newInstance(ArrayList.class, 2);
-            this.urlStubs[0] = new ArrayList<String>(inboundSize);
-            this.urlStubs[1] = new ArrayList<String>(outboundSize);
+            this.urls = (ArrayList<String>[]) Array.newInstance(ArrayList.class, 2);
+            this.urls[0] = new ArrayList<String>(inboundSize);
+            this.urls[1] = new ArrayList<String>(outboundSize);
             this.urlAnchorTexts = (ArrayList<String>[]) Array.newInstance(ArrayList.class, 2);
             this.urlAnchorTexts[0] = new ArrayList<String>(inboundSize);
             this.urlAnchorTexts[1] = new ArrayList<String>(outboundSize);
@@ -133,8 +131,7 @@ public class CollectionConfiguration implements Serializable {
                   target_host.equals("www." + source_host) ||
                   source_host.equals("www." + target_host))); // well, not everybody defines 'outbound' that way but however, thats used here.
         int ioidx = inbound ? 0 : 1;
-        subgraph.urlProtocols[ioidx].add(target_url.getProtocol());
-        subgraph.urlStubs[ioidx].add(target_url.urlstub(true, true));
+        subgraph.urls[ioidx].add(target_url.toNormalform(true));
         subgraph.urlAnchorTexts[ioidx].add(text);
         return inbound;
     }
@@ -599,11 +596,9 @@ public class CollectionConfiguration implements Serializable {
         }
        
         // attach the subgraph content
-        add(doc, CollectionSchema.inboundlinks_protocol_sxt, protocolList2indexedList(subgraph.urlProtocols[0]));
-        add(doc, CollectionSchema.inboundlinks_urlstub_sxt, subgraph.urlStubs[0]);
+        add(doc, CollectionSchema.inboundlinks_sxt, subgraph.urls[0]);
         add(doc, CollectionSchema.inboundlinks_anchortext_txt, subgraph.urlAnchorTexts[0]);
-        add(doc, CollectionSchema.outboundlinks_protocol_sxt, protocolList2indexedList(subgraph.urlProtocols[1]));
-        add(doc, CollectionSchema.outboundlinks_urlstub_sxt, subgraph.urlStubs[1]);
+        add(doc, CollectionSchema.outboundlinks_sxt, subgraph.urls[1]);
         add(doc, CollectionSchema.outboundlinks_anchortext_txt, subgraph.urlAnchorTexts[1]);
         
         // charset
@@ -644,11 +639,10 @@ public class CollectionConfiguration implements Serializable {
      */
 	private static void processImages(JSONObject doc, LinkedHashMap<MultiProtocolURL, String> inboundLinks,
 			LinkedHashMap<MultiProtocolURL, String> outboundLinks, List<ImageEntry> images) {
-		final ArrayList<String> imgprots = new ArrayList<String>(images.size());
+		final ArrayList<String> imgurls = new ArrayList<String>(images.size());
 		final Integer[] imgheights = new Integer[images.size()];
 		final Integer[] imgwidths = new Integer[images.size()];
 		final Integer[] imgpixels = new Integer[images.size()];
-		final String[] imgstubs = new String[images.size()];
 		final String[] imgalts  = new String[images.size()];
 		int withalt = 0;
 		int i = 0;
@@ -661,9 +655,7 @@ public class CollectionConfiguration implements Serializable {
 		    imgheights[i] = ie.height();
 		    imgwidths[i] = ie.width();
 		    imgpixels[i] = ie.height() < 0 || ie.width() < 0 ? -1 : ie.height() * ie.width();
-		    String protocol = uri.getProtocol();
-		    imgprots.add(protocol);
-		    imgstubs[i] = uri.toString().substring(protocol.length() + 3);
+		    imgurls.add(uri.toNormalform(true));
 		    imgalts[i] = ie.alt();
 		    for (String it: CommonPattern.SPACE.split(uri.toTokens())) images_text_map.add(it);
 		    if (ie.alt() != null && ie.alt().length() > 0) {
@@ -676,8 +668,7 @@ public class CollectionConfiguration implements Serializable {
 		StringBuilder images_text = new StringBuilder(images_text_map.size() * 6 + 1);
 		for (String s: images_text_map) images_text.append(s.trim()).append(' ');
 		add(doc, CollectionSchema.imagescount_i, images.size());
-		add(doc, CollectionSchema.images_protocol_sxt, protocolList2indexedList(imgprots));
-		add(doc, CollectionSchema.images_urlstub_sxt, imgstubs);
+		add(doc, CollectionSchema.images_sxt, imgurls);
 		add(doc, CollectionSchema.images_alt_sxt, imgalts);
 		add(doc, CollectionSchema.images_height_val, imgheights);
 		add(doc, CollectionSchema.images_width_val, imgwidths);

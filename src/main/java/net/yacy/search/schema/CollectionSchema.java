@@ -39,12 +39,9 @@ public enum CollectionSchema implements SchemaDeclaration {
     httpstatus_i(SolrType.num_integer, true, true, false, false, false, "html status return code (i.e. \"200\" for ok), -1 if not loaded", true),
     url_file_ext_s(SolrType.string, true, true, false, false, true, "the file name extension", true),
     host_organization_s(SolrType.string, true, true, false, false, true, "either the second level domain or, if a ccSLD is used, the third level domain", true), // needed to search in the url
-    inboundlinks_urlstub_sxt(SolrType.string, true, true, true, false, true, "internal links, the url only without the protocol", true), // needed for HostBrowser
-    inboundlinks_protocol_sxt(SolrType.string, true, true, true, false, false, "internal links, only the protocol", true), // for correct assembly of inboundlinks  inboundlinks_protocol_sxt + inboundlinks_urlstub_sxt is needed
-    outboundlinks_protocol_sxt(SolrType.string, true, true, true, false, false, "external links, only the protocol", true), // for correct assembly of outboundlinks  outboundlinks_protocol_sxt + outboundlinks_urlstub_sxt is needed
-    outboundlinks_urlstub_sxt(SolrType.string, true, true, true, false, true, "external links, the url only without the protocol", true), // needed to enhance the crawler
-    images_urlstub_sxt(SolrType.string, true, true, true, false, true, "all image links without the protocol and '://'", true),
-    images_protocol_sxt(SolrType.string, true, true, true, false, false, "all image link protocols", true), // for correct assembly of image url  images_protocol_sxt + images_urlstub_sxt is needed
+    inboundlinks_sxt(SolrType.string, true, true, true, false, true, "internal links", true),
+    outboundlinks_sxt(SolrType.string, true, true, true, false, false, "external links", true),
+    images_sxt(SolrType.string, true, true, true, false, true, "all image links", true),
     
     // optional but recommended, part of index distribution
     fresh_date_dt(SolrType.date, true, true, false, false, false, "date until resource shall be considered as fresh"),
@@ -131,9 +128,7 @@ public enum CollectionSchema implements SchemaDeclaration {
     inboundlinks_anchortext_txt(SolrType.text_general, true, true, true, false, true, "internal links, the visible anchor text"),
     outboundlinks_anchortext_txt(SolrType.text_general, true, true, true, false, true, "external links, the visible anchor text"),
     
-    icons_urlstub_sxt(SolrType.string, true, true, true, false, true, "all icon links without the protocol and '://'"),
-    /** All icon links protocols : split from icons_urlstub to provide some compression, as http protocol is implied as default and not stored */
-    icons_protocol_sxt(SolrType.string, true, true, true, false, false, "all icon links protocols"),
+    icons_sxt(SolrType.string, true, true, true, false, true, "all icon links"),
     icons_rel_sxt(SolrType.string, true, true, true, false, false, "all icon links relationships space separated (e.g.. 'icon apple-touch-icon')"),
     icons_sizes_sxt(SolrType.num_integer, true, true, true, false, false, "all icon sizes space separated (e.g. '16x16 32x32')"),
     
