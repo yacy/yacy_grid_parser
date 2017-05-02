@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-
+import net.yacy.grid.io.index.MappingDeclaration;
 
 /**
  * The Ranking class is the solr ranking definition file for boosts and query functions.
