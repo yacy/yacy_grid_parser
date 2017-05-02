@@ -35,13 +35,13 @@ public class Ranking {
     private static float quantRate = 0.5f; // to be filled with search.ranking.solr.doubledetection.quantrate
     private static int   minTokenLen = 3;   // to be filled with search.ranking.solr.doubledetection.minlength
     
-    private Map<SchemaDeclaration, Float> fieldBoosts;
+    private Map<MappingDeclaration, Float> fieldBoosts;
     private String name, filterQuery, boostQuery, boostFunction, queryFields;
     
     public Ranking() {
         super();
         this.name = "";
-        this.fieldBoosts = new LinkedHashMap<SchemaDeclaration, Float>();
+        this.fieldBoosts = new LinkedHashMap<MappingDeclaration, Float>();
         this.filterQuery = "";
         this.boostQuery = "";
         this.boostFunction = "";
@@ -56,15 +56,15 @@ public class Ranking {
         this.name = name;
     }
     
-    public void putFieldBoost(SchemaDeclaration schema, float boost) {
+    public void putFieldBoost(MappingDeclaration schema, float boost) {
         this.fieldBoosts.put(schema,  boost);
     }
 
-    public Float getFieldBoost(SchemaDeclaration schema) {
+    public Float getFieldBoost(MappingDeclaration schema) {
         return this.fieldBoosts.get(schema);
     }
     
-    public Set<Map.Entry<SchemaDeclaration,Float>> getBoostMap() {
+    public Set<Map.Entry<MappingDeclaration,Float>> getBoostMap() {
         return this.fieldBoosts.entrySet();
     }
 

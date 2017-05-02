@@ -20,7 +20,7 @@
 
 package net.yacy.cora.federate.solr;
 
-public interface SchemaDeclaration {
+public interface MappingDeclaration {
 
     /**
      * this shall be implemented as enum, thus shall have the name() method
@@ -33,7 +33,7 @@ public interface SchemaDeclaration {
      */
     public String getSolrFieldName();
 
-    public SolrType getType();
+    public MappingType getType();
 
     public boolean isIndexed();
 

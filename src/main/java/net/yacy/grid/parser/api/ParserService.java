@@ -38,6 +38,7 @@ import org.jwat.warc.WarcRecord;
 import ai.susi.mind.SusiThought;
 import ai.susi.mind.SusiAction;
 import ai.susi.mind.SusiAction.RenderType;
+import net.yacy.cora.federate.solr.WebConfiguration;
 import net.yacy.cora.protocol.HeaderFramework;
 import net.yacy.cora.protocol.RequestHeader;
 import net.yacy.cora.protocol.ResponseHeader;
@@ -56,7 +57,6 @@ import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.MultiProtocolURL;
-import net.yacy.search.schema.CollectionConfiguration;
 import net.yacy.server.http.ChunkedInputStream;
 
 /**
@@ -301,7 +301,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                                     response.getContent());
                             // transform the YaCy document into a JSON
                             for (Document d: documents) {
-                                JSONObject json = CollectionConfiguration.yacy2solr(
+                                JSONObject json = WebConfiguration.yacy2solr(
                                         null /* collections */, responseHeader,
                                         d, requestHeader.referer(), null /* language */, false,
                                         0 /* timezoneOffset */);

@@ -22,7 +22,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.yacy.search.schema;
+package net.yacy.cora.federate.solr;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -53,10 +53,13 @@ import net.yacy.document.parser.html.ContentScraper;
 import net.yacy.document.parser.html.ImageEntry;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.Classification.ContentDomain;
+import net.yacy.search.schema.WebMapping;
 import net.yacy.grid.tools.CommonPattern;
 import net.yacy.grid.tools.DateParser;
 import net.yacy.grid.tools.MultiProtocolURL;
-public class CollectionConfiguration implements Serializable {
+
+
+public class WebConfiguration implements Serializable {
 
     private static final long serialVersionUID=-499100932212840385L;
 
@@ -65,39 +68,39 @@ public class CollectionConfiguration implements Serializable {
     
     private final static Set<String> omitFields = new HashSet<String>(3);
     static {
-        omitFields.add(CollectionSchema.author_sxt.getSolrFieldName());
-        omitFields.add(CollectionSchema.coordinate_p_0_coordinate.getSolrFieldName());
-        omitFields.add(CollectionSchema.coordinate_p_1_coordinate.getSolrFieldName());
+        omitFields.add(WebMapping.author_sxt.getSolrFieldName());
+        omitFields.add(WebMapping.coordinate_p_0_coordinate.getSolrFieldName());
+        omitFields.add(WebMapping.coordinate_p_1_coordinate.getSolrFieldName());
     }
 
-    private static void add(JSONObject json, CollectionSchema field, String value) {
+    private static void add(JSONObject json, WebMapping field, String value) {
         json.put(field.getSolrFieldName(), value);
     }
-    private static void add(JSONObject json, CollectionSchema field, int value) {
+    private static void add(JSONObject json, WebMapping field, int value) {
         json.put(field.getSolrFieldName(), (long) value);
     }
-    private static void add(JSONObject json, CollectionSchema field, boolean value) {
+    private static void add(JSONObject json, WebMapping field, boolean value) {
         json.put(field.getSolrFieldName(), value);
     }
-    private static void add(JSONObject json, CollectionSchema field, Date value) {
+    private static void add(JSONObject json, WebMapping field, Date value) {
         json.put(field.getSolrFieldName(), DateParser.iso8601MillisFormat.format(value));
     }
-    private static void add(JSONObject json, CollectionSchema field, String[] values) {
+    private static void add(JSONObject json, WebMapping field, String[] values) {
         JSONArray a = new JSONArray();
         for (String s: values) a.put(s);
         json.put(field.getSolrFieldName(), a);
     }
-    private static void add(JSONObject json, CollectionSchema field, Integer[] values) {
+    private static void add(JSONObject json, WebMapping field, Integer[] values) {
         JSONArray a = new JSONArray();
         for (Integer s: values) a.put((long) s);
         json.put(field.getSolrFieldName(), a);
     }
-    private static void add(JSONObject json, CollectionSchema field, Date[] values) {
+    private static void add(JSONObject json, WebMapping field, Date[] values) {
         JSONArray a = new JSONArray();
         for (Date s: values) a.put(DateParser.iso8601MillisFormat.format(s));
         json.put(field.getSolrFieldName(), a);
     }
-    private static void add(JSONObject json, CollectionSchema field, List<?> values) {
+    private static void add(JSONObject json, WebMapping field, List<?> values) {
         JSONArray a = new JSONArray();
         for (Object s: values) {
             if (s instanceof Date) a.put(DateParser.iso8601MillisFormat.format((Date) s));
@@ -145,9 +148,9 @@ public class CollectionConfiguration implements Serializable {
      */
     public static String addURIAttributes(final JSONObject doc, final MultiProtocolURL MultiProtocolURL) {
         String us = MultiProtocolURL.toNormalform(true);
-        add(doc, CollectionSchema.url_s, us);
+        add(doc, WebMapping.url_s, us);
         final InetAddress address = MultiProtocolURL.getInetAddress();
-        if (address != null) add(doc, CollectionSchema.ip_s, address.getHostAddress());
+        if (address != null) add(doc, WebMapping.ip_s, address.getHostAddress());
 
         String host = null;
         if ((host = MultiProtocolURL.getHost()) != null) {
@@ -156,11 +159,11 @@ public class CollectionConfiguration implements Serializable {
             int p = subdomOrga.lastIndexOf('.');
             String subdom = (p < 0) ? "" : subdomOrga.substring(0, p);
             String orga = (p < 0) ? subdomOrga : subdomOrga.substring(p + 1);
-            add(doc, CollectionSchema.host_s, host);
-            add(doc, CollectionSchema.host_dnc_s, dnc);
-            add(doc, CollectionSchema.host_organization_s, orga);
-            add(doc, CollectionSchema.host_organizationdnc_s, orga + '.' + dnc);
-            add(doc, CollectionSchema.host_subdomain_s, subdom);
+            add(doc, WebMapping.host_s, host);
+            add(doc, WebMapping.host_dnc_s, dnc);
+            add(doc, WebMapping.host_organization_s, orga);
+            add(doc, WebMapping.host_organizationdnc_s, orga + '.' + dnc);
+            add(doc, WebMapping.host_subdomain_s, subdom);
         }
         
         // path elements of link
@@ -171,24 +174,24 @@ public class CollectionConfiguration implements Serializable {
         // TODO: consider to implement ";jsession=123" check in getFileExtension()
         if (extension.indexOf(';') >= 0) extension = extension.substring(0,extension.indexOf(';'));
         
-        add(doc, CollectionSchema.url_chars_i, us.length());
-        add(doc, CollectionSchema.url_protocol_s, MultiProtocolURL.getProtocol());
+        add(doc, WebMapping.url_chars_i, us.length());
+        add(doc, WebMapping.url_protocol_s, MultiProtocolURL.getProtocol());
         
         String[] paths = MultiProtocolURL.getPaths();
-        add(doc, CollectionSchema.url_paths_count_i, paths.length);
-        add(doc, CollectionSchema.url_paths_sxt, paths);
+        add(doc, WebMapping.url_paths_count_i, paths.length);
+        add(doc, WebMapping.url_paths_sxt, paths);
         
-        add(doc, CollectionSchema.url_file_name_s, filenameStub);
-        add(doc, CollectionSchema.url_file_name_tokens_t, net.yacy.grid.tools.MultiProtocolURL.toTokens(filenameStub));
-        add(doc, CollectionSchema.url_file_ext_s, extension);
+        add(doc, WebMapping.url_file_name_s, filenameStub);
+        add(doc, WebMapping.url_file_name_tokens_t, net.yacy.grid.tools.MultiProtocolURL.toTokens(filenameStub));
+        add(doc, WebMapping.url_file_ext_s, extension);
         
         Map<String, String> searchpart = MultiProtocolURL.getSearchpartMap();
         if (searchpart == null) {
-            add(doc, CollectionSchema.url_parameter_i, 0);
+            add(doc, WebMapping.url_parameter_i, 0);
         } else {
-            add(doc, CollectionSchema.url_parameter_i, searchpart.size());
-            add(doc, CollectionSchema.url_parameter_key_sxt, searchpart.keySet().toArray(new String[searchpart.size()]));
-            add(doc, CollectionSchema.url_parameter_value_sxt,  searchpart.values().toArray(new String[searchpart.size()]));
+            add(doc, WebMapping.url_parameter_i, searchpart.size());
+            add(doc, WebMapping.url_parameter_key_sxt, searchpart.keySet().toArray(new String[searchpart.size()]));
+            add(doc, WebMapping.url_parameter_value_sxt,  searchpart.values().toArray(new String[searchpart.size()]));
         }
         return us;
     }
@@ -201,67 +204,67 @@ public class CollectionConfiguration implements Serializable {
         final MultiProtocolURL digestURL = document.dc_source();
         JSONObject doc = new JSONObject(true);
         String url = addURIAttributes(doc, digestURL);
-        add(doc, CollectionSchema.content_type, new String[]{document.dc_format()}); // content_type (mime) is defined a schema field and we rely on it in some queries like imagequery (makes it mandatory, no need to check)
+        add(doc, WebMapping.content_type, new String[]{document.dc_format()}); // content_type (mime) is defined a schema field and we rely on it in some queries like imagequery (makes it mandatory, no need to check)
 
         String host = digestURL.getHost();
         
         int crawldepth = document.getDepth();
-        add(doc, CollectionSchema.crawldepth_i, crawldepth);
+        add(doc, WebMapping.crawldepth_i, crawldepth);
       
         if (collections != null && collections.size() > 0) {
             List<String> cs = new ArrayList<String>();
             for (Map.Entry<String, Pattern> e: collections.entrySet()) {
                 if (e.getValue().matcher(url).matches()) cs.add(e.getKey());
             }
-            add(doc, CollectionSchema.collection_sxt, cs);
+            add(doc, WebMapping.collection_sxt, cs);
         }
 
         List<String> titles = document.titles();
-        add(doc, CollectionSchema.title, titles);
-        add(doc, CollectionSchema.title_count_i, titles.size());
+        add(doc, WebMapping.title, titles);
+        add(doc, WebMapping.title_count_i, titles.size());
         ArrayList<Integer> cv = new ArrayList<Integer>(titles.size());
         for (String s: titles) cv.add(new Integer(s.length()));
-        add(doc, CollectionSchema.title_chars_val, cv);
+        add(doc, WebMapping.title_chars_val, cv);
         
         cv = new ArrayList<Integer>(titles.size());
         for (String s: titles) cv.add(new Integer(CommonPattern.SPACES.split(s).length));
-        add(doc, CollectionSchema.title_words_val, cv);
+        add(doc, WebMapping.title_words_val, cv);
 
         String[] descriptions = document.dc_description();
-        add(doc, CollectionSchema.description_txt, descriptions);
+        add(doc, WebMapping.description_txt, descriptions);
 
-        add(doc, CollectionSchema.description_count_i, descriptions.length);
+        add(doc, WebMapping.description_count_i, descriptions.length);
         cv = new ArrayList<Integer>(descriptions.length);
         for (String s: descriptions) cv.add(new Integer(s.length()));
-        add(doc, CollectionSchema.description_chars_val, cv);
+        add(doc, WebMapping.description_chars_val, cv);
         
         cv = new ArrayList<Integer>(descriptions.length);
         for (String s: descriptions) cv.add(new Integer(CommonPattern.SPACES.split(s).length));
-        add(doc, CollectionSchema.description_words_val, cv);
+        add(doc, WebMapping.description_words_val, cv);
 
         String author = document.dc_creator();
         if (author == null || author.length() == 0) author = document.dc_publisher();
-        add(doc, CollectionSchema.author, author);
+        add(doc, WebMapping.author, author);
         
         Date lastModified = responseHeader == null ? new Date() : responseHeader.lastModified();
         if (lastModified == null) lastModified = new Date();
         if (document.getLastModified().before(lastModified)) lastModified = document.getLastModified();
-        add(doc, CollectionSchema.last_modified, lastModified);
+        add(doc, WebMapping.last_modified, lastModified);
 
         String content = document.getTextString();
 
         LinkedHashSet<Date> dates_in_content = DateDetection.parse(content, timezoneOffset);
        
-        add(doc, CollectionSchema.dates_in_content_count_i, dates_in_content.size());
+        add(doc, WebMapping.dates_in_content_count_i, dates_in_content.size());
             
-        add(doc, CollectionSchema.dates_in_content_dts, dates_in_content.toArray(new Date[dates_in_content.size()]));
+        add(doc, WebMapping.dates_in_content_dts, dates_in_content.toArray(new Date[dates_in_content.size()]));
 
         String keywords = document.dc_subject(' ');
-        add(doc, CollectionSchema.keywords, keywords);
+        add(doc, WebMapping.keywords, keywords);
 
         // unique-fields; these values must be corrected during postprocessing. (the following logic is !^ (not-xor) but I prefer to write it that way as it is)
-        add(doc, CollectionSchema.http_unique_b, setUnique || UNIQUE_HEURISTIC_PREFER_HTTPS ? digestURL.isHTTPS() : digestURL.isHTTP()); // this must be corrected afterwards during storage!
-        add(doc, CollectionSchema.www_unique_b, setUnique || host != null && (UNIQUE_HEURISTIC_PREFER_WWWPREFIX ? host.startsWith("www.") : !host.startsWith("www."))); // this must be corrected afterwards during storage!
+        add(doc, WebMapping.http_unique_b, setUnique || UNIQUE_HEURISTIC_PREFER_HTTPS ? digestURL.isHTTPS() : digestURL.isHTTP()); // this must be corrected afterwards during storage!
+        add(doc, WebMapping.www_unique_b, setUnique || host != null && (UNIQUE_HEURISTIC_PREFER_WWWPREFIX ? host.startsWith("www.") : !host.startsWith("www."))); // this must be corrected afterwards during storage!
         
         // get list of all links; they will be shrinked by urls that appear in other fields of the solr schema
         LinkedHashMap<MultiProtocolURL,String> inboundLinks = document.inboundLinks();
@@ -280,22 +283,22 @@ public class CollectionConfiguration implements Serializable {
             int f = 1;
             String[] hs;
 
-            hs = html.getHeadlines(1); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, CollectionSchema.h1_txt, hs); add(doc, CollectionSchema.h1_i, hs.length);
-            hs = html.getHeadlines(2); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, CollectionSchema.h2_txt, hs); add(doc, CollectionSchema.h2_i, hs.length);
-            hs = html.getHeadlines(3); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, CollectionSchema.h3_txt, hs); add(doc, CollectionSchema.h3_i, hs.length);
-            hs = html.getHeadlines(4); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, CollectionSchema.h4_txt, hs); add(doc, CollectionSchema.h4_i, hs.length);
-            hs = html.getHeadlines(5); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, CollectionSchema.h5_txt, hs); add(doc, CollectionSchema.h5_i, hs.length);
-            hs = html.getHeadlines(6); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, CollectionSchema.h6_txt, hs); add(doc, CollectionSchema.h6_i, hs.length);
+            hs = html.getHeadlines(1); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h1_txt, hs); add(doc, WebMapping.h1_i, hs.length);
+            hs = html.getHeadlines(2); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h2_txt, hs); add(doc, WebMapping.h2_i, hs.length);
+            hs = html.getHeadlines(3); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h3_txt, hs); add(doc, WebMapping.h3_i, hs.length);
+            hs = html.getHeadlines(4); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h4_txt, hs); add(doc, WebMapping.h4_i, hs.length);
+            hs = html.getHeadlines(5); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h5_txt, hs); add(doc, WebMapping.h5_i, hs.length);
+            hs = html.getHeadlines(6); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h6_txt, hs); add(doc, WebMapping.h6_i, hs.length);
        
-            add(doc, CollectionSchema.htags_i, h);
-            add(doc, CollectionSchema.schema_org_breadcrumb_i, html.breadcrumbCount());
+            add(doc, WebMapping.htags_i, h);
+            add(doc, WebMapping.schema_org_breadcrumb_i, html.breadcrumbCount());
 
             // meta tags: Open Graph properties
             String og;
-            og = html.getMetas().get("og:title"); if (og != null) add(doc, CollectionSchema.opengraph_title_t, og);
-            og = html.getMetas().get("og:type"); if (og != null) add(doc, CollectionSchema.opengraph_type_s, og);
-            og = html.getMetas().get("og:url"); if (og != null) add(doc, CollectionSchema.opengraph_url_s, og);
-            og = html.getMetas().get("og:image"); if (og != null) add(doc, CollectionSchema.opengraph_image_s, og);
+            og = html.getMetas().get("og:title"); if (og != null) add(doc, WebMapping.opengraph_title_t, og);
+            og = html.getMetas().get("og:type"); if (og != null) add(doc, WebMapping.opengraph_type_s, og);
+            og = html.getMetas().get("og:url"); if (og != null) add(doc, WebMapping.opengraph_url_s, og);
+            og = html.getMetas().get("og:image"); if (og != null) add(doc, WebMapping.opengraph_image_s, og);
 
             // noindex and nofollow attributes
             // from HTML (meta-tag in HTML header: robots)
@@ -341,51 +344,51 @@ public class CollectionConfiguration implements Serializable {
                 if (x_robots_tag.indexOf("noimageindex",0) >= 0) b += 1<<15;      // set bit 15
                 if (x_robots_tag.indexOf("unavailable_after",0) >= 0) b += 1<<16; // set bit 16
             }
-            add(doc, CollectionSchema.robots_i, b);
+            add(doc, WebMapping.robots_i, b);
 
             // meta tags: generator
             final String generator = html.getMetas().get("generator");
-            if (generator != null) add(doc, CollectionSchema.metagenerator_t, generator);
+            if (generator != null) add(doc, WebMapping.metagenerator_t, generator);
 
             // bold, italic
             final String[] bold = html.getBold();
-            add(doc, CollectionSchema.boldcount_i, bold.length);
+            add(doc, WebMapping.boldcount_i, bold.length);
             if (bold.length > 0) {
-                add(doc, CollectionSchema.bold_txt, bold);
-                add(doc, CollectionSchema.bold_val, html.getBoldCount(bold));
+                add(doc, WebMapping.bold_txt, bold);
+                add(doc, WebMapping.bold_val, html.getBoldCount(bold));
             }
             final String[] italic = html.getItalic();
-            add(doc, CollectionSchema.italiccount_i, italic.length);
+            add(doc, WebMapping.italiccount_i, italic.length);
             if (italic.length > 0) {
-                add(doc, CollectionSchema.italic_txt, italic);
-                add(doc, CollectionSchema.italic_val, html.getItalicCount(italic));
+                add(doc, WebMapping.italic_txt, italic);
+                add(doc, WebMapping.italic_val, html.getItalicCount(italic));
             }
             final String[] underline = html.getUnderline();
-            add(doc, CollectionSchema.underlinecount_i, underline.length);
+            add(doc, WebMapping.underlinecount_i, underline.length);
             if (underline.length > 0) {
-                add(doc, CollectionSchema.underline_txt, underline);
-                add(doc, CollectionSchema.underline_val, html.getUnderlineCount(underline));
+                add(doc, WebMapping.underline_txt, underline);
+                add(doc, WebMapping.underline_val, html.getUnderlineCount(underline));
             }
             final String[] li = html.getLi();
-            add(doc, CollectionSchema.licount_i, li.length);
-            if (li.length > 0) add(doc, CollectionSchema.li_txt, li);
+            add(doc, WebMapping.licount_i, li.length);
+            if (li.length > 0) add(doc, WebMapping.li_txt, li);
             
             final String[] dt = html.getDt();
-            add(doc, CollectionSchema.dtcount_i, dt.length);
-            if (dt.length > 0) add(doc, CollectionSchema.dt_txt, dt);
+            add(doc, WebMapping.dtcount_i, dt.length);
+            if (dt.length > 0) add(doc, WebMapping.dt_txt, dt);
 
             final String[] dd = html.getDd();
-            add(doc, CollectionSchema.ddcount_i, dd.length);
-            if (dd.length > 0) add(doc, CollectionSchema.dd_txt, dd);
+            add(doc, WebMapping.ddcount_i, dd.length);
+            if (dd.length > 0) add(doc, WebMapping.dd_txt, dd);
 
             final List<Date> startDates = html.getStartDates();
-            if (startDates.size() > 0) add(doc, CollectionSchema.startDates_dts, startDates.toArray(new Date[startDates.size()]));
+            if (startDates.size() > 0) add(doc, WebMapping.startDates_dts, startDates.toArray(new Date[startDates.size()]));
             final List<Date> endDates = html.getEndDates();
-            if (endDates.size() > 0) add(doc, CollectionSchema.endDates_dts, endDates.toArray(new Date[endDates.size()]));
+            if (endDates.size() > 0) add(doc, WebMapping.endDates_dts, endDates.toArray(new Date[endDates.size()]));
             
             final List<String> articles = html.getArticles();
-            add(doc, CollectionSchema.articlecount_i, articles.size());
-            if (articles.size() > 0) add(doc, CollectionSchema.article_txt, articles);
+            add(doc, WebMapping.articlecount_i, articles.size());
+            if (articles.size() > 0) add(doc, WebMapping.article_txt, articles);
 
             // images
             processImages(doc, inboundLinks, outboundLinks, images);
@@ -405,9 +408,9 @@ public class CollectionConfiguration implements Serializable {
                 css_url[c] = cssurl;
                 c++;
             }
-            add(doc, CollectionSchema.csscount_i, css_tag.length);
-            if (css_tag.length > 0) add(doc, CollectionSchema.css_tag_sxt, css_tag);
-            if (css_url.length > 0) add(doc, CollectionSchema.css_url_sxt, css_url);
+            add(doc, WebMapping.csscount_i, css_tag.length);
+            if (css_tag.length > 0) add(doc, WebMapping.css_tag_sxt, css_tag);
+            if (css_url.length > 0) add(doc, WebMapping.css_url_sxt, css_url);
 
             // Scripts
             final Set<AnchorURL> scriptss = html.getScript();
@@ -418,8 +421,8 @@ public class CollectionConfiguration implements Serializable {
                 outboundLinks.remove(u);
                 scripts[c++] = u.toNormalform(false);
             }
-            add(doc, CollectionSchema.scriptscount_i, scripts.length);
-            if (scripts.length > 0) add(doc, CollectionSchema.scripts_sxt, scripts);
+            add(doc, WebMapping.scriptscount_i, scripts.length);
+            if (scripts.length > 0) add(doc, WebMapping.scripts_sxt, scripts);
 
             // Frames
             final Set<AnchorURL> framess = html.getFrames();
@@ -430,9 +433,9 @@ public class CollectionConfiguration implements Serializable {
                 outboundLinks.remove(u);
                 frames[c++] = u.toNormalform(false);
             }
-            add(doc, CollectionSchema.framesscount_i, frames.length);
+            add(doc, WebMapping.framesscount_i, frames.length);
             if (frames.length > 0) {
-                add(doc, CollectionSchema.frames_sxt, frames);
+                add(doc, WebMapping.frames_sxt, frames);
                 //webgraph.addEdges(subgraph, digestURI, responseHeader, collections, crawldepth, alllinks, images, true, framess, citations); // add here because links have been removed from remaining inbound/outbound
             }
 
@@ -445,9 +448,9 @@ public class CollectionConfiguration implements Serializable {
                 outboundLinks.remove(u);
                 iframes[c++] = u.toNormalform(false);
             }
-            add(doc, CollectionSchema.iframesscount_i, iframes.length);
+            add(doc, WebMapping.iframesscount_i, iframes.length);
             if (iframes.length > 0) {
-                add(doc, CollectionSchema.iframes_sxt, iframes);
+                add(doc, WebMapping.iframes_sxt, iframes);
                 //webgraph.addEdges(subgraph, digestURI, responseHeader, collections, crawldepth, alllinks, images, true, iframess, citations); // add here because links have been removed from remaining inbound/outbound
             }
 
@@ -472,9 +475,9 @@ public class CollectionConfiguration implements Serializable {
             if (canonical != null) {
                 inboundLinks.remove(canonical);
                 outboundLinks.remove(canonical);
-                add(doc, CollectionSchema.canonical_s, canonical.toNormalform(false));
+                add(doc, WebMapping.canonical_s, canonical.toNormalform(false));
                 // set a flag if this is equal to sku
-                add(doc, CollectionSchema.canonical_equal_sku_b, canonical.equals(digestURL));
+                add(doc, WebMapping.canonical_equal_sku_b, canonical.equals(digestURL));
             }
 
             // meta refresh tag
@@ -486,10 +489,10 @@ public class CollectionConfiguration implements Serializable {
                     if (refreshURL != null) {
                         inboundLinks.remove(refreshURL);
                         outboundLinks.remove(refreshURL);
-                        add(doc, CollectionSchema.refresh_s, refreshURL.toNormalform(false));
+                        add(doc, WebMapping.refresh_s, refreshURL.toNormalform(false));
                     }
                 } catch (final MalformedURLException e) {
-                    add(doc, CollectionSchema.refresh_s, refresh);
+                    add(doc, WebMapping.refresh_s, refresh);
                 }
             }
 
@@ -500,19 +503,19 @@ public class CollectionConfiguration implements Serializable {
                 inboundLinks.remove(u);
                 outboundLinks.remove(u);
             }
-            add(doc, CollectionSchema.flash_b, flashURLs.length > 0);
+            add(doc, WebMapping.flash_b, flashURLs.length > 0);
 
             // generic evaluation pattern
             for (final String model: html.getEvaluationModelNames()) {
             final String[] scorenames = html.getEvaluationModelScoreNames(model);
                 if (scorenames.length > 0) {
-                    add(doc, CollectionSchema.valueOf("ext_" + model + "_txt"), scorenames);
-                    add(doc, CollectionSchema.valueOf("ext_" + model + "_val"), html.getEvaluationModelScoreCounts(model, scorenames));
+                    add(doc, WebMapping.valueOf("ext_" + model + "_txt"), scorenames);
+                    add(doc, WebMapping.valueOf("ext_" + model + "_val"), html.getEvaluationModelScoreCounts(model, scorenames));
                 }
             }
 
             // response time
-            add(doc, CollectionSchema.responsetime_i, responseHeader == null ? 0 : Integer.parseInt(responseHeader.get(HeaderFramework.RESPONSE_TIME_MILLIS, "0")));
+            add(doc, WebMapping.responsetime_i, responseHeader == null ? 0 : Integer.parseInt(responseHeader.get(HeaderFramework.RESPONSE_TIME_MILLIS, "0")));
             
             // hreflang link tag, see http://support.google.com/webmasters/bin/answer.py?hl=de&answer=189077
             final String[] ccs = new String[html.getHreflang().size()];
@@ -523,8 +526,8 @@ public class CollectionConfiguration implements Serializable {
                 urls[c] = e.getValue().toNormalform(true);
                 c++;
             }
-            add(doc, CollectionSchema.hreflang_cc_sxt, ccs);
-            add(doc, CollectionSchema.hreflang_url_sxt, urls);
+            add(doc, WebMapping.hreflang_cc_sxt, ccs);
+            add(doc, WebMapping.hreflang_url_sxt, urls);
 
             // page navigation url, see http://googlewebmastercentral.blogspot.de/2011/09/pagination-with-relnext-and-relprev.html
             final String[] navs = new String[html.getNavigation().size()];
@@ -535,12 +538,12 @@ public class CollectionConfiguration implements Serializable {
                 urls[c] = e.getValue().toNormalform(true);
                 c++;
             }
-            add(doc, CollectionSchema.navigation_type_sxt, navs);
-            add(doc, CollectionSchema.navigation_url_sxt, urls);
+            add(doc, WebMapping.navigation_type_sxt, navs);
+            add(doc, WebMapping.navigation_url_sxt, urls);
 
             // publisher url as defined in http://support.google.com/plus/answer/1713826?hl=de
             if (html.getPublisherLink() != null) {
-                add(doc, CollectionSchema.publisher_url_s, html.getPublisherLink().toNormalform(true));
+                add(doc, WebMapping.publisher_url_s, html.getPublisherLink().toNormalform(true));
             }
         }
 
@@ -561,32 +564,32 @@ public class CollectionConfiguration implements Serializable {
                 }
             }
             if (heights.size() > 0) {
-                add(doc, CollectionSchema.images_height_val, heights);
-                add(doc, CollectionSchema.images_width_val, widths);
-                add(doc, CollectionSchema.images_pixel_val, pixels);
+                add(doc, WebMapping.images_height_val, heights);
+                add(doc, WebMapping.images_width_val, widths);
+                add(doc, WebMapping.images_pixel_val, pixels);
             }
 
-            add(doc, CollectionSchema.images_text_t, content); // the content may contain the exif data from the image parser
+            add(doc, WebMapping.images_text_t, content); // the content may contain the exif data from the image parser
             content = digestURL.toTokens(); // remove all other entry but the url tokens
         }
 
         // content (must be written after special parser data, since this can influence the content)
-        add(doc, CollectionSchema.text_t, content);
+        add(doc, WebMapping.text_t, content);
         if (content.length() == 0) {
-            add(doc, CollectionSchema.wordcount_i, 0);
+            add(doc, WebMapping.wordcount_i, 0);
         } else {
             int contentwc = 1;
             for (int i = content.length() - 1; i >= 0; i--) if (content.charAt(i) == ' ') contentwc++;
-            add(doc, CollectionSchema.wordcount_i, contentwc);
+            add(doc, WebMapping.wordcount_i, contentwc);
         }
         
         // statistics about the links
-        add(doc, CollectionSchema.linkscount_i, inboundLinks.size() + outboundLinks.size());
-        add(doc, CollectionSchema.linksnofollowcount_i, document.inboundLinkNofollowCount() + document.outboundLinkNofollowCount());
-        add(doc, CollectionSchema.inboundlinkscount_i, inboundLinks.size());
-        add(doc, CollectionSchema.inboundlinksnofollowcount_i, document.inboundLinkNofollowCount());
-        add(doc, CollectionSchema.outboundlinkscount_i, outboundLinks.size());
-        add(doc, CollectionSchema.outboundlinksnofollowcount_i, document.outboundLinkNofollowCount());
+        add(doc, WebMapping.linkscount_i, inboundLinks.size() + outboundLinks.size());
+        add(doc, WebMapping.linksnofollowcount_i, document.inboundLinkNofollowCount() + document.outboundLinkNofollowCount());
+        add(doc, WebMapping.inboundlinkscount_i, inboundLinks.size());
+        add(doc, WebMapping.inboundlinksnofollowcount_i, document.inboundLinkNofollowCount());
+        add(doc, WebMapping.outboundlinkscount_i, outboundLinks.size());
+        add(doc, WebMapping.outboundlinksnofollowcount_i, document.outboundLinkNofollowCount());
 
         
         // create a subgraph
@@ -596,34 +599,34 @@ public class CollectionConfiguration implements Serializable {
         }
        
         // attach the subgraph content
-        add(doc, CollectionSchema.inboundlinks_sxt, subgraph.urls[0]);
-        add(doc, CollectionSchema.inboundlinks_anchortext_txt, subgraph.urlAnchorTexts[0]);
-        add(doc, CollectionSchema.outboundlinks_sxt, subgraph.urls[1]);
-        add(doc, CollectionSchema.outboundlinks_anchortext_txt, subgraph.urlAnchorTexts[1]);
+        add(doc, WebMapping.inboundlinks_sxt, subgraph.urls[0]);
+        add(doc, WebMapping.inboundlinks_anchortext_txt, subgraph.urlAnchorTexts[0]);
+        add(doc, WebMapping.outboundlinks_sxt, subgraph.urls[1]);
+        add(doc, WebMapping.outboundlinks_anchortext_txt, subgraph.urlAnchorTexts[1]);
         
         // charset
-        add(doc, CollectionSchema.charset_s, document.getCharset());
+        add(doc, WebMapping.charset_s, document.getCharset());
 
         // coordinates
         if (document.lat() != 0.0 && document.lon() != 0.0) {
-            add(doc, CollectionSchema.coordinate_p, Double.toString(document.lat()) + "," + Double.toString(document.lon()));
+            add(doc, WebMapping.coordinate_p, Double.toString(document.lat()) + "," + Double.toString(document.lon()));
         }
-        add(doc, CollectionSchema.httpstatus_i, responseHeader == null ? 200 : responseHeader.getStatusCode());
+        add(doc, WebMapping.httpstatus_i, responseHeader == null ? 200 : responseHeader.getStatusCode());
 
         // fields that were additionally in URIMetadataRow
         Date loadDate = new Date();
         Date modDate = responseHeader == null ? new Date() : responseHeader.lastModified();
         if (modDate.getTime() > loadDate.getTime()) modDate = loadDate;
         int size = (int) Math.max(document.dc_source().length(), responseHeader == null ? 0 : responseHeader.getContentLength());
-        add(doc, CollectionSchema.load_date_dt, loadDate);
-        add(doc, CollectionSchema.fresh_date_dt, new Date(loadDate.getTime() + Math.max(0, loadDate.getTime() - modDate.getTime()) / 2)); // freshdate, computed with Proxy-TTL formula
-        if (referrerURL != null) add(doc, CollectionSchema.referrer_url_s, referrerURL.toNormalform(true));
-        add(doc, CollectionSchema.publisher_t, document.dc_publisher());
-        if (language != null) add(doc, CollectionSchema.language_s, language);
-        add(doc, CollectionSchema.size_i, size);
-        add(doc, CollectionSchema.audiolinkscount_i, document.getAudiolinks().size());
-        add(doc, CollectionSchema.videolinkscount_i, document.getVideolinks().size());
-        add(doc, CollectionSchema.applinkscount_i, document.getApplinks().size());
+        add(doc, WebMapping.load_date_dt, loadDate);
+        add(doc, WebMapping.fresh_date_dt, new Date(loadDate.getTime() + Math.max(0, loadDate.getTime() - modDate.getTime()) / 2)); // freshdate, computed with Proxy-TTL formula
+        if (referrerURL != null) add(doc, WebMapping.referrer_url_s, referrerURL.toNormalform(true));
+        add(doc, WebMapping.publisher_t, document.dc_publisher());
+        if (language != null) add(doc, WebMapping.language_s, language);
+        add(doc, WebMapping.size_i, size);
+        add(doc, WebMapping.audiolinkscount_i, document.getAudiolinks().size());
+        add(doc, WebMapping.videolinkscount_i, document.getVideolinks().size());
+        add(doc, WebMapping.applinkscount_i, document.getApplinks().size());
         
         return doc;
     }
@@ -667,14 +670,14 @@ public class CollectionConfiguration implements Serializable {
 		}
 		StringBuilder images_text = new StringBuilder(images_text_map.size() * 6 + 1);
 		for (String s: images_text_map) images_text.append(s.trim()).append(' ');
-		add(doc, CollectionSchema.imagescount_i, images.size());
-		add(doc, CollectionSchema.images_sxt, imgurls);
-		add(doc, CollectionSchema.images_alt_sxt, imgalts);
-		add(doc, CollectionSchema.images_height_val, imgheights);
-		add(doc, CollectionSchema.images_width_val, imgwidths);
-		add(doc, CollectionSchema.images_pixel_val, imgpixels);
-		add(doc, CollectionSchema.images_withalt_i, withalt);
-		add(doc, CollectionSchema.images_text_t, images_text.toString().trim());
+		add(doc, WebMapping.imagescount_i, images.size());
+		add(doc, WebMapping.images_sxt, imgurls);
+		add(doc, WebMapping.images_alt_sxt, imgalts);
+		add(doc, WebMapping.images_height_val, imgheights);
+		add(doc, WebMapping.images_width_val, imgwidths);
+		add(doc, WebMapping.images_pixel_val, imgpixels);
+		add(doc, WebMapping.images_withalt_i, withalt);
+		add(doc, WebMapping.images_text_t, images_text.toString().trim());
 	}
     
     /**

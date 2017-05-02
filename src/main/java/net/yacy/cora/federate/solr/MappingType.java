@@ -21,7 +21,7 @@
 
 package net.yacy.cora.federate.solr;
 
-public enum SolrType {
+public enum MappingType {
     string("s", "sxt"),                  // The type is not analyzed, but indexed/stored verbatim
     text_general("t", "txt"),            // tokenizes with StandardTokenizer, removes stop words from case-insensitive "stopwords.txt", down cases, applies synonyms.
     text_en_splitting_tight(null, null), // can insert dashes in the wrong place and still match
@@ -35,12 +35,12 @@ public enum SolrType {
     coordinate("coordinate", "coordinatex", "tdouble");
     
     private String printName, singlevalExt, multivalExt;
-    private SolrType(final String singlevalExt, final String multivalExt) {
+    private MappingType(final String singlevalExt, final String multivalExt) {
         this.printName = this.name();
         this.singlevalExt = singlevalExt;
         this.multivalExt = multivalExt;
     }
-    private SolrType(final String singlevalExt, final String multivalExt, final String printName) {
+    private MappingType(final String singlevalExt, final String multivalExt, final String printName) {
         this.printName = printName;
         this.singlevalExt = singlevalExt;
         this.multivalExt = multivalExt;
@@ -48,7 +48,7 @@ public enum SolrType {
     public String printName() {
         return this.printName;
     }
-    public boolean appropriateName(final SchemaDeclaration collectionSchema) {
+    public boolean appropriateName(final MappingDeclaration collectionSchema) {
         String field = collectionSchema.name();
         int p = field.indexOf('_');
         if (p < 0 || field.length() - p > 4) return true; // special names may have no type extension
