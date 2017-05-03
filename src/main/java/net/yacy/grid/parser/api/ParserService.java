@@ -127,7 +127,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
     public ServiceResponse serviceImpl(Query call, HttpServletResponse response) {
 
         boolean flat = call.get("flatfile", false); // if true, the result is a text file with one json object per line each
-        boolean elastic = flat && call.get("elastic", false); // if true, the result has per line a index prefix object which is required to feed the result into elasticsearch
+        boolean elastic = flat && call.get("bulk", false); // if true, the result has per line a index prefix object which is required to feed the result into elasticsearch
         
         InputStream sourceStream = null;
         
