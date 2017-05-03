@@ -54,6 +54,7 @@ import net.yacy.grid.http.ObjectAPIHandler;
 import net.yacy.grid.http.Query;
 import net.yacy.grid.http.ServiceResponse;
 import net.yacy.grid.io.assets.Asset;
+import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.MultiProtocolURL;
@@ -126,6 +127,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
     public ServiceResponse serviceImpl(Query call, HttpServletResponse response) {
 
         boolean flat = call.get("flatfile", false); // if true, the result is a text file with one json object per line each
+        boolean elastic = flat && call.get("bulk", false); // if true, the result has per line a index prefix object which is required to feed the result into elasticsearch
         
         InputStream sourceStream = null;
         
@@ -188,7 +190,12 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         if (flat) {
             StringBuffer sb = new StringBuffer(2048);
             for (int i = 0; i < parsedDocuments.length(); i++) {
-                sb.append(parsedDocuments.getJSONObject(i).toString(0)).append("\n");
+            	JSONObject docjson = parsedDocuments.getJSONObject(i);
+            	if (elastic) {
+            		JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", docjson.getString(WebMapping.url_s.name())));
+            		sb.append(bulkjson.toString(0)).append("\n");
+            	}
+                sb.append(docjson.toString(0)).append("\n");
             }
             return new ServiceResponse(sb.toString());
         }
