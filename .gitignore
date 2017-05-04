@@ -1,5 +1,8 @@
 /classes/
 /.gradle/
 /build/
-/bin/
 /data/
+target/
+/class/
+.DS_Store
+.settings
