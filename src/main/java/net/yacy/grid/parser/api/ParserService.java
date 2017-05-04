@@ -57,6 +57,7 @@ import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
+import net.yacy.grid.tools.Digest;
 import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.server.http.ChunkedInputStream;
 
@@ -192,7 +193,9 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             for (int i = 0; i < parsedDocuments.length(); i++) {
             	JSONObject docjson = parsedDocuments.getJSONObject(i);
             	if (elastic) {
-            		JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", docjson.getString(WebMapping.url_s.name())));
+            	    String url = docjson.getString(WebMapping.url_s.name());
+            	    String id = Digest.encodeMD5Hex(url);
+            		JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
             		sb.append(bulkjson.toString(0)).append("\n");
             	}
                 sb.append(docjson.toString(0)).append("\n");
