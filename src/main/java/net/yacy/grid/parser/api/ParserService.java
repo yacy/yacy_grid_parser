@@ -236,7 +236,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
      * @param f
      * @throws IOException
      */
-    public JSONArray indexWarcRecords(InputStream f) throws IOException {
+    public static JSONArray indexWarcRecords(InputStream f) throws IOException {
 
         JSONArray parsedDocuments = new JSONArray();
         byte[] content;
