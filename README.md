@@ -53,6 +53,17 @@ This produces the file "publicplan.de.warc.gz". That file can then be send to th
 The result is a file "publicplan.de.flatjson" with 774 single JSON objects, each printed in it's own line in the flatjson file.
 To index that file with legacy YaCy (YaCy/1.x) just copy it into the yacy_search_server/DATA/SURROGATES/in/ path.
 
+## Contribute
+
+This is a community project and your contribution is welcome!
+
+1. Check for [open issues](https://github.com/yacy/yacy_grid_parser/issues)
+   or open a fresh one to start a discussion around a feature idea or a bug.
+2. Fork [the repository](https://github.com/yacy/yacy_grid_parser.git)
+   on GitHub to start making your changes (branch off of the master branch).
+3. Write a test that shows the bug was fixed or the feature works as expected.
+4. Send a pull request and bug us on Gitter until it gets merged and published. :)
+
 
 ## What is the software license?
 LGPL 2.1
