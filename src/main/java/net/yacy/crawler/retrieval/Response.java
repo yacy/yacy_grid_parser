@@ -36,7 +36,6 @@ import net.yacy.cora.protocol.HeaderFramework;
 import net.yacy.cora.protocol.RequestHeader;
 import net.yacy.cora.protocol.ResponseHeader;
 import net.yacy.cora.util.NumberTools;
-import net.yacy.crawler.data.ResultURLs.EventOrigin;
 import net.yacy.document.TextParser;
 
 public class Response {
@@ -761,26 +760,4 @@ public class Response {
           (this.requestHeader.get(HeaderFramework.X_YACY_INDEX_CONTROL)).toUpperCase().equals("NO-INDEX");
     }
 
-    public EventOrigin processCase(final String mySeedHash) {
-        // we must distinguish the following cases: resource-load was initiated by
-        // 1) global crawling: the index is extern, not here (not possible here)
-        // 2) result of search queries, some indexes are here (not possible here)
-        // 3) result of index transfer, some of them are here (not possible here)
-        // 4) proxy-load (initiator is "------------")
-        // 5) local prefetch/crawling (initiator is own seedHash)
-        // 6) local fetching for global crawling (other known or unknwon initiator)
-        EventOrigin processCase = EventOrigin.UNKNOWN;
-        // FIXME the equals seems to be incorrect: String.equals(boolean)
-        if (initiator() == null || initiator().length == 0 || ASCII.String(initiator()).equals("------------")) {
-            // proxy-load
-            processCase = EventOrigin.PROXY_LOAD;
-        } else if (UTF8.String(initiator()).equals(mySeedHash)) {
-            // normal crawling
-            processCase = EventOrigin.LOCAL_CRAWLING;
-        } else {
-            // this was done for remote peer (a global crawl)
-            processCase = EventOrigin.GLOBAL_CRAWLING;
-        }
-        return processCase;
-    }
 }
