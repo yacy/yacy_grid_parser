@@ -54,6 +54,7 @@ import net.yacy.grid.http.ObjectAPIHandler;
 import net.yacy.grid.http.Query;
 import net.yacy.grid.http.ServiceResponse;
 import net.yacy.grid.io.assets.Asset;
+import net.yacy.grid.io.index.MappingType;
 import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
@@ -141,13 +142,13 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         // 2) get the asset from the mcp asset store
         if (sourceStream == null) {
             // read asset from mcp
-            String sourceasset = call.get("sourceasset", "");
-            if (sourceasset.length() > 0) {
+            String sourceasset_path = call.get("sourceasset", "");
+            if (sourceasset_path.length() > 0) {
                 try {
-                    Asset<byte[]> asset = Data.gridStorage.load(sourceasset);
+                    Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
                     source = asset.getPayload();
                     sourceStream = new ByteArrayInputStream(source);
-                    if (sourceasset.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
+                    if (sourceasset_path.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
                 } catch (IOException e) {
                     Data.logger.error(e.getMessage(), e);
                 }
@@ -157,11 +158,11 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         // 3) get the asset from an external resource
         if (sourceStream == null) {
             // read from url
-            String urlstring = call.get("sourceurl", "");
-            if (urlstring.length() > 0) try {
-                MultiProtocolURL url = new MultiProtocolURL(urlstring);
+            String sourceurl = call.get("sourceurl", "");
+            if (sourceurl.length() > 0) try {
+                MultiProtocolURL url = new MultiProtocolURL(sourceurl);
                 sourceStream = url.getInputStream(ClientIdentification.browserAgent, "anonymous", "");
-                if (urlstring.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
+                if (sourceurl.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
             } catch (IOException e) {
                 Data.logger.error(e.getMessage(), e);
             }
@@ -331,5 +332,39 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         return parsedDocuments;
     }
 
+    public final static WebMapping[] graph_attributes = new WebMapping[]{
+        WebMapping.url_s,
+        WebMapping.url_protocol_s,
+        WebMapping.url_file_name_s,
+        WebMapping.url_file_ext_s,
+        WebMapping.inboundlinkscount_i,
+        WebMapping.inboundlinks_sxt,
+        WebMapping.inboundlinks_anchortext_txt,
+        WebMapping.inboundlinksnofollowcount_i,
+        WebMapping.outboundlinkscount_i,
+        WebMapping.outboundlinks_sxt,
+        WebMapping.outboundlinks_anchortext_txt,
+        WebMapping.outboundlinksnofollowcount_i,
+        WebMapping.imagescount_i,
+        WebMapping.images_sxt,
+        WebMapping.images_text_t,
+        WebMapping.images_alt_sxt,
+        WebMapping.images_height_val,
+        WebMapping.images_width_val,
+        WebMapping.images_pixel_val,
+        WebMapping.canonical_s,
+        WebMapping.frames_sxt,
+        WebMapping.framesscount_i,
+        WebMapping.iframes_sxt,
+        WebMapping.iframesscount_i
+    };
 
+    public static JSONObject extractGraph(JSONObject doc) {
+        JSONObject graph = new JSONObject(true);
+        for (WebMapping mapping: graph_attributes) {
+            String key = mapping.getSolrFieldName();
+            graph.put(key, doc.get(key));
+        }
+        return graph;
+    }
 }

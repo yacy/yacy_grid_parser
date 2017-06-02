@@ -74,13 +74,19 @@ public class Parser {
     "type": "parser",
     "queue": "yacyparser",
     "sourceasset": "test3/yacy.net.warc.gz",
-    "targetasset": "test3/yacy.net.jsonlist"
+    "targetasset": "test3/yacy.net.text.jsonlist",
+    "targetgraph": "test3/yacy.net.graph.jsonlist"
   },{
     "type": "indexer",
     "queue": "elasticsearch",
-    "sourceasset": "test3/yacy.net.jsonlist"
-  },
-  ]
+    "targetindex": "webindex",
+    "targettype" : "common",
+    "sourceasset": "test3/yacy.net.text.jsonlist"
+  },{
+    "type": "crawler",
+    "queue": "webcrawler",
+    "sourceasset": "test3/yacy.net.graph.jsonlist"
+  }]
 }
      */
     public static class BrokerListener extends Thread {
@@ -97,56 +103,31 @@ public class Parser {
                     JSONObject json = new JSONObject(new JSONTokener(new String(mc.getPayload(), StandardCharsets.UTF_8)));
                     SusiThought process = new SusiThought(json);
                     List<SusiAction> actions = process.getActions();
-                    if (!actions.isEmpty()) {
-                        SusiAction a = actions.get(0);
-                        String targetasset = a.getStringAttr("targetasset");
-                        String sourceasset = a.getStringAttr("sourceasset");
-                        boolean elastic = a.getBooleanAttr("bulk");
-                        if (targetasset != null && targetasset.length() > 0 &&
-                        	sourceasset != null && sourceasset.length() > 0) {
-                        	InputStream sourceStream = null;
+                    actionloop: for (int ac = 0; ac < actions.size(); ac++) {
+                        SusiAction a = actions.get(ac);
+                        String type = a.getStringAttr("type");
+                        String queue = a.getStringAttr("queue");
+                        if (type == null || type.length() == 0 || queue == null || queue.length() == 0) {
+                            Data.logger.info("bad message in queue, continue");
+                            continue actionloop;
+                        }
+                        if (!type.equals(YaCyServices.parser.name())) {
+                            Data.logger.info("wrong message in queue: " + type + ", continue");
                             try {
-                                Asset<byte[]> asset = Data.gridStorage.load(sourceasset);
-                                byte[] source = asset.getPayload();
-                                sourceStream = new ByteArrayInputStream(source);
-                                if (sourceasset.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
-
-                                // compute parsed documents
-                                JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream);
-                                StringBuffer sb = new StringBuffer(2048);
-                                for (int i = 0; i < parsedDocuments.length(); i++) {
-                                	JSONObject docjson = parsedDocuments.getJSONObject(i);
-                                	if (elastic) {
-                                	    String url = docjson.getString(WebMapping.url_s.name());
-                                	    String id = Digest.encodeMD5Hex(url);
-                                		JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
-                                		sb.append(bulkjson.toString(0)).append("\n");
-                                	}
-                                    sb.append(docjson.toString(0)).append("\n");
-                                }
-                                                                
-                                Data.gridStorage.store(targetasset, sb.toString().getBytes(StandardCharsets.UTF_8));
-                                Data.logger.info("processed message from queue and stored asset " + targetasset);
-                                
-                                // send next action to queue
-                                actions.remove(0);
-                                if (actions.size() > 0) {
-                                    a = actions.get(0);
-                                    String type = a.getStringAttr("type");
-                                    String queue = a.getStringAttr("queue");
-                                    if (type.length() > 0 && queue.length() > 0) {
-                                        // create a new Thought and push it to the next queue
-                                        JSONArray nextActions = new JSONArray();
-                                        actions.forEach(action -> nextActions.put(action.toJSONClone()));
-                                        JSONObject nextProcess = new JSONObject().put("data", process.getData()).put("actions", nextActions);
-                                        byte[] b = nextProcess.toString().getBytes(StandardCharsets.UTF_8);
-                                        Data.gridBroker.send(type, queue, b);
-                                    }
-                                }
-                            
+                                loadNextAction(a, process.getData()); // put that into the correct queue
                             } catch (Throwable e) {
                                 e.printStackTrace();
                             }
+                            continue actionloop;
+                        }
+
+                        boolean processed = processAction(a);
+                        if (processed) {
+                            // send next embedded action(s) to queue
+                            JSONArray embeddedActions = a.toJSONClone().getJSONArray("actions");
+                            for (int j = 0; j < embeddedActions.length(); j++) {
+                                loadNextAction(new SusiAction(embeddedActions.getJSONObject(j)), process.getData());
+                            }    
                         }
                     }
                 } catch (IOException e) {
@@ -158,6 +139,68 @@ public class Parser {
         public void terminate() {
             this.shallRun = false;
         }
+    }
+    
+    public static boolean processAction(SusiAction a) {
+
+        String sourceasset_path = a.getStringAttr("sourceasset");
+        String targetasset_path = a.getStringAttr("targetasset");
+        String targetgraph_path = a.getStringAttr("targetgraph");
+        boolean elastic = a.getBooleanAttr("bulk");
+        if (targetasset_path == null || targetasset_path.length() == 0 ||
+            sourceasset_path == null || sourceasset_path.length() == 0) return false;
+        
+        InputStream sourceStream = null;
+        try {
+            Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
+            byte[] source = asset.getPayload();
+            sourceStream = new ByteArrayInputStream(source);
+            if (sourceasset_path.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
+
+            // compute parsed documents
+            JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream);
+            StringBuffer targetasset_object = new StringBuffer(2048);
+            StringBuffer targetgraph_object = targetgraph_path != null && targetgraph_path.length() > 0 ? new StringBuffer(2048) : null;
+            for (int i = 0; i < parsedDocuments.length(); i++) {
+                JSONObject docjson = parsedDocuments.getJSONObject(i);
+                if (elastic) {
+                    String url = docjson.getString(WebMapping.url_s.name());
+                    String id = Digest.encodeMD5Hex(url);
+                    JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
+                    targetasset_object.append(bulkjson.toString(0)).append("\n");
+                    if (targetgraph_object != null) {
+                        targetgraph_object.append(bulkjson.toString(0)).append("\n");
+                    }
+                }
+                targetasset_object.append(docjson.toString(0)).append("\n");
+                if (targetgraph_object != null) {
+                    targetgraph_object.append(ParserService.extractGraph(docjson).toString(0)).append("\n");
+                }
+            }
+
+            Data.gridStorage.store(targetasset_path, targetasset_object.toString().getBytes(StandardCharsets.UTF_8));
+            Data.gridStorage.store(targetgraph_path, targetgraph_object.toString().getBytes(StandardCharsets.UTF_8));
+            Data.logger.info("processed message from queue and stored asset " + targetasset_path);
+
+            return true;
+        } catch (Throwable e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    public static void loadNextAction(SusiAction action, JSONArray data) throws UnsupportedOperationException, IOException {
+        String type = action.getStringAttr("type");
+        if (type == null || type.length() == 0) throw new UnsupportedOperationException("missing type in action");
+        String queue = action.getStringAttr("queue");
+        if (queue == null || queue.length() == 0) throw new UnsupportedOperationException("missing queue in action");
+
+        // create a new Thought and push it to the next queue
+        JSONObject nextProcess = new JSONObject()
+                .put("data", data)
+                .put("actions", new JSONArray().put(action.toJSONClone()));
+        byte[] b = nextProcess.toString().getBytes(StandardCharsets.UTF_8);
+        Data.gridBroker.send(type, queue, b);
     }
     
     public static void main(String[] args) {
