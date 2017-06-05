@@ -54,7 +54,6 @@ import net.yacy.grid.http.ObjectAPIHandler;
 import net.yacy.grid.http.Query;
 import net.yacy.grid.http.ServiceResponse;
 import net.yacy.grid.io.assets.Asset;
-import net.yacy.grid.io.index.MappingType;
 import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
@@ -363,7 +362,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         JSONObject graph = new JSONObject(true);
         for (WebMapping mapping: graph_attributes) {
             String key = mapping.getSolrFieldName();
-            graph.put(key, doc.get(key));
+            if (doc.has(key)) graph.put(key, doc.get(key));
         }
         return graph;
     }
