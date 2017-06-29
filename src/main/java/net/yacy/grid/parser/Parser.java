@@ -36,6 +36,8 @@ import ai.susi.mind.SusiAction;
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.io.index.WebMapping;
+import net.yacy.grid.mcp.AbstractBrokerListener;
+import net.yacy.grid.mcp.BrokerListener;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.mcp.MCP;
 import net.yacy.grid.mcp.AbstractBrokerListener;
@@ -59,7 +61,6 @@ public class Parser {
     /*
      * test this with
      * curl -X POST -F "message=@job.json" -F "serviceName=parser" -F "queueName=yacyparser" http://yacygrid.com:8100/yacy/grid/mcp/messages/send.json
-     * 
 {
   "metadata": {
     "process": "yacy_grid_parser",
@@ -71,33 +72,36 @@ public class Parser {
     "queue": "yacyparser",
     "sourceasset": "test3/yacy.net.warc.gz",
     "targetasset": "test3/yacy.net.text.jsonlist",
-    "targetgraph": "test3/yacy.net.graph.jsonlist"
-  },{
-    "type": "indexer",
-    "queue": "elasticsearch",
-    "targetindex": "webindex",
-    "targettype" : "common",
-    "sourceasset": "test3/yacy.net.text.jsonlist"
-  },{
-    "type": "crawler",
-    "queue": "webcrawler",
-    "sourceasset": "test3/yacy.net.graph.jsonlist"
+    "targetgraph": "test3/yacy.net.graph.jsonlist",
+    "actions": [
+      {
+      "type": "indexer",
+      "queue": "elasticsearch",
+      "targetindex": "webindex",
+      "targettype" : "common",
+      "sourceasset": "test3/yacy.net.text.jsonlist"
+      },
+      {
+        "type": "crawler",
+        "queue": "webcrawler",
+        "sourceasset": "test3/yacy.net.graph.jsonlist"
+      }
+    ]
   }]
 }
      */
     public static class ParserListener extends AbstractBrokerListener implements BrokerListener {
-    
+
         public ParserListener(YaCyServices service) {
              super(service, Runtime.getRuntime().availableProcessors());
         }
 
-        @Override
-        public boolean processAction(SusiAction a, JSONArray data) {
+        public boolean processAction(SusiAction action, JSONArray data) {
     
-            String sourceasset_path = a.getStringAttr("sourceasset");
-            String targetasset_path = a.getStringAttr("targetasset");
-            String targetgraph_path = a.getStringAttr("targetgraph");
-            boolean elastic = a.getBooleanAttr("bulk");
+            String sourceasset_path = action.getStringAttr("sourceasset");
+            String targetasset_path = action.getStringAttr("targetasset");
+            String targetgraph_path = action.getStringAttr("targetgraph");
+            boolean elastic = action.getBooleanAttr("bulk");
             if (targetasset_path == null || targetasset_path.length() == 0 ||
                 sourceasset_path == null || sourceasset_path.length() == 0) return false;
             
@@ -140,7 +144,7 @@ public class Parser {
             }
         }
     }
-
+        
     public static void main(String[] args) {
         // initialize environment variables
         List<Class<? extends Servlet>> services = new ArrayList<>();
