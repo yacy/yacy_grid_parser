@@ -422,7 +422,7 @@ public class ChunkedInputStream extends InputStream {
                 if (!this.eof) {
                     exhaustInputStream(this);
                 }
-            } finally {
+            } catch (IOException e) {} finally {
                 this.eof = true;
                 this.closed = true;
             }

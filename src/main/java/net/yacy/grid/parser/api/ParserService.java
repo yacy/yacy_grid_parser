@@ -259,20 +259,23 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                     if (TextParser.supportsMime(http.contentType) == null) { // check availability of parser
 
                         InputStream istream = wrec.getPayloadContent();
+                        /*
                         hl = http.getHeader(HeaderFramework.TRANSFER_ENCODING);
                         if (hl != null && hl.value.contains("chunked")) {
                             // because chunked stream.read doesn't read source fully, make sure all chunks are read
                             istream = new ChunkedInputStream(istream);
                             final ByteBuffer bbuffer = new ByteBuffer();
                             int c;
-                            while ((c = istream.read()) >= 0) {
+                            try {while ((c = istream.read()) >= 0) {
                                 bbuffer.append(c);
+                            }} catch (IOException e) {
+                                e.printStackTrace();
                             }
                             content = bbuffer.getBytes();
-                        } else {
+                        } else {*/
                             content = new byte[(int) http.getPayloadLength()];
                             istream.read(content, 0, content.length);
-                        }
+                        //}
                         istream.close();
 
                         RequestHeader requestHeader = new RequestHeader();
