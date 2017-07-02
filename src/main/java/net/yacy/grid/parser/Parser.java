@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -101,14 +102,25 @@ public class Parser {
             String sourceasset_path = action.getStringAttr("sourceasset");
             String targetasset_path = action.getStringAttr("targetasset");
             String targetgraph_path = action.getStringAttr("targetgraph");
-            boolean elastic = action.getBooleanAttr("bulk");
             if (targetasset_path == null || targetasset_path.length() == 0 ||
                 sourceasset_path == null || sourceasset_path.length() == 0) return false;
-            
-            InputStream sourceStream = null;
+
+            byte[] source = null;
             try {
                 Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
-                byte[] source = asset.getPayload();
+                source = asset.getPayload();
+            } catch (Throwable e) {
+                e.printStackTrace();
+                // if we do not get the payload from the storage, we look for attached data in the action
+                source = action.getBinaryAsset(sourceasset_path);
+                if (source == null) {
+                    Data.logger.warn("could not load asset from action", e);
+                    return false;
+                }
+                Data.logger.info("asset was taken from action");
+            }
+            try{
+                InputStream sourceStream = null;
                 sourceStream = new ByteArrayInputStream(source);
                 if (sourceasset_path.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
     
@@ -118,18 +130,23 @@ public class Parser {
                 StringBuffer targetgraph_object = targetgraph_path != null && targetgraph_path.length() > 0 ? new StringBuffer(2048) : null;
                 for (int i = 0; i < parsedDocuments.length(); i++) {
                     JSONObject docjson = parsedDocuments.getJSONObject(i);
-                    if (elastic) {
-                        String url = docjson.getString(WebMapping.url_s.name());
-                        String id = Digest.encodeMD5Hex(url);
-                        JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
-                        targetasset_object.append(bulkjson.toString(0)).append("\n");
-                        if (targetgraph_object != null) {
-                            targetgraph_object.append(bulkjson.toString(0)).append("\n");
-                        }
-                    }
+                    
+                    // create elasticsearch index line
+                    String url = docjson.getString(WebMapping.url_s.name());
+                    String id = Digest.encodeMD5Hex(url);
+                    JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
+
+                    // write web index
+                    targetasset_object.append(bulkjson.toString(0)).append("\n");
+                    //docjson.put("_id", id);
                     targetasset_object.append(docjson.toString(0)).append("\n");
+                    
+                    // write graph
                     if (targetgraph_object != null) {
-                        targetgraph_object.append(ParserService.extractGraph(docjson).toString(0)).append("\n");
+                        targetgraph_object.append(bulkjson.toString(0)).append("\n");
+                        JSONObject graphjson = ParserService.extractGraph(docjson);
+                        //graphjson.put("_id", id);
+                        targetgraph_object.append(graphjson.toString(0)).append("\n");
                     }
                 }
     
