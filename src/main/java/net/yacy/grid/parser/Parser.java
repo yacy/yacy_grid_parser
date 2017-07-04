@@ -20,9 +20,7 @@
 package net.yacy.grid.parser;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -105,18 +103,17 @@ public class Parser {
                 sourceasset_path == null || sourceasset_path.length() == 0) return false;
 
             byte[] source = null;
-            try {
+            if (action.hasAsset(sourceasset_path)) {
+            	source = action.getBinaryAsset(sourceasset_path);
+            }
+            if (source == null) try {
                 Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
                 source = asset.getPayload();
             } catch (Throwable e) {
                 e.printStackTrace();
                 // if we do not get the payload from the storage, we look for attached data in the action
-                source = action.getBinaryAsset(sourceasset_path);
-                if (source == null) {
-                    Data.logger.warn("could not load asset from action", e);
-                    return false;
-                }
-                Data.logger.info("asset was taken from action");
+                Data.logger.warn("could not load asset: " + sourceasset_path, e);
+                return false;
             }
             try{
                 InputStream sourceStream = null;
@@ -148,27 +145,32 @@ public class Parser {
                         targetgraph_object.add(graphjson);
                     }
                 }
-    
+                
+                boolean storeToMessage = true; // debug version for now: always true TODO: set to false later
+                /*
                 try {
                 	String targetasset = targetasset_object.toString();
                 	Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
                 } catch (IOException ee) {
                 	 ee.printStackTrace();
                      Data.logger.info("asset " + targetasset_path + " could not be stored, carrying the asset within the next action");
-                     JSONArray actions = action.getEmbeddedActions();
-                     actions.forEach(a -> 
-                         new SusiAction((JSONObject) a).setJSONListAsset(targetasset_path, targetasset_object)
-                     );
+                     storeToMessage = true;
                 }
                 try {
                 	String targetgraph = targetgraph_object.toString();
                 	Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
                 } catch (IOException ee) {
                 	Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action");
-                    JSONArray actions = action.getEmbeddedActions();
-                    actions.forEach(a -> 
-                        new SusiAction((JSONObject) a).setJSONListAsset(targetgraph_path, targetgraph_object)
-                    );
+                	storeToMessage = true;
+                }
+                 */                
+                // emergency storage to message
+                if (storeToMessage) {
+                	JSONArray actions = action.getEmbeddedActions();
+                    actions.forEach(a -> {
+                        new SusiAction((JSONObject) a).setJSONListAsset(targetasset_path, targetasset_object);
+                        new SusiAction((JSONObject) a).setJSONListAsset(targetgraph_path, targetgraph_object);
+                    });
                 }
                 Data.logger.info("processed message from queue and stored asset " + targetasset_path);
     
