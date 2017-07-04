@@ -20,11 +20,11 @@
 package net.yacy.grid.parser;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -41,11 +41,10 @@ import net.yacy.grid.mcp.AbstractBrokerListener;
 import net.yacy.grid.mcp.BrokerListener;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.mcp.MCP;
-import net.yacy.grid.mcp.AbstractBrokerListener;
-import net.yacy.grid.mcp.BrokerListener;
 import net.yacy.grid.mcp.Service;
 import net.yacy.grid.parser.api.ParserService;
 import net.yacy.grid.tools.Digest;
+import net.yacy.grid.tools.JSONList;
 
 public class Parser {
 
@@ -126,8 +125,8 @@ public class Parser {
     
                 // compute parsed documents
                 JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream);
-                StringBuffer targetasset_object = new StringBuffer(2048);
-                StringBuffer targetgraph_object = targetgraph_path != null && targetgraph_path.length() > 0 ? new StringBuffer(2048) : null;
+                JSONList targetasset_object = new JSONList();
+                JSONList targetgraph_object = new JSONList();
                 for (int i = 0; i < parsedDocuments.length(); i++) {
                     JSONObject docjson = parsedDocuments.getJSONObject(i);
                     
@@ -137,21 +136,40 @@ public class Parser {
                     JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
 
                     // write web index
-                    targetasset_object.append(bulkjson.toString(0)).append("\n");
+                    targetasset_object.add(bulkjson);
                     //docjson.put("_id", id);
-                    targetasset_object.append(docjson.toString(0)).append("\n");
+                    targetasset_object.add(docjson);
                     
                     // write graph
                     if (targetgraph_object != null) {
-                        targetgraph_object.append(bulkjson.toString(0)).append("\n");
+                        targetgraph_object.add(bulkjson);
                         JSONObject graphjson = ParserService.extractGraph(docjson);
                         //graphjson.put("_id", id);
-                        targetgraph_object.append(graphjson.toString(0)).append("\n");
+                        targetgraph_object.add(graphjson);
                     }
                 }
     
-                Data.gridStorage.store(targetasset_path, targetasset_object.toString().getBytes(StandardCharsets.UTF_8));
-                Data.gridStorage.store(targetgraph_path, targetgraph_object.toString().getBytes(StandardCharsets.UTF_8));
+                try {
+                	String targetasset = targetasset_object.toString();
+                	Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
+                } catch (IOException ee) {
+                	 ee.printStackTrace();
+                     Data.logger.info("asset " + targetasset_path + " could not be stored, carrying the asset within the next action");
+                     JSONArray actions = action.getEmbeddedActions();
+                     actions.forEach(a -> 
+                         new SusiAction((JSONObject) a).setJSONListAsset(targetasset_path, targetasset_object)
+                     );
+                }
+                try {
+                	String targetgraph = targetgraph_object.toString();
+                	Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
+                } catch (IOException ee) {
+                	Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action");
+                    JSONArray actions = action.getEmbeddedActions();
+                    actions.forEach(a -> 
+                        new SusiAction((JSONObject) a).setJSONListAsset(targetgraph_path, targetgraph_object)
+                    );
+                }
                 Data.logger.info("processed message from queue and stored asset " + targetasset_path);
     
                 return true;
