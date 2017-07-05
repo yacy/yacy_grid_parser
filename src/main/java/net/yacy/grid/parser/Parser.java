@@ -152,7 +152,7 @@ public class Parser {
                 try {
                 	String targetasset = targetasset_object.toString();
                 	Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
-                } catch (IOException ee) {
+                } catch (Throwable ee) {
                 	 ee.printStackTrace();
                      Data.logger.info("asset " + targetasset_path + " could not be stored, carrying the asset within the next action");
                      storeToMessage = true;
@@ -160,7 +160,7 @@ public class Parser {
                 try {
                 	String targetgraph = targetgraph_object.toString();
                 	Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
-                } catch (IOException ee) {
+                } catch (Throwable ee) {
                 	Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action");
                 	storeToMessage = true;
                 }        
