@@ -20,7 +20,9 @@
 package net.yacy.grid.parser;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -147,7 +149,6 @@ public class Parser {
                 }
                 
                 boolean storeToMessage = true; // debug version for now: always true TODO: set to false later
-                /*
                 try {
                 	String targetasset = targetasset_object.toString();
                 	Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
@@ -162,8 +163,7 @@ public class Parser {
                 } catch (IOException ee) {
                 	Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action");
                 	storeToMessage = true;
-                }
-                 */                
+                }        
                 // emergency storage to message
                 if (storeToMessage) {
                 	JSONArray actions = action.getEmbeddedActions();
