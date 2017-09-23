@@ -84,10 +84,6 @@ public final class TextParser {
         initParser(new csvParser());
         initParser(new docParser());
         initParser(new gzipParser());
-        // AugmentParser calls internally RDFaParser (therefore add before RDFa)
-        // if (Switchboard.getSwitchboard().getConfigBool("parserAugmentation", true)) initParser(new AugmentParser()); // experimental implementation, not working yet (2015-06-05)
-        // RDFaParser calls internally htmlParser (therefore add before html)
-        // if (Switchboard.getSwitchboard().getConfigBool("parserAugmentation.RDFa", true)) initParser(new RDFaParser()); // experimental implementation, not working yet (2015-06-04)
         initParser(new htmlParser()); // called within rdfa parser
         initParser(new genericImageParser());
         initParser(new metadataImageParser());

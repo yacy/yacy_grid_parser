@@ -42,7 +42,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.yacy.cora.protocol.ftp.FTPClient;
-import net.yacy.cora.protocol.http.HTTPClient;
 import net.yacy.grid.tools.MultiProtocolURL;
 
 /**
@@ -286,20 +285,5 @@ public class Scanner {
             if (comment.getValue().contains(url)) return comment.getKey();
         }
         return null;
-    }
-
-    public static void main(final String[] args) {
-        //try {System.out.println("192.168.1.91: " + ping(new MultiProtocolURI("smb://192.168.1.91/"), 1000));} catch (final MalformedURLException e) {}
-        final Scanner scanner = new Scanner(100, 10);
-        List<InetAddress> addresses = genlist(Domains.myIntranetIPs(), 20);
-        scanner.addProtocols(addresses, true, true, true, true);
-        scanner.terminate();
-        for (final Service service: scanner.services().keySet()) {
-            System.out.println(service.toString());
-        }
-        try {
-            HTTPClient.closeConnectionManager();
-        } catch (final InterruptedException e) {
-        }
     }
 }
