@@ -971,10 +971,8 @@ public final class FileUtils {
                 try {
                     final String command = "cmd /C del /F /Q \"" + p + "\"";
                     final Process r = Runtime.getRuntime().exec(command);
-                    if ( r == null ) {
-                       
-                    } else {
-                        final byte[] response = read(r.getInputStream());
+                    if (r != null) {
+                        read(r.getInputStream());
                     }
                 } catch (final IOException e ) {
                 }

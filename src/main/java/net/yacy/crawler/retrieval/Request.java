@@ -109,8 +109,12 @@ public class Request {
         this.statusMessage = s;
         this.status = code;
     }
+    
+    public int getStatus() {
+        return this.status;
+    }
 
-    public String getStatus() {
+    public String getStatusMessage() {
         return this.statusMessage;
     }
 

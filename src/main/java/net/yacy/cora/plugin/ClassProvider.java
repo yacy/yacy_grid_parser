@@ -47,6 +47,7 @@ public class ClassProvider {
             URL[] urls;
             try {
                 urls = new URL[]{new URL("file", "", path)};
+                @SuppressWarnings("resource")
                 final ClassLoader cl = new URLClassLoader(urls);
                 c = cl.loadClass(classname);
             } catch (final MalformedURLException e) {

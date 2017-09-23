@@ -324,6 +324,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                     }
                 }
             }
+            try {wrec.close();} catch (IOException e1) {}
             wrec = localwarcReader.getNextRecord();
         }
         localwarcReader.close();
