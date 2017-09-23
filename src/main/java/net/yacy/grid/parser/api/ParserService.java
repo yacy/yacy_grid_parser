@@ -39,10 +39,8 @@ import ai.susi.mind.SusiThought;
 import ai.susi.mind.SusiAction;
 import ai.susi.mind.SusiAction.RenderType;
 import net.yacy.cora.federate.solr.WebConfiguration;
-import net.yacy.cora.protocol.HeaderFramework;
 import net.yacy.cora.protocol.RequestHeader;
 import net.yacy.cora.protocol.ResponseHeader;
-import net.yacy.cora.util.ByteBuffer;
 import net.yacy.crawler.retrieval.Request;
 import net.yacy.crawler.retrieval.Response;
 import net.yacy.document.Document;
@@ -59,7 +57,6 @@ import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.Digest;
 import net.yacy.grid.tools.MultiProtocolURL;
-import net.yacy.server.http.ChunkedInputStream;
 
 /**
  * The parser transforms a given source file into a YaCy JSON

@@ -122,6 +122,7 @@ public class pptParser extends AbstractParser implements Parser {
                 false,
                 pptExtractor.getSummaryInformation().getLastSaveDateTime() // may be null
                 )};
+            pptExtractor.close();
             return docs;
         } catch (final Exception e) {
             if (e instanceof InterruptedException) throw (InterruptedException) e;

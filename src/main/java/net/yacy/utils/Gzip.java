@@ -44,7 +44,7 @@ import net.yacy.grid.mcp.Data;
 
 
 
-public class gzip {
+public class Gzip {
 
     public static void gzipFile(final String inFile, final String outFile) {
 	try {
@@ -195,13 +195,13 @@ public class gzip {
 	    } else {
 		target = s[2];
 	    }
-	    gzip.gunzipFile(new File(s[1]), new File(target));
+	    Gzip.gunzipFile(new File(s[1]), new File(target));
 	    System.exit(0);
 	}
 	if ((s.length < 1) || (s.length > 2)) {help(); System.exit(-1);}
 	String target;
 	if (s.length == 1) target = s[0] + ".gz"; else target = s[1];
-	gzip.gzipFile((s[0]), target);
+	Gzip.gzipFile((s[0]), target);
 	System.exit(0);
     }
 

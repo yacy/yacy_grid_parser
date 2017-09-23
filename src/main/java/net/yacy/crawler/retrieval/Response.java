@@ -28,7 +28,6 @@ package net.yacy.crawler.retrieval;
 
 import java.util.Date;
 
-import net.yacy.cora.document.encoding.ASCII;
 import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.grid.tools.Classification;
 import net.yacy.grid.tools.MultiProtocolURL;

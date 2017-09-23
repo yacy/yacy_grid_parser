@@ -27,6 +27,7 @@
 
 package net.yacy.document.parser;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -132,7 +133,7 @@ public class docParser extends AbstractParser implements Parser {
             false,
             extractor.getSummaryInformation().getLastSaveDateTime() // maybe null
             )};
-
+        try {extractor.close();} catch (IOException e) {}
         return docs;
     }
 
@@ -206,7 +207,7 @@ public class docParser extends AbstractParser implements Parser {
             false,
             extractor.getSummaryInformation().getLastSaveDateTime() // maybe null
             )};
-
+        try {extractor.close();} catch (IOException e) {}
         return docs;
     }
 }

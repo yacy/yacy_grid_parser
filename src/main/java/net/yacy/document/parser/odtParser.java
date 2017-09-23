@@ -109,7 +109,7 @@ public class odtParser extends AbstractParser implements Parser {
     	return parser;
     }
 
-    private Document[] parse(final MultiProtocolURL location, final String mimeType, @SuppressWarnings("unused") final String charset, final File dest)
+    private Document[] parse(final MultiProtocolURL location, final String mimeType, final String charset, final File dest)
             throws Parser.Failure, InterruptedException {
 
         CharBuffer writer = null;
