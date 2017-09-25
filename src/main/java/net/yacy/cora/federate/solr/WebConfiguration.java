@@ -31,7 +31,6 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -66,13 +65,6 @@ public class WebConfiguration implements Serializable {
     public static boolean UNIQUE_HEURISTIC_PREFER_HTTPS = false;
     public static boolean UNIQUE_HEURISTIC_PREFER_WWWPREFIX = true;
     
-    private final static Set<String> omitFields = new HashSet<String>(3);
-    static {
-        omitFields.add(WebMapping.author_sxt.getSolrFieldName());
-        omitFields.add(WebMapping.coordinate_p_0_coordinate.getSolrFieldName());
-        omitFields.add(WebMapping.coordinate_p_1_coordinate.getSolrFieldName());
-    }
-
     private static void add(JSONObject json, WebMapping field, String value) {
         json.put(field.getSolrFieldName(), value);
     }
@@ -244,7 +236,10 @@ public class WebConfiguration implements Serializable {
 
         String author = document.dc_creator();
         if (author == null || author.length() == 0) author = document.dc_publisher();
-        add(doc, WebMapping.author, author);
+        if (author != null && author.length() > 0) {
+            add(doc, WebMapping.author, author);
+            add(doc, WebMapping.author_sxt, new String[]{author}); // this was a copy-field when used with solr
+        }
         
         Date lastModified = responseHeader == null ? new Date() : responseHeader.lastModified();
         if (lastModified == null) lastModified = new Date();
