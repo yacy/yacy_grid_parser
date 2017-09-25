@@ -71,6 +71,9 @@ public class WebConfiguration implements Serializable {
     private static void add(JSONObject json, WebMapping field, int value) {
         json.put(field.getSolrFieldName(), (long) value);
     }
+    private static void add(JSONObject json, WebMapping field, double value) {
+        json.put(field.getSolrFieldName(), value);
+    }
     private static void add(JSONObject json, WebMapping field, boolean value) {
         json.put(field.getSolrFieldName(), value);
     }
@@ -605,6 +608,8 @@ public class WebConfiguration implements Serializable {
         // coordinates
         if (document.lat() != 0.0 && document.lon() != 0.0) {
             add(doc, WebMapping.coordinate_p, Double.toString(document.lat()) + "," + Double.toString(document.lon()));
+            add(doc, WebMapping.coordinate_lat_d, document.lat());
+            add(doc, WebMapping.coordinate_lon_d, document.lon());
         }
         add(doc, WebMapping.httpstatus_i, responseHeader == null ? 200 : responseHeader.getStatusCode());
 
