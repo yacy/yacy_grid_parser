@@ -24,7 +24,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.Servlet;
@@ -33,6 +37,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import ai.susi.mind.SusiAction;
+import ai.susi.mind.SusiThought;
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.io.index.WebMapping;
@@ -122,7 +127,11 @@ public class Parser {
                 if (sourceasset_path.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
     
                 // compute parsed documents
-                JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream);
+                // String collection = 
+
+                JSONObject crawl = SusiThought.selectData(data, "id", action.getStringAttr("id"));
+                final Map<String, Pattern> collections = collectionParser(crawl.optString("collection"));
+                JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream, collections);
                 JSONList targetasset_object = new JSONList();
                 JSONList targetgraph_object = new JSONList();
                 for (int i = 0; i < parsedDocuments.length(); i++) {
@@ -149,19 +158,19 @@ public class Parser {
                 
                 boolean storeToMessage = true; // debug version for now: always true TODO: set to false later
                 try {
-                	String targetasset = targetasset_object.toString();
-                	Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
+                    String targetasset = targetasset_object.toString();
+                    Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
                 } catch (Throwable ee) {
-                	 ee.printStackTrace();
-                     Data.logger.info("asset " + targetasset_path + " could not be stored, carrying the asset within the next action");
-                     storeToMessage = true;
+                	    ee.printStackTrace();
+                	    Data.logger.info("asset " + targetasset_path + " could not be stored, carrying the asset within the next action");
+                	    storeToMessage = true;
                 }
                 try {
-                	String targetgraph = targetgraph_object.toString();
-                	Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
+                    String targetgraph = targetgraph_object.toString();
+                    Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
                 } catch (Throwable ee) {
-                	Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action");
-                	storeToMessage = true;
+                	    Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action");
+                	    storeToMessage = true;
                 }        
                 // emergency storage to message
                 if (storeToMessage) {
@@ -180,7 +189,20 @@ public class Parser {
             }
         }
     }
-        
+
+    public static final Pattern catchall_pattern = Pattern.compile(".*");
+    
+    public static Map<String, Pattern> collectionParser(String collectionString) {
+        if (collectionString == null || collectionString.length() == 0) return new HashMap<String, Pattern>();
+        String[] cs = collectionString.split(",");
+        final Map<String, Pattern> cm = new LinkedHashMap<String, Pattern>();
+        for (String c: cs) {
+            int p = c.indexOf(':');
+            if (p < 0) cm.put(c, catchall_pattern); else cm.put(c.substring(0, p), Pattern.compile(c.substring(p + 1)));
+        }
+        return cm;
+    }
+    
     public static void main(String[] args) {
         // initialize environment variables
         List<Class<? extends Servlet>> services = new ArrayList<>();

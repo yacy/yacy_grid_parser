@@ -22,6 +22,8 @@ package net.yacy.grid.parser.api;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletResponse;
@@ -174,7 +176,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         // compute parsed documents
         JSONArray parsedDocuments;
         try {
-            parsedDocuments = indexWarcRecords(sourceStream);
+            parsedDocuments = indexWarcRecords(sourceStream, null);
         } catch (IOException e) {
             e.printStackTrace();
             parsedDocuments = new JSONArray();
@@ -233,7 +235,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
      * @param f
      * @throws IOException
      */
-    public static JSONArray indexWarcRecords(InputStream f) throws IOException {
+    public static JSONArray indexWarcRecords(InputStream f, final Map<String, Pattern> collections) throws IOException {
 
         JSONArray parsedDocuments = new JSONArray();
         byte[] content;
@@ -312,7 +314,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                             // transform the YaCy document into a JSON
                             for (Document d: documents) {
                                 JSONObject json = WebConfiguration.yacy2solr(
-                                        null /* collections */, responseHeader,
+                                        collections, responseHeader,
                                         d, requestHeader.referer(), null /* language */, false,
                                         0 /* timezoneOffset */);
                                 parsedDocuments.put(json);
