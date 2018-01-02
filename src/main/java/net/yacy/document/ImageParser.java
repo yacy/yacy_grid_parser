@@ -46,10 +46,10 @@ public class ImageParser {
 			 * full loading with a MediaTracker
 			 */
 		} catch (IOException e) {
-			Data.logger.debug("IMAGEPARSER", "IMAGEPARSER.parse : could not parse image " + filename, e);
+			Data.logger.debug("IMAGEPARSER.parse : could not parse image " + filename, e);
 		}
 		if (image == null) {
-			Data.logger.debug("IMAGEPARSER", "IMAGEPARSER.parse : ImageIO failed for " + filename);
+			Data.logger.debug("IMAGEPARSER.parse : ImageIO failed for " + filename);
 			return null;
 		}
 

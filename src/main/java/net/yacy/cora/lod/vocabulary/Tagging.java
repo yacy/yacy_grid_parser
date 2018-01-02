@@ -204,7 +204,7 @@ public class Tagging {
         this.predicate = this.namespace + this.navigatorName;
         this.objectspace = null;
 
-        Data.logger.info("Tagging", "Started Vocabulary Initialization for " + this.propFile);
+        Data.logger.info("Started Vocabulary Initialization for " + this.propFile);
         long start = System.currentTimeMillis();
         long count = 0;
         BlockingQueue<String> list = Files.concurentLineReader(this.propFile);
@@ -271,7 +271,7 @@ public class Tagging {
         } catch (final InterruptedException e) {
         }
         long time = Math.max(1, System.currentTimeMillis() - start);
-        Data.logger.info("Tagging", "Finished Vocabulary Initialization for " + this.propFile + "; " + count + " lines; " + time + " milliseconds; " + (1000L * count / time) + " lines / second");
+        Data.logger.info("Finished Vocabulary Initialization for " + this.propFile + "; " + count + " lines; " + time + " milliseconds; " + (1000L * count / time) + " lines / second");
     }
 
     public boolean isFacet() {

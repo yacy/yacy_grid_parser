@@ -116,7 +116,7 @@ public class Evaluation {
                 final String v = (String) entry.getValue();
                 final int w = k.indexOf('_');
                 if (w < 0) {
-                    Data.logger.error("PatternAnalysis", "wrong configuration in " + name + ": separator '_' missing: " + k);
+                    Data.logger.error("wrong configuration in " + name + ": separator '_' missing: " + k);
                     continue;
                 }
                 subject = k.substring(0, w);
@@ -124,12 +124,12 @@ public class Evaluation {
                 try {
                     pattern = Pattern.compile(v);
                 } catch (final PatternSyntaxException e) {
-                    Data.logger.error("PatternAnalysis", "bad pattern in " + name + ": '" + k + "=" + v + "' - " + e.getDescription());
+                    Data.logger.error("bad pattern in " + name + ": '" + k + "=" + v + "' - " + e.getDescription());
                     continue;
                 }
                 element = Element.valueOf(elementName);
                 if (element == null) {
-                    Data.logger.error("PatternAnalysis", "unknown element in " + name + ": " + elementName);
+                    Data.logger.error("unknown element in " + name + ": " + elementName);
                     continue;
                 }
                 List<Attribute> attributeList = this.elementMatcher.get(element);

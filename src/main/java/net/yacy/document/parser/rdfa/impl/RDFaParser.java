@@ -83,7 +83,7 @@ public class RDFaParser extends AbstractParser implements Parser {
 			allTriples = triple.parse();
 
 		} catch (final Exception e) {
-			Data.logger.warn("RDFA PARSER", "Triple extraction failed");
+			Data.logger.warn("Triple extraction failed");
 		}
 
 		Document doc = new Document(url, mimeType, charset, null, null, null, singleList(""), "",
@@ -95,8 +95,7 @@ public class RDFaParser extends AbstractParser implements Parser {
 						allTriples);
 
 		} catch (final Exception e) {
-			Data.logger.warn("RDFA PARSER",
-					"Conversion triple to document failed");
+			Data.logger.warn("Conversion triple to document failed");
 		}
 		return doc;
 	}
@@ -116,7 +115,7 @@ public class RDFaParser extends AbstractParser implements Parser {
 			source.reset();
 
 		} catch (final IOException e1) {
-			Data.logger.warn("RDFA PARSER", "Super call failed");
+			Data.logger.warn("Super call failed");
 		}
 		return htmlDocs;
 	}

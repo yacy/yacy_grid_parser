@@ -86,7 +86,7 @@ public class vsdParser extends AbstractParser implements Parser {
                 summary = extractor.getSummaryInformation();
                 extractor.close();
             } catch (final Exception e) {
-            	Data.logger.warn("vsdParser", e.getMessage());
+            	Data.logger.warn(e.getMessage());
             }
 
             String author = null;

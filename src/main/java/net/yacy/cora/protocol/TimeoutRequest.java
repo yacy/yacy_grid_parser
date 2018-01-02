@@ -102,7 +102,7 @@ public class TimeoutRequest<E> {
                 throw new ExecutionException(e);
             }
         } catch (final OutOfMemoryError e) {
-            Data.logger.warn(TimeoutRequest.class.getName(), "OutOfMemoryError / retry follows", e);
+            Data.logger.warn("OutOfMemoryError / retry follows", e);
             // in case that no memory is there to create a new native thread
             try {
                 return this.call.call();

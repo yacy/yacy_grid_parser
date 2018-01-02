@@ -427,7 +427,7 @@ public class HeaderFramework extends TreeMap<String, String> implements Map<Stri
             try {
                 return (int) Long.parseLong(get(CONTENT_LENGTH));
             } catch (final NumberFormatException e) {
-                Data.logger.warn("HeaderFramework", "content-length cannot be parsed: " + get(CONTENT_LENGTH));
+                Data.logger.warn("content-length cannot be parsed: " + get(CONTENT_LENGTH));
                 return -1;
             }
         }

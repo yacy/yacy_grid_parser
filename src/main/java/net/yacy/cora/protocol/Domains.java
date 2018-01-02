@@ -169,11 +169,11 @@ public class Domains {
                         boolean isLoopbackAddress  = a.isLoopbackAddress();  // true i.e. for localhost/0:0:0:0:0:0:0:1, localhost/127.0.0.1
                         boolean isSiteLocalAddress = a.isSiteLocalAddress(); // true i.e. for myhost.local/192.168.1.33
                         if (isAnyLocalAddress || isLinkLocalAddress || isLoopbackAddress || isSiteLocalAddress) {
-                            Data.logger.info("Domain Init", "local host address: " + hostaddress + " (local)");
+                            Data.logger.info("local host address: " + hostaddress + " (local)");
                             localHostAddresses.add(a);
                             if (hostname != null) {localHostNames.add(chopZoneID(hostname)); localHostNames.add(chopZoneID(hostaddress));}
                         } else {
-                            Data.logger.info("Domain Init", "local host address: " + hostaddress + " (public)");
+                            Data.logger.info("local host address: " + hostaddress + " (public)");
                             if (a instanceof Inet4Address) {
                                 publicIPv4HostAddresses.add(a);
                             } else {

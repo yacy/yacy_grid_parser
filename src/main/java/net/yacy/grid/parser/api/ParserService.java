@@ -330,7 +330,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             wrec = localwarcReader.getNextRecord();
         }
         localwarcReader.close();
-        Data.logger.info("WarcImporter", "Indexed " + cnt + " documents");
+        Data.logger.info("Indexed " + cnt + " documents");
         return parsedDocuments;
     }
 

@@ -103,7 +103,7 @@ public class Memory {
         if (deadlockIDs == null) return;
         ThreadInfo[] infos = ManagementFactory.getThreadMXBean().getThreadInfo(deadlockIDs, true, true);
         for (ThreadInfo ti : infos) {
-            Data.logger.warn("DEADLOCKREPORT", ti.toString());
+            Data.logger.warn(ti.toString());
         }
     }
 }

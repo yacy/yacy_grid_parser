@@ -251,9 +251,7 @@ public final class FileUtils {
                 try {
                     fos.close();
                 } catch (final Exception e ) {
-                    Data.logger.warn(
-                        "FileUtils",
-                        "cannot close FileOutputStream for " + dest + "! " + e.getMessage());
+                    Data.logger.warn("cannot close FileOutputStream for " + dest + "! " + e.getMessage());
                 }
             }
         }
@@ -497,7 +495,7 @@ public final class FileUtils {
             final byte[] b = read(f);
             return table(strings(b));
         } catch (final IOException e2 ) {
-            Data.logger.error("FileUtils", f.toString() + " not found", e2);
+            Data.logger.error(f.toString() + " not found", e2);
             return null;
         }
     }
@@ -538,10 +536,10 @@ public final class FileUtils {
             }
             pw.println("# EOF");
         } catch (final  FileNotFoundException e ) {
-            Data.logger.warn("FileUtils", e.getMessage(), e);
+            Data.logger.warn(e.getMessage(), e);
             err = true;
         } catch (final  UnsupportedEncodingException e ) {
-            Data.logger.warn("FileUtils", e.getMessage(), e);
+            Data.logger.warn(e.getMessage(), e);
             err = true;
         } finally {
             if ( pw != null ) {
@@ -1053,9 +1051,9 @@ public final class FileUtils {
                 try {
                     List<String> charsets = FileUtils.detectCharset(file);
                     if (charsets.contains(givenCharset)) {
-                        Data.logger.info("checkCharset", "appropriate charset '" + givenCharset + "' for import of " + file + ", is part one detected " + charsets);
+                        Data.logger.info("appropriate charset '" + givenCharset + "' for import of " + file + ", is part one detected " + charsets);
                     } else {
-                        Data.logger.warn("checkCharset", "possibly wrong charset '" + givenCharset + "' for import of " + file + ", use one of " + charsets);
+                        Data.logger.warn("possibly wrong charset '" + givenCharset + "' for import of " + file + ", use one of " + charsets);
                     }
                 } catch (IOException e) {}
                 
