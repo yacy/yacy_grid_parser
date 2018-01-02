@@ -160,24 +160,26 @@ public class Parser {
                 try {
                     String targetasset = targetasset_object.toString();
                     Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
+                    Data.logger.info("stored asset " + targetasset_path);
                 } catch (Throwable ee) {
-                    Data.logger.warn("", ee);
-                	    Data.logger.info("asset " + targetasset_path + " could not be stored, carrying the asset within the next action");
+                	    Data.logger.warn("asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
                 	    storeToMessage = true;
                 }
                 try {
                     String targetgraph = targetgraph_object.toString();
                     Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
+                    Data.logger.info("stored graph " + targetgraph_path);
                 } catch (Throwable ee) {
-                	    Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action");
+                	    Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action", ee);
                 	    storeToMessage = true;
                 }        
                 // emergency storage to message
                 if (storeToMessage) {
-                	JSONArray actions = action.getEmbeddedActions();
+                    JSONArray actions = action.getEmbeddedActions();
                     actions.forEach(a -> {
                         new SusiAction((JSONObject) a).setJSONListAsset(targetasset_path, targetasset_object);
                         new SusiAction((JSONObject) a).setJSONListAsset(targetgraph_path, targetgraph_object);
+                        Data.logger.info("stored assets " + targetasset_path + ", " + targetgraph_path + " into message");
                     });
                 }
                 Data.logger.info("processed message from queue and stored asset " + targetasset_path);
