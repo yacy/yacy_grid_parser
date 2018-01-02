@@ -178,7 +178,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         try {
             parsedDocuments = indexWarcRecords(sourceStream, null);
         } catch (IOException e) {
-            e.printStackTrace();
+            Data.logger.warn("", e);
             parsedDocuments = new JSONArray();
         } finally {
             try {
@@ -268,7 +268,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                             try {while ((c = istream.read()) >= 0) {
                                 bbuffer.append(c);
                             }} catch (IOException e) {
-                                e.printStackTrace();
+                                Data.logger.warn("", e);
                             }
                             content = bbuffer.getBytes();
                         } else {*/
@@ -320,7 +320,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                                 parsedDocuments.put(json);
                             }
                         } catch (Parser.Failure e) {
-                            e.printStackTrace();
+                            Data.logger.warn("", e);
                         }
                         cnt++;
                     }

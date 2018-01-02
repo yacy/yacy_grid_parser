@@ -464,7 +464,7 @@ public class apkParser extends AbstractParser implements Parser  {
             }
             jf.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            Data.logger.warn("", e);
         }
         System.exit(1);
     }

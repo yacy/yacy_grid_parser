@@ -323,7 +323,7 @@ public class pdfParser extends AbstractParser implements Parser {
                 this.findLoadedClass.setAccessible(true);
                 this.sys = ClassLoader.getSystemClassLoader();
             } catch (Throwable e) {
-                e.printStackTrace();
+                Data.logger.warn("", e);
                 this.findLoadedClass = null;
                 this.sys = null;
             }
@@ -337,7 +337,7 @@ public class pdfParser extends AbstractParser implements Parser {
                     if (clearResources != null) clearResources.invoke(null);
                 }
             } catch (Throwable e) {
-                //e.printStackTrace();
+                Data.logger.warn("", e);
             }
         }
     }

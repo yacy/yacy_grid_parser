@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
 import net.yacy.cora.document.encoding.UTF8;
+import net.yacy.grid.mcp.Data;
 
 /**
  * a key list is a file which contains a list of key words; each line one word
@@ -117,7 +118,7 @@ public class KeyList implements Iterable<String> {
             kl.add("drei");
             System.out.println(kl.contains("eins") ? "drin" : "nicht");
         } catch (final IOException e) {
-            e.printStackTrace();
+            Data.logger.warn("", e);
         }
 
     }

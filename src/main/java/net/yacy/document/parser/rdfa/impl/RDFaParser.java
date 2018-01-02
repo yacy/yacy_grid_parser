@@ -179,7 +179,7 @@ public class RDFaParser extends AbstractParser implements Parser {
                     aReader = new InputStreamReader(aURL.openStream());
                 } catch (final MalformedURLException e) {
                 } catch (final IOException e) {
-                    e.printStackTrace();
+                    Data.logger.warn("", e);
                     aReader = null;
                 }
 
@@ -189,16 +189,8 @@ public class RDFaParser extends AbstractParser implements Parser {
                 RDFaParser aParser = new RDFaParser();
                 try {
                     aParser.parse(new MultiProtocolURL(args[0]), "", "", new VocabularyScraper(), 0, aURL.openStream());
-                } catch (final FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (final IOException e) {
-                    e.printStackTrace();
-                } catch (final Failure e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (final InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                } catch (IOException|Failure|InterruptedException e) {
+                    Data.logger.warn("", e);
                 }
             } else
                 System.out.println("File or URL not recognized.");

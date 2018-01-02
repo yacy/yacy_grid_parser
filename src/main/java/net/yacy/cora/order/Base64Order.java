@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 
 import net.yacy.cora.document.encoding.ASCII;
 import net.yacy.cora.document.encoding.UTF8;
+import net.yacy.grid.mcp.Data;
 
 //ATTENTION! THIS CLASS SHALL NOT IMPORT FROM OTHER PACKAGES THAN CORA AND JRE
 //BECAUSE OTHERWISE THE DEBIAN INSTALLER FAILS!
@@ -655,7 +656,7 @@ public class Base64Order extends AbstractOrder<byte[]> implements ByteOrder, Com
                 long time = System.currentTimeMillis() - start;
                 System.out.println("time: " + (time / 1000) + " seconds, " + (1000 * time / count) + " ms / 1000 steps");
             } catch (Throwable e) {
-                e.printStackTrace();
+                Data.logger.warn("", e);
             }
             
         }

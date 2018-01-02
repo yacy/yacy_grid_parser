@@ -1382,13 +1382,13 @@ public class FTPClient {
                 }
             }
         } catch (final IOException e1) {
-            e1.printStackTrace();
+            Data.logger.warn("", e1);
         } finally {try {
             // shutdown data connection
             dataStream.close(); // Closing the returned InputStream will
             closeDataSocket(); // close the associated socket.
         } catch (final IOException e) {
-            e.printStackTrace();
+            Data.logger.warn("", e);
         }}
         // after stream is empty we should get control completion echo
         reply = receive();

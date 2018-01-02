@@ -38,6 +38,7 @@ import java.util.Map;
 
 import net.yacy.cora.document.encoding.ASCII;
 import net.yacy.cora.document.encoding.UTF8;
+import net.yacy.grid.mcp.Data;
 
 public class BDecoder {
 
@@ -326,7 +327,7 @@ public class BDecoder {
             print(o, 0);
             System.out.println("Object: " + o.toString());
         } catch (final IOException e) {
-            e.printStackTrace();
+            Data.logger.warn("", e);
         }
     }
 }

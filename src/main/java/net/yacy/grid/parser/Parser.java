@@ -116,7 +116,7 @@ public class Parser {
                 Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
                 source = asset.getPayload();
             } catch (Throwable e) {
-                e.printStackTrace();
+                Data.logger.warn("", e);
                 // if we do not get the payload from the storage, we look for attached data in the action
                 Data.logger.warn("could not load asset: " + sourceasset_path, e);
                 return false;
@@ -161,7 +161,7 @@ public class Parser {
                     String targetasset = targetasset_object.toString();
                     Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
                 } catch (Throwable ee) {
-                	    ee.printStackTrace();
+                    Data.logger.warn("", ee);
                 	    Data.logger.info("asset " + targetasset_path + " could not be stored, carrying the asset within the next action");
                 	    storeToMessage = true;
                 }
@@ -184,7 +184,7 @@ public class Parser {
     
                 return true;
             } catch (Throwable e) {
-                e.printStackTrace();
+                Data.logger.warn("", e);
                 return false;
             }
         }

@@ -33,6 +33,8 @@ import java.util.TreeSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import net.yacy.grid.mcp.Data;
+
 /**
  * implements a stack where elements 'float' on-top of the stack according to a weight value.
  * objects pushed on the stack must implement the hashCode() method to provide a handle
@@ -413,7 +415,7 @@ public class WeakPriorityBlockingQueue<E> implements Serializable {
                 try {
                     while ((e = a.poll(1000)) != null) System.out.println("> " + e.toString());
                 } catch (final InterruptedException e1) {
-                    e1.printStackTrace();
+                    Data.logger.warn("", e1);
                 }
             }
         }.start();

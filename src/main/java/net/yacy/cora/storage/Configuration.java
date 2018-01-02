@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import net.yacy.cora.storage.Configuration.Entry;
+import net.yacy.grid.mcp.Data;
 import net.yacy.cora.storage.Files;
 
 /**
@@ -317,7 +318,7 @@ public class Configuration extends TreeMap<String, Entry> implements Serializabl
                 if (!k.enabled()) System.out.println(k.toString() );
             }
         } catch (final IOException e) {
-            e.printStackTrace();
+            Data.logger.warn("", e);
         }
     }
 

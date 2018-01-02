@@ -303,14 +303,8 @@ public class genericImageParser extends AbstractParser implements Parser {
             uri = new MultiProtocolURL("http://localhost/" + image.getName());
             final Document[] document = parser.parse(uri, "image/" + MultiProtocolURL.getFileExtension(uri.getFileName()), StandardCharsets.UTF_8.name(), new VocabularyScraper(), 0, new FileInputStream(image));
             System.out.println(document[0].toString());
-        } catch (final MalformedURLException e) {
-            e.printStackTrace();
-        } catch (final FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (final Parser.Failure e) {
-            e.printStackTrace();
-        } catch (final InterruptedException e) {
-            e.printStackTrace();
+        } catch (final MalformedURLException|FileNotFoundException|Parser.Failure|InterruptedException e) {
+            Data.logger.warn("", e);
         }
     }
 
