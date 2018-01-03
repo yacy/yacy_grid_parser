@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
 
 import javax.servlet.Servlet;
 
@@ -124,7 +125,12 @@ public class Parser {
             try{
                 InputStream sourceStream = null;
                 sourceStream = new ByteArrayInputStream(source);
-                if (sourceasset_path.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
+                if (sourceasset_path.endsWith(".gz")) try {
+                    sourceStream = new GZIPInputStream(sourceStream);
+                } catch (ZipException e) {
+                    // This may actually not be in gzip format in case that a http process unzipped it already.
+                    // In that case we simply ignore the exception and the sourcestream stays as it is
+                }
     
                 // compute parsed documents
                 // String collection = 
