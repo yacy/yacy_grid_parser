@@ -12,7 +12,7 @@ sourceSets {
 }
 
 mainClassName = "net.yacy.grid.parser.Parser"
-applicationDefaultJvmArgs = ["-Xmx1024m"]
+applicationDefaultJvmArgs = ["-Xmx4g"]
 
 group = 'net.yacy'
 version = '0.0.1-SNAPSHOT'
