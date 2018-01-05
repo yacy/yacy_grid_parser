@@ -36,6 +36,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.LinkedHashMap;
 
 import net.yacy.cora.document.encoding.UTF8;
+import net.yacy.grid.http.ClientConnection;
 import net.yacy.grid.tools.CommonPattern;
 import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
@@ -192,18 +193,25 @@ public class htmlParser extends AbstractParser implements Parser {
             charset = patchCharsetEncoding(documentCharset);
         }
 
-        // nothing found: try to find a meta-tag
-        if (charset == null) {
-            ScraperInputStream htmlFilter = null;
-            try {
-                htmlFilter = new ScraperInputStream(sourceStream, documentCharset, vocabularyScraper, location, null, false, maxLinks, timezoneOffset);
-                sourceStream = htmlFilter;
-                charset = htmlFilter.detectCharset();
-            } catch (final IOException e1) {
-                throw new Parser.Failure("Charset error:" + e1.getMessage(), location);
-            } finally {
-                if (htmlFilter != null) htmlFilter.close();
-            }
+        // try to find a meta-tag
+        String scrapedCharset = null;
+        ScraperInputStream htmlFilter = null;
+        try {
+            htmlFilter = new ScraperInputStream(sourceStream, documentCharset, vocabularyScraper, location, null, false, maxLinks, timezoneOffset);
+            sourceStream = htmlFilter;
+            scrapedCharset = htmlFilter.detectCharset();
+            if (scrapedCharset != null) scrapedCharset = patchCharsetEncoding(scrapedCharset);
+        } catch (final IOException e1) {
+            throw new Parser.Failure("Charset error:" + e1.getMessage(), location);
+        } finally {
+            if (htmlFilter != null) htmlFilter.close();
+        }
+        Charset scrapedCharsetCharset = null;
+        try {
+            scrapedCharsetCharset = Charset.forName(scrapedCharset);
+        } catch (IllegalArgumentException e) {}
+        if (charset == null || scrapedCharsetCharset != null) {
+            charset = scrapedCharset;
         }
 
         // the author didn't tell us the encoding, try the mozilla-heuristic
@@ -326,6 +334,30 @@ public class htmlParser extends AbstractParser implements Parser {
 
         return encoding;
     }
+    
+    public static Document[] load(String url) throws IOException {
+        MultiProtocolURL location = new MultiProtocolURL(url);
+        htmlParser parser = new htmlParser();
+        Document[] docs;
+        try {
+            docs = parser.parse(location, "text/html", "UTF-8", null, -60,
+                    new ByteArrayInputStream(ClientConnection.load(url)));
+        } catch (Failure | InterruptedException e) {
+            throw new IOException (e.getMessage());
+        }
+        return docs;
+    }
 
-
+    public static void main(String[] args) {
+        try {
+            Document[] test1 = load("http://www.tourismus-in-bueren.de/bildung_soziales/bildung/volkshochschule.php");
+            System.out.println(test1[0].dc_title());
+            Document[] test2 = load("http://www.bad-muenstereifel.de/seiten/leben_wohnen/bildung/Stadtbuecherei.php");
+            System.out.println(test2[0].dc_title());
+            Document[] test3 = load("http://yacy.net");
+            System.out.println(test3[0].dc_title());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
