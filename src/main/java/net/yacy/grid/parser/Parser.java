@@ -117,9 +117,9 @@ public class Parser {
                 Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
                 source = asset.getPayload();
             } catch (Throwable e) {
-                Data.logger.warn("", e);
+                Data.logger.warn("Parser.processAction", e);
                 // if we do not get the payload from the storage, we look for attached data in the action
-                Data.logger.warn("could not load asset: " + sourceasset_path, e);
+                Data.logger.warn("Parser.processAction could not load asset: " + sourceasset_path, e);
                 return false;
             }
             try{
@@ -163,32 +163,34 @@ public class Parser {
                 }
                 
                 boolean storeToMessage = true; // debug version for now: always true TODO: set to false later
-                try {
-                    String targetasset = targetasset_object.toString();
-                    Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
-                    Data.logger.info("stored asset " + targetasset_path);
-                } catch (Throwable ee) {
-                	    Data.logger.warn("asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
-                	    storeToMessage = true;
+                if (!storeToMessage) {
+                    try {
+                        String targetasset = targetasset_object.toString();
+                        Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
+                        Data.logger.info("Parser.processAction stored asset " + targetasset_path);
+                    } catch (Throwable ee) {
+                    	    Data.logger.warn("Parser.processAction asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
+                    	    storeToMessage = true;
+                    }
+                    try {
+                        String targetgraph = targetgraph_object.toString();
+                        Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
+                        Data.logger.info("Parser.processAction stored graph " + targetgraph_path);
+                    } catch (Throwable ee) {
+                    	    Data.logger.info("Parser.processAction asset " + targetgraph_path + " could not be stored, carrying the asset within the next action", ee);
+                    	    storeToMessage = true;
+                    }
                 }
-                try {
-                    String targetgraph = targetgraph_object.toString();
-                    Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
-                    Data.logger.info("stored graph " + targetgraph_path);
-                } catch (Throwable ee) {
-                	    Data.logger.info("asset " + targetgraph_path + " could not be stored, carrying the asset within the next action", ee);
-                	    storeToMessage = true;
-                }        
                 // emergency storage to message
                 if (storeToMessage) {
                     JSONArray actions = action.getEmbeddedActions();
                     actions.forEach(a -> {
                         new SusiAction((JSONObject) a).setJSONListAsset(targetasset_path, targetasset_object);
                         new SusiAction((JSONObject) a).setJSONListAsset(targetgraph_path, targetgraph_object);
-                        Data.logger.info("stored assets " + targetasset_path + ", " + targetgraph_path + " into message");
+                        Data.logger.info("Parser.processAction stored assets " + targetasset_path + ", " + targetgraph_path + " into message");
                     });
                 }
-                Data.logger.info("processed message from queue and stored asset " + targetasset_path);
+                Data.logger.info("Parser.processAction processed message from queue and stored asset " + targetasset_path);
     
                 return true;
             } catch (Throwable e) {
