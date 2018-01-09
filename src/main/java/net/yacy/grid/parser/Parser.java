@@ -49,6 +49,7 @@ import net.yacy.grid.mcp.MCP;
 import net.yacy.grid.mcp.Service;
 import net.yacy.grid.parser.api.ParserService;
 import net.yacy.grid.tools.Digest;
+import net.yacy.grid.tools.GitTool;
 import net.yacy.grid.tools.JSONList;
 
 public class Parser {
@@ -225,6 +226,8 @@ public class Parser {
         new Thread(brokerListener).start();
 
         // start server
+        Data.logger.info("started Parser");
+        Data.logger.info(new GitTool().toString());
         Service.runService(null);
         brokerListener.terminate();
     }
