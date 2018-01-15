@@ -39,6 +39,7 @@ import org.json.JSONObject;
 
 import ai.susi.mind.SusiAction;
 import ai.susi.mind.SusiThought;
+import net.yacy.document.parser.pdfParser;
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.io.index.WebMapping;
@@ -51,6 +52,7 @@ import net.yacy.grid.parser.api.ParserService;
 import net.yacy.grid.tools.Digest;
 import net.yacy.grid.tools.GitTool;
 import net.yacy.grid.tools.JSONList;
+import net.yacy.grid.tools.Memory;
 
 public class Parser {
 
@@ -103,7 +105,12 @@ public class Parser {
         }
 
         public boolean processAction(SusiAction action, JSONArray data) {
-    
+            
+            // check short memory status
+            if (Memory.shortStatus()) {
+                pdfParser.clean_up_idiotic_PDFParser_font_cache_which_eats_up_tons_of_megabytes();
+            }
+            
             String sourceasset_path = action.getStringAttr("sourceasset");
             String targetasset_path = action.getStringAttr("targetasset");
             String targetgraph_path = action.getStringAttr("targetgraph");

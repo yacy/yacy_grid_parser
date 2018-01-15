@@ -49,6 +49,7 @@ dependencies {
     compile group: 'org.apache.poi', name: 'poi-scratchpad', version: '3.+'
     compile group: 'org.apache.commons', name: 'commons-compress', version: '1.+'
     compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.+'
+    compile group: 'org.apache.pdfbox', name: 'fontbox', version: '2.+'
     compile group: 'com.ibm.icu', name: 'icu4j', version: '58.+'
     compile group: 'org', name: 'jaudiotagger', version: '2.+'
     compile group: 'commons-lang', name: 'commons-lang', version: '2.+'
