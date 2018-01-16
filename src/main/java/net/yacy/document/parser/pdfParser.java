@@ -256,7 +256,6 @@ public class pdfParser extends AbstractParser implements Parser {
         // the great number of these objects can easily be seen in Java Visual VM
         // we try to get this shit out of the memory here by forced clear calls, hope the best the rubbish gets out.
         pdfDoc = null;
-        clean_up_idiotic_PDFParser_font_cache_which_eats_up_tons_of_megabytes();
         
         return result;
     }
