@@ -104,7 +104,7 @@ public class Parser {
              super(service, Runtime.getRuntime().availableProcessors());
         }
 
-        public boolean processAction(SusiAction action, JSONArray data) {
+        public boolean processAction(SusiAction action, JSONArray data, String processName, int processNumber) {
             
             // check short memory status
             if (Memory.shortStatus()) {
