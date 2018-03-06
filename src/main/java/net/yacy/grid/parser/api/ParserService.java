@@ -40,7 +40,7 @@ import org.jwat.warc.WarcRecord;
 import ai.susi.mind.SusiThought;
 import ai.susi.mind.SusiAction;
 import ai.susi.mind.SusiAction.RenderType;
-import net.yacy.cora.federate.solr.WebConfiguration;
+import net.yacy.cora.federate.index.WebConfiguration;
 import net.yacy.cora.protocol.RequestHeader;
 import net.yacy.cora.protocol.ResponseHeader;
 import net.yacy.crawler.retrieval.Request;
@@ -364,7 +364,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
     public static JSONObject extractGraph(JSONObject doc) {
         JSONObject graph = new JSONObject(true);
         for (WebMapping mapping: graph_attributes) {
-            String key = mapping.getSolrFieldName();
+            String key = mapping.getMapping().name();
             if (doc.has(key)) graph.put(key, doc.get(key));
         }
         return graph;

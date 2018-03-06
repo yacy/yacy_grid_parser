@@ -18,7 +18,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.yacy.cora.federate.solr;
+package net.yacy.cora.federate.index;
 
 public enum FailCategory {
     // TEMPORARY categories are such failure cases that should be tried again

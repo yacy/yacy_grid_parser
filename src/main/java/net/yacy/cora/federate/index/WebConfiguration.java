@@ -22,7 +22,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package net.yacy.cora.federate.solr;
+package net.yacy.cora.federate.index;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -66,34 +66,34 @@ public class WebConfiguration implements Serializable {
     public static boolean UNIQUE_HEURISTIC_PREFER_WWWPREFIX = true;
     
     private static void add(JSONObject json, WebMapping field, String value) {
-        json.put(field.getSolrFieldName(), value);
+        json.put(field.getMapping().name(), value);
     }
     private static void add(JSONObject json, WebMapping field, int value) {
-        json.put(field.getSolrFieldName(), (long) value);
+        json.put(field.getMapping().name(), (long) value);
     }
     private static void add(JSONObject json, WebMapping field, double value) {
-        json.put(field.getSolrFieldName(), value);
+        json.put(field.getMapping().name(), value);
     }
     private static void add(JSONObject json, WebMapping field, boolean value) {
-        json.put(field.getSolrFieldName(), value);
+        json.put(field.getMapping().name(), value);
     }
     private static void add(JSONObject json, WebMapping field, Date value) {
-        json.put(field.getSolrFieldName(), DateParser.iso8601MillisFormat.format(value));
+        json.put(field.getMapping().name(), DateParser.iso8601MillisFormat.format(value));
     }
     private static void add(JSONObject json, WebMapping field, String[] values) {
         JSONArray a = new JSONArray();
         for (String s: values) a.put(s);
-        json.put(field.getSolrFieldName(), a);
+        json.put(field.getMapping().name(), a);
     }
     private static void add(JSONObject json, WebMapping field, Integer[] values) {
         JSONArray a = new JSONArray();
         for (Integer s: values) a.put((long) s);
-        json.put(field.getSolrFieldName(), a);
+        json.put(field.getMapping().name(), a);
     }
     private static void add(JSONObject json, WebMapping field, Date[] values) {
         JSONArray a = new JSONArray();
         for (Date s: values) a.put(DateParser.iso8601MillisFormat.format(s));
-        json.put(field.getSolrFieldName(), a);
+        json.put(field.getMapping().name(), a);
     }
     private static void add(JSONObject json, WebMapping field, List<?> values) {
         JSONArray a = new JSONArray();
@@ -101,7 +101,7 @@ public class WebConfiguration implements Serializable {
             if (s instanceof Date) a.put(DateParser.iso8601MillisFormat.format((Date) s));
             else a.put(s);
         }
-        json.put(field.getSolrFieldName(), a);
+        json.put(field.getMapping().name(), a);
     }
 
     public static class Subgraph {

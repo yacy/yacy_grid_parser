@@ -19,7 +19,7 @@
  */
 
 
-package net.yacy.cora.federate.solr;
+package net.yacy.cora.federate.index;
 
 /**
  * this enum class is used to define (post-) process steps that are attached at the solr dataset in the field process_s
