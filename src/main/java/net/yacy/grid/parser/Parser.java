@@ -144,7 +144,7 @@ public class Parser {
                 // String collection = 
 
                 JSONObject crawl = SusiThought.selectData(data, "id", action.getStringAttr("id"));
-                final Map<String, Pattern> collections = collectionParser(crawl.optString("collection"));
+                final Map<String, Pattern> collections = WebMapping.collectionParser(crawl.optString("collection"));
                 JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream, collections);
                 JSONList targetasset_object = new JSONList();
                 JSONList targetgraph_object = new JSONList();
@@ -208,19 +208,6 @@ public class Parser {
         }
     }
 
-    public static final Pattern catchall_pattern = Pattern.compile(".*");
-    
-    public static Map<String, Pattern> collectionParser(String collectionString) {
-        if (collectionString == null || collectionString.length() == 0) return new HashMap<String, Pattern>();
-        String[] cs = collectionString.split(",");
-        final Map<String, Pattern> cm = new LinkedHashMap<String, Pattern>();
-        for (String c: cs) {
-            int p = c.indexOf(':');
-            if (p < 0) cm.put(c, catchall_pattern); else cm.put(c.substring(0, p), Pattern.compile(c.substring(p + 1)));
-        }
-        return cm;
-    }
-    
     public static void main(String[] args) {
         // initialize environment variables
         List<Class<? extends Servlet>> services = new ArrayList<>();
