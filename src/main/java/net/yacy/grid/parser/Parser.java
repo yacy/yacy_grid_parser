@@ -20,12 +20,12 @@
 package net.yacy.grid.parser;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -42,7 +42,9 @@ import ai.susi.mind.SusiThought;
 import net.yacy.document.parser.pdfParser;
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.io.assets.Asset;
+import net.yacy.grid.io.index.CrawlerDocument;
 import net.yacy.grid.io.index.WebMapping;
+import net.yacy.grid.io.index.CrawlerDocument.Status;
 import net.yacy.grid.mcp.AbstractBrokerListener;
 import net.yacy.grid.mcp.BrokerListener;
 import net.yacy.grid.mcp.Data;
@@ -141,9 +143,8 @@ public class Parser {
                 }
     
                 // compute parsed documents
-                // String collection = 
-
-                JSONObject crawl = SusiThought.selectData(data, "id", action.getStringAttr("id"));
+                String crawlid = action.getStringAttr("id");
+                JSONObject crawl = SusiThought.selectData(data, "id", crawlid);
                 final Map<String, Pattern> collections = WebMapping.collectionParser(crawl.optString("collection"));
                 JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream, collections);
                 JSONList targetasset_object = new JSONList();
@@ -153,20 +154,31 @@ public class Parser {
                     
                     // create elasticsearch index line
                     String url = docjson.getString(WebMapping.url_s.name());
-                    String id = Digest.encodeMD5Hex(url);
-                    JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
+                    String urlid = Digest.encodeMD5Hex(url);
+                    JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", urlid));
 
-                    // write web index
+                    // write web index document
                     targetasset_object.add(bulkjson);
                     //docjson.put("_id", id);
                     targetasset_object.add(docjson);
                     
-                    // write graph
+                    // write graph document
                     if (targetgraph_object != null) {
                         targetgraph_object.add(bulkjson);
                         JSONObject graphjson = ParserService.extractGraph(docjson);
                         //graphjson.put("_id", id);
                         targetgraph_object.add(graphjson);
+                    }
+                    
+                    // write crawler index
+                    try {
+                        CrawlerDocument crawlerDocument = CrawlerDocument.load(Data.gridIndex, urlid);
+                        crawlerDocument.setStatus(Status.parsed).setStatusDate(new Date()).setComment(docjson.optString(WebMapping.title.getMapping().name()));
+                        crawlerDocument.store(Data.gridIndex, urlid);
+                        // check with http://localhost:9200/crawler/_search?q=status_s:parsed
+                    } catch (IOException e) {
+                        // well that should not happen
+                        Data.logger.warn("could not write crawler index", e);
                     }
                 }
                 
