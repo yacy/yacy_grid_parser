@@ -553,7 +553,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
             if (href.length() > 0) {
                 tag.opts.put("name", areatitle);
                 AnchorURL url = absolutePath(href);
-                if(url != null) {
+                if (url != null) {
                 	tag.opts.put("href", url.toNormalform(true));
                 	url.setAll(tag.opts);
                 	this.addAnchor(url);
@@ -610,7 +610,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
                     this.addAnchor(newLink);
                 }
             }
-        } else if(tag.name.equalsIgnoreCase("embed") || tag.name.equalsIgnoreCase("source")) { //html5 tag
+        } else if (tag.name.equalsIgnoreCase("embed") || tag.name.equalsIgnoreCase("source")) { //html5 tag
             final String src = tag.opts.getProperty("src", EMPTY_STRING);
             try {
                 if (src.length() > 0) {
@@ -630,17 +630,21 @@ public class ContentScraper extends AbstractScraper implements Scraper {
             final String name = tag.opts.getProperty("name", EMPTY_STRING);
             if (name.equalsIgnoreCase("movie")) {
                 AnchorURL url = absolutePath(tag.opts.getProperty("value", EMPTY_STRING));
-                tag.opts.put("value", url.toNormalform(true));
-                url.setAll(tag.opts);
-                this.addAnchor(url);
+                if (url != null) {
+                    tag.opts.put("value", url.toNormalform(true));
+                    url.setAll(tag.opts);
+                    this.addAnchor(url);
+                }
             }
         } else if (tag.name.equalsIgnoreCase("iframe")) {
             final AnchorURL src = absolutePath(tag.opts.getProperty("src", EMPTY_STRING));
-            tag.opts.put("src", src.toNormalform(true));
-            src.setAll(tag.opts);
-            //this.addAnchor(src); // don't add the iframe to the anchors because the webgraph should not contain such links (by definition)
-            this.iframes.add(src);
-            this.evaluationScores.match(Element.iframepath, src.toNormalform(true));
+            if (src != null) {
+                tag.opts.put("src", src.toNormalform(true));
+                src.setAll(tag.opts);
+                //this.addAnchor(src); // don't add the iframe to the anchors because the webgraph should not contain such links (by definition)
+                this.iframes.add(src);
+                this.evaluationScores.match(Element.iframepath, src.toNormalform(true));
+            }
         } else if (tag.name.equalsIgnoreCase("html")) {
             final String lang = tag.opts.getProperty("lang", EMPTY_STRING);
             if (!lang.isEmpty()) // fake a language meta to preserv detection from <html lang="xx" />
