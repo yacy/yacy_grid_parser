@@ -225,7 +225,7 @@ public class Parser {
         List<Class<? extends Servlet>> services = new ArrayList<>();
         services.addAll(Arrays.asList(MCP.MCP_SERVICES));
         services.addAll(Arrays.asList(PARSER_SERVICES));
-        Service.initEnvironment(PARSER_SERVICE, services, DATA_PATH);
+        Service.initEnvironment(PARSER_SERVICE, services, DATA_PATH, false);
 
         // start listener
         BrokerListener brokerListener = new ParserListener(PARSER_SERVICE);
