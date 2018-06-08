@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -800,7 +799,7 @@ public class Domains {
 	final private static ExecutorService getByNameService = Executors
 			.newCachedThreadPool(new NamePrefixThreadFactory("InetAddress.getByName"));
 
-	final private static TimeLimiter timeLimiter = SimpleTimeLimiter.create(getByNameService);
+	final private static TimeLimiter timeLimiter = new SimpleTimeLimiter(getByNameService);
 
     /**
      * strip off any parts of an url, address string (containing host/ip:port) or raw IPs/Hosts,
@@ -946,7 +945,7 @@ public class Domains {
                 }
                 Thread.currentThread().setName(oldName);
                 if (ip == null) try {
-                    ip = timeLimiter.callWithTimeout(() -> InetAddress.getByName(host), 3000L, TimeUnit.MILLISECONDS);
+                    ip = timeLimiter.callWithTimeout(() -> InetAddress.getByName(host), 3000L, TimeUnit.MILLISECONDS, true);
                     //ip = TimeoutRequest.getByName(host, 1000); // this makes the DNS request to backbone
                 } catch (final UncheckedTimeoutException e) {
                 	// in case of a timeout - maybe cause of massive requests - do not fill NAME_CACHE_MISS
