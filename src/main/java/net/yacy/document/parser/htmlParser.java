@@ -366,13 +366,16 @@ public class htmlParser extends AbstractParser implements Parser {
             // parse from an etherpad
             String etherpad = args[0];
             String apikey = args[1];
-            try {
-                String pad = ClientConnection.loadFromEtherpad(etherpad, apikey, "05cc1575f55de2dc82f20f9010d71358");
-                Document[] docs = parse(pad);
-                System.out.println(docs[0].dc_title());
-                System.out.println(docs[0].ld().toString(2));
-            } catch (IOException e) {
-                e.printStackTrace();
+            String[] pads = new String[] {"05cc1575f55de2dc82f20f9010d71358", "c8f2a54127f96b38a85623cb472e33cd"};
+            for (String padid: pads) {
+                try {
+                    String content = ClientConnection.loadFromEtherpad(etherpad, apikey, padid);
+                    Document[] docs = parse(content);
+                    System.out.println(docs[0].dc_title());
+                    System.out.println(docs[0].ld().toString(2));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
         

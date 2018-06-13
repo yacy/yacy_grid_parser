@@ -50,6 +50,7 @@ import net.yacy.grid.mcp.BrokerListener;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.mcp.MCP;
 import net.yacy.grid.mcp.Service;
+import net.yacy.grid.parser.api.JSONLDValidatorService;
 import net.yacy.grid.parser.api.ParserService;
 import net.yacy.grid.tools.Digest;
 import net.yacy.grid.tools.GitTool;
@@ -65,7 +66,8 @@ public class Parser {
     @SuppressWarnings("unchecked")
     public final static Class<? extends Servlet>[] PARSER_SERVICES = new Class[]{
             // information services
-            ParserService.class
+            ParserService.class,
+            JSONLDValidatorService.class
     };
     
     /*
