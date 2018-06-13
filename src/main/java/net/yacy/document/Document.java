@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ai.susi.json.JsonLDNode;
 import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.cora.lod.vocabulary.Tagging;
@@ -98,6 +99,7 @@ public class Document {
     private final Map<String, Set<String>> generic_facets; // a map from vocabulary names to the set of tags for that vocabulary which apply for this document
     private final Date lastModified; // creation or last modification date of the source document
     private int crawldepth;
+    private JsonLDNode ldNode;
 
     public Document(final MultiProtocolURL location,
                     final String mimeType,
@@ -154,8 +156,13 @@ public class Document {
         this.lastModified = lastModified == null ? new Date() : lastModified;
         this.crawldepth = 999; // unknown yet
         this.scraperObject = null; // will be set by setScraperObject()
+        this.ldNode = new JsonLDNode();
     }
 
+    public JsonLDNode ld() {
+        return this.ldNode;
+    }
+    
     /**
      * Get the content domain of a document. This tries to get the content domain from the mime type
      * and if this fails it uses alternatively the content domain from the file extension.

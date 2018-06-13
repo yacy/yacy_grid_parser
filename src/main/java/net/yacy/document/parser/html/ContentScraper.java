@@ -50,6 +50,7 @@ import java.util.regex.Pattern;
 
 import javax.swing.event.EventListenerList;
 
+import ai.susi.json.JsonLDNode;
 import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.sorting.ClusteredScoreMap;
 import net.yacy.cora.storage.SizeLimitedMap;
@@ -102,6 +103,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         source(TagType.singleton), // html5 (part of <video> <audio>) - scaped like embed
 
         a(TagType.pair),
+        p(TagType.pair),
         h1(TagType.pair),
         h2(TagType.pair),
         h3(TagType.pair),
@@ -118,6 +120,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         dt(TagType.pair),
         dd(TagType.pair),
         script(TagType.pair),
+        small(TagType.pair),
         span(TagType.pair),
         div(TagType.pair),
         article(TagType.pair), // html5
@@ -199,7 +202,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
     private final VocabularyScraper vocabularyScraper;
     private final int timezoneOffset;
     private int breadcrumbs;
-
+    private JsonLDNode ld;
 
     /** links to icons that belongs to the document (mapped by absolute URL)*/
     private final Map<MultiProtocolURL, IconEntry> icons;
@@ -264,8 +267,13 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         this.canonical = null;
         this.publisher = null;
         this.breadcrumbs = 0;
+        this.ld = new JsonLDNode();
     }
 
+    public JsonLDNode ld() {
+        return this.ld;
+    }
+    
     @Override
     public void finish() {
         this.content.trimToSize();
@@ -392,14 +400,43 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         }
     }
     
-    private void checkOpts(Tag tag) {
+    private void checkOpts(Tag tag, String content_text) {
         // vocabulary classes
         final String classprop = tag.opts.getProperty("class", EMPTY_STRING);
         if (this.vocabularyScraper != null) this.vocabularyScraper.check(this.root, classprop, tag.content);
+
+        String itemtype = tag.opts.getProperty("itemtype", null); // microdata
+        if (itemtype != null) {
+            this.ld.addContext(null, itemtype);
+            return;
+        }
+        
+        String vocab = tag.opts.getProperty("vocab", null); // RDFa
+        if (vocab != null) {
+            this.ld.addContext(null, vocab);
+            String typeof = tag.opts.getProperty("typeof", null);
+            if (typeof != null) {
+                this.ld.addType(typeof);
+                return;
+            }
+        }
         
         // itemprop (schema.org)
-        String itemprop = tag.opts.getProperty("itemprop");
+        String itemprop = tag.opts.getProperty("itemprop", tag.opts.getProperty("property", null));
         if (itemprop != null) {
+            if ("websiteURL".equals(itemprop)) {
+                System.out.println();
+            }
+            // content text
+            if (content_text == null) {
+                if (tag.opts.containsKey("content")) {
+                    this.ld.setPredicate(itemprop, tag.opts.getProperty("content"));
+                }
+            } else {
+                this.ld.setPredicate(itemprop, content_text);
+            }
+            
+            // special content
             String propval = tag.opts.getProperty("content"); // value for <meta itemprop="" content=""> see https://html.spec.whatwg.org/multipage/microdata.html#values
             if (propval == null) propval = tag.opts.getProperty("datetime"); // html5 + schema.org#itemprop example: <time itemprop="startDate" datetime="2016-01-26">today</time> while each prop is optional
             if (propval != null) {                                           // html5 example: <time datetime="2016-01-26">today</time> while each prop is optional
@@ -431,6 +468,28 @@ public class ContentScraper extends AbstractScraper implements Scraper {
             }
         }
     }
+    
+    /*
+Microdata
+<div itemscope itemtype="http://schema.org/CreativeWork">
+<img itemprop="image" alt="Fall of Man cover art"
+src="videogame.jpg" />
+<span itemprop="name">Resistance 3: Fall of Man</span>
+by <span itemprop="author">Sony</span>,
+Platform: Playstation 3
+Rated:<span itemprop="contentRating">Mature</span>
+</div>
+
+RDFa
+<div vocab="http://schema.org/" typeof="CreativeWork">
+<img property="image" alt="Fall of Man cover art"
+src="videogame.jpg" />
+<span property="name">Resistance 3: Fall of Man</span>
+by <span property="author">Sony</span>,
+Platform: Playstation 3
+Rated:<span property="contentRating">Mature</span>
+</div>
+     */
     
 	/**
 	 * Parses sizes icon link attribute. (see
@@ -497,7 +556,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
 
     @Override
     public void scrapeTag0(Tag tag) {
-        checkOpts(tag);
+        checkOpts(tag, null);
         if (tag.name.equalsIgnoreCase("img")) {
             final String src = tag.opts.getProperty("src", EMPTY_STRING);
             try {
@@ -657,7 +716,8 @@ public class ContentScraper extends AbstractScraper implements Scraper {
 
     @Override
     public void scrapeTag1(Tag tag) {
-        checkOpts(tag);
+        String content_text = stripAllTags(tag.content.getChars());
+        checkOpts(tag, content_text);
         // System.out.println("ScrapeTag1: tag.tagname=" + tag.tagname + ", opts=" + tag.opts.toString() + ", text=" + UTF8.String(text));
         if (tag.name.equalsIgnoreCase("a") && tag.content.length() < 2048) {
             String href = tag.opts.getProperty("href", EMPTY_STRING);
@@ -669,7 +729,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
                     if (rel.length() == 0) rel = "nofollow"; else if (rel.indexOf("nofollow") < 0) rel += ",nofollow";
                     tag.opts.put("rel", rel);
                 }
-                tag.opts.put("text", stripAllTags(tag.content.getChars())); // strip any inline html in tag text like  "<a ...> <span>test</span> </a>"
+                tag.opts.put("text", content_text); // strip any inline html in tag text like  "<a ...> <span>test</span> </a>"
                 tag.opts.put("href", url.toNormalform(true)); // we must assign this because the url may have resolved backpaths and may not be absolute
                 url.setAll(tag.opts);
                 recursiveParse(url, tag.content.getChars());
@@ -686,50 +746,50 @@ public class ContentScraper extends AbstractScraper implements Scraper {
                 breadcrumbs++;
             }
         } else if ((tag.name.equalsIgnoreCase("h1")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.headlines[0].add(h);
         } else if((tag.name.equalsIgnoreCase("h2")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.headlines[1].add(h);
         } else if ((tag.name.equalsIgnoreCase("h3")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.headlines[2].add(h);
         } else if ((tag.name.equalsIgnoreCase("h4")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.headlines[3].add(h);
         } else if ((tag.name.equalsIgnoreCase("h5")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.headlines[4].add(h);
         } else if ((tag.name.equalsIgnoreCase("h6")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.headlines[5].add(h);
         } else if ((tag.name.equalsIgnoreCase("title")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             this.titles.add(h);
             this.evaluationScores.match(Element.title, h);
         } else if ((tag.name.equalsIgnoreCase("b")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.bold.inc(h);
         } else if ((tag.name.equalsIgnoreCase("strong")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.bold.inc(h);
         } else if ((tag.name.equalsIgnoreCase("em")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.bold.inc(h);
         } else if ((tag.name.equalsIgnoreCase("i")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.italic.inc(h);
         } else if ((tag.name.equalsIgnoreCase("u")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.underline.inc(h);
         } else if ((tag.name.equalsIgnoreCase("li")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.li.add(h);
         } else if ((tag.name.equalsIgnoreCase("dt")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.dt.add(h);
         } else if ((tag.name.equalsIgnoreCase("dd")) && (tag.content.length() < 1024)) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.dd.add(h);
         } else if (tag.name.equalsIgnoreCase("script")) {
             final String src = tag.opts.getProperty("src", EMPTY_STRING);
@@ -743,7 +803,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
                 this.evaluationScores.match(Element.scriptcode, LB.matcher(new String(tag.content.getChars())).replaceAll(" "));
             }
         } else if (tag.name.equalsIgnoreCase("article")) {
-            h = cleanLine(CharacterCoding.html2unicode(stripAllTags(tag.content.getChars())));
+            h = cleanLine(CharacterCoding.html2unicode(content_text));
             if (h.length() > 0) this.articles.add(h);
         } else if (tag.name.equalsIgnoreCase(TagName.time.name())) { // html5 tag <time datetime="2016-12-23">Event</time>
             h = tag.opts.getProperty("datetime"); // TODO: checkOpts() also parses datetime property if in combination with schema.org itemprop=startDate/endDate

@@ -51,7 +51,6 @@ import net.yacy.kelondro.util.FileUtils;
 
 import com.ibm.icu.text.CharsetDetector;
 
-
 public class htmlParser extends AbstractParser implements Parser {
 
     private static final int maxLinks = 10000;
@@ -155,7 +154,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 scraper.getDate());
         ppd.setScraperObject(scraper);
         ppd.setIcons(scraper.getIcons());
-        
+        ppd.ld().putAll(scraper.ld().simplify());
         return ppd;
     }
 
@@ -347,17 +346,51 @@ public class htmlParser extends AbstractParser implements Parser {
         }
         return docs;
     }
+    
+    public static Document[] parse(String context) throws IOException {
+        htmlParser parser = new htmlParser();
+        MultiProtocolURL location = new MultiProtocolURL("http://context.local");
+        Document[] docs;
+        try {
+            docs = parser.parse(location, "text/html", "UTF-8", null, -60,
+                    new ByteArrayInputStream(context.getBytes("UTF-8")));
+            return docs;
+        } catch (Failure | InterruptedException e) {
+            throw new IOException(e.getMessage());
+        }
+    }
 
     public static void main(String[] args) {
-        try {
-            Document[] test1 = load("http://www.tourismus-in-bueren.de/bildung_soziales/bildung/volkshochschule.php");
-            System.out.println(test1[0].dc_title());
-            Document[] test2 = load("http://www.bad-muenstereifel.de/seiten/leben_wohnen/bildung/Stadtbuecherei.php");
-            System.out.println(test2[0].dc_title());
-            Document[] test3 = load("http://yacy.net");
-            System.out.println(test3[0].dc_title());
-        } catch (IOException e) {
-            e.printStackTrace();
+
+        if (args.length == 2) {
+            // parse from an etherpad
+            String etherpad = args[0];
+            String apikey = args[1];
+            try {
+                String pad = ClientConnection.loadFromEtherpad(etherpad, apikey, "05cc1575f55de2dc82f20f9010d71358");
+                Document[] docs = parse(pad);
+                System.out.println(docs[0].dc_title());
+                System.out.println(docs[0].ld().toString(2));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        String[] testurl = new String[] {
+                "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
+                "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
+                "https://developers.google.com/search/docs/guides/intro-structured-data",
+                "https://www.bbcgoodfood.com/recipes/9652/bestever-tiramisu",
+                "https://www.livegigs.de/konzert/madball/duesseldorf-stone-im-ratinger-hof/2018-06-19"
+        };
+        for (String url: testurl) {
+            try {
+                Document[] docs = load(url);
+                System.out.println(docs[0].dc_title());
+                System.out.println(docs[0].ld().toString(2));
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
         }
     }
 }
