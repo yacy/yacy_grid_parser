@@ -103,6 +103,9 @@ public class WebConfiguration implements Serializable {
         }
         json.put(field.getMapping().name(), a);
     }
+    private static void add(JSONObject json, WebMapping field, JSONObject object) {
+        json.put(field.getMapping().name(), object);
+    }
 
     public static class Subgraph {
         public final ArrayList<String>[] urls;
@@ -628,6 +631,8 @@ public class WebConfiguration implements Serializable {
         add(doc, WebMapping.videolinkscount_i, document.getVideolinks().size());
         add(doc, WebMapping.applinkscount_i, document.getApplinks().size());
         
+        // LSON-LD object
+        add(doc, WebMapping.ld_o, document.ld());
         return doc;
     }
     
