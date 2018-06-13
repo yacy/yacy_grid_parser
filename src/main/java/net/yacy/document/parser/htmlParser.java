@@ -366,6 +366,8 @@ public class htmlParser extends AbstractParser implements Parser {
         // https://www.w3.org/2012/pyRdfa/Overview.html#distill_by_input
         // http://rdf.greggkellogg.net/distiller?command=serialize&format=rdfa&output_format=jsonld
         // https://rdfa.info/play/
+        // http://linter.structured-data.org/
+        
         
         if (args.length == 2) {
             // parse from an etherpad
