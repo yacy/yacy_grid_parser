@@ -65,7 +65,7 @@ public abstract class AbstractTransformer implements Transformer {
 
     @Override
     public char[] transformTag1(final ContentScraper.Tag tag, final char quotechar) {
-        return TransformerWriter.genTag1(tag.name, tag.opts, tag.content.getChars(), quotechar);
+        return TransformerWriter.genTag1(tag.name, tag.opts, tag.getContent(), quotechar);
     }
 
     @Override

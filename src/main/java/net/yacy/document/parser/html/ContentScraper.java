@@ -138,7 +138,8 @@ public class ContentScraper extends AbstractScraper implements Scraper {
     public static class Tag {
         public String name;
         public Properties opts;
-        public CharBuffer content;
+        private CharBuffer content;
+        private int depth = 0;
         public Tag(final String name) {
             this.name = name;
             this.opts = new Properties();
@@ -159,6 +160,18 @@ public class ContentScraper extends AbstractScraper implements Scraper {
             this.opts = null;
             if (this.content != null) this.content.close();
             this.content = null;
+        }
+        public char[] getContent() {
+            return this.content.getChars();
+        }
+        public void appendToContent(char[] chars) {
+            this.content.append(chars);
+        }
+        public void setDepth(int d) {
+            this.depth = d;
+        }
+        public int getDepth() {
+            return this.depth;
         }
         @Override
         public void finalize() {

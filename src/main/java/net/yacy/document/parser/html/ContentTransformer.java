@@ -134,9 +134,10 @@ public class ContentTransformer extends AbstractTransformer implements Transform
 
     @Override
     public char[] transformTag1(final ContentScraper.Tag tag, final char quotechar) {
-        if (bluelistHit(tag.opts.getProperty("href","").toCharArray())) return genBlueLetters(tag.content.length());
-        if (bluelistHit(tag.content.getChars())) return genBlueLetters(tag.content.length());
-        return TransformerWriter.genTag1(tag.name, tag.opts, tag.content.getChars(), quotechar);
+        char[] content = tag.getContent();
+        if (bluelistHit(tag.opts.getProperty("href","").toCharArray())) return genBlueLetters(content.length);
+        if (bluelistHit(content)) return genBlueLetters(content.length);
+        return TransformerWriter.genTag1(tag.name, tag.opts, content, quotechar);
     }
 
     @Override

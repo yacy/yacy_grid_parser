@@ -242,9 +242,9 @@ public final class TransformerWriter extends Writer {
             this.scraper.scrapeText(content, this.tagStack.lastElement().name);
         }
         if (this.transformer != null) {
-            this.tagStack.lastElement().content.append(this.transformer.transformText(content));
+            this.tagStack.lastElement().appendToContent(this.transformer.transformText(content));
         } else {
-            this.tagStack.lastElement().content.append(content);
+            this.tagStack.lastElement().appendToContent(content);
         }
         return new char[0];
     }
@@ -273,13 +273,13 @@ public final class TransformerWriter extends Writer {
         // it's a tag! which one?
         if (opening) {
             // case (5): the opening should not be here. But we keep the order anyway
-            this.tagStack.lastElement().content.append(filterTagOpening(tagname, content, quotechar));
+            this.tagStack.lastElement().appendToContent(filterTagOpening(tagname, content, quotechar));
             return new char[0];
         }
 
         if (!tagname.equalsIgnoreCase(this.tagStack.lastElement().name)) {
             // case (6): its a closing tag, but the wrong one. just add it.
-            this.tagStack.lastElement().content.append(genTag0raw(tagname, opening, content));
+            this.tagStack.lastElement().appendToContent(genTag0raw(tagname, opening, content));
             return new char[0];
         }
 
@@ -302,6 +302,7 @@ public final class TransformerWriter extends Writer {
         } else if ((this.scraper != null && this.scraper.isTag1(tagname)) ||
                    (this.transformer != null && this.transformer.isTag1(tagname))) {
             // ok, start collecting; we don't push this here to the scraper or transformer; we do that when the tag is closed.
+            tag.setDepth(this.tagStack.size());
             this.tagStack.push(tag);
             return new char[0];
         } else {
@@ -317,14 +318,14 @@ public final class TransformerWriter extends Writer {
         if (this.transformer != null) {
             ret = this.transformer.transformTag1(tag, quotechar);
         } else {
-            ret = genTag1(tag.name, tag.opts, tag.content.getChars(), quotechar);
+            ret = genTag1(tag.name, tag.opts, tag.getContent(), quotechar);
         }
         if ((this.scraper != null && this.scraper.isTag1(tag.name)) ||
             (this.transformer != null && this.transformer.isTag1(tag.name))) {
             // remove the tag from the stack as soon as the tag is processed
             this.tagStack.pop();
             // at this point the characters from the recently processed tag must be attached to the previous tag
-            if (this.tagStack.size() > 0) this.tagStack.lastElement().content.append(ret);
+            if (this.tagStack.size() > 0) this.tagStack.lastElement().appendToContent(ret);
         }
         return ret;
     }
@@ -340,7 +341,7 @@ public final class TransformerWriter extends Writer {
         if (this.transformer != null) {
             ret = this.transformer.transformTag1(this.tagStack.lastElement(), quotechar);
         } else {
-            ret = genTag1(this.tagStack.lastElement().name, this.tagStack.lastElement().opts, this.tagStack.lastElement().content.getChars(), quotechar);
+            ret = genTag1(this.tagStack.lastElement().name, this.tagStack.lastElement().opts, this.tagStack.lastElement().getContent(), quotechar);
         }
         this.tagStack.pop();
         return ret;
