@@ -45,6 +45,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -126,7 +127,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         article(TagType.pair), // html5
         time(TagType.pair), // html5 <time datetime>
         // tags used to capture tag content
-        // TODO: considere to use </head> or <body> as trigger to scape for text content
+        // TODO: consider to use </head> or <body> as trigger to scrape text content
         style(TagType.pair); // embedded css (if not declared as tag content is parsed as text)
 
         public TagType type;
@@ -179,7 +180,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         }
         @Override
         public String toString() {
-            return "<" + name + " " + opts + ">" + content + "</" + name + ">";
+            return "<" + name + " " + opts + ">" + content + "</" + name + "> [" + this.depth + "]";
         }
     }
 
@@ -216,6 +217,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
     private final int timezoneOffset;
     private int breadcrumbs;
     private JsonLDNode ld;
+    private Stack<JsonLDNode> ldStack;
 
     /** links to icons that belongs to the document (mapped by absolute URL)*/
     private final Map<MultiProtocolURL, IconEntry> icons;
@@ -281,6 +283,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         this.publisher = null;
         this.breadcrumbs = 0;
         this.ld = new JsonLDNode();
+        this.ldStack = new Stack<>();
     }
 
     public JsonLDNode ld() {
@@ -413,7 +416,8 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         }
     }
     
-    private void checkOpts(Tag tag, String content_text) {
+    public void checkOpts(Tag tag, String content_text) {
+        System.out.println("### " + tag.toString());
         // vocabulary classes
         final String classprop = tag.opts.getProperty("class", EMPTY_STRING);
         if (this.vocabularyScraper != null) this.vocabularyScraper.check(this.root, classprop, tag.content);
@@ -437,19 +441,31 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         // itemprop (schema.org)
         String itemprop = tag.opts.getProperty("itemprop", tag.opts.getProperty("property", null));
         if (itemprop != null) {
-            if ("websiteURL".equals(itemprop)) {
-                System.out.println();
-            }
             // content text
-            if (content_text == null) {
-                if (tag.opts.containsKey("content")) {
-                    this.ld.setPredicate(itemprop, tag.opts.getProperty("content"));
+            if (content_text == null && tag.opts.containsKey("content")) {
+                content_text = tag.opts.getProperty("content");
+            }
+            if (content_text != null) {
+                // in case that the current predicate is on a lower level than the already stored, make a sub-object
+                if (tag.depth < this.ld.getDepth()) {
+                    JsonLDNode deep = this.ld;
+                    this.ld = this.ldStack.isEmpty() ? new JsonLDNode() : this.ldStack.pop();
+                    this.ld.setPredicate(itemprop, deep);
+                } if (tag.depth > this.ld.getDepth()) {
+                    // stack the current object and move on with fresh object
+                    if (!this.ld.isEmpty()) {
+                        this.ldStack.push(this.ld);
+                        //System.out.println("push to stack: " + this.ld.toString());
+                        this.ld = new JsonLDNode();
+                    }
+                    this.ld.setPredicate(itemprop, content_text);
+                } else {
+                    this.ld.setPredicate(itemprop, content_text);
                 }
-            } else {
-                this.ld.setPredicate(itemprop, content_text);
+                this.ld.setDepth(tag.depth);
             }
             
-            // special content
+            // special content (legacy, pre-JSON-LD-parsing)
             String propval = tag.opts.getProperty("content"); // value for <meta itemprop="" content=""> see https://html.spec.whatwg.org/multipage/microdata.html#values
             if (propval == null) propval = tag.opts.getProperty("datetime"); // html5 + schema.org#itemprop example: <time itemprop="startDate" datetime="2016-01-26">today</time> while each prop is optional
             if (propval != null) {                                           // html5 example: <time datetime="2016-01-26">today</time> while each prop is optional
@@ -481,28 +497,6 @@ public class ContentScraper extends AbstractScraper implements Scraper {
             }
         }
     }
-    
-    /*
-Microdata
-<div itemscope itemtype="http://schema.org/CreativeWork">
-<img itemprop="image" alt="Fall of Man cover art"
-src="videogame.jpg" />
-<span itemprop="name">Resistance 3: Fall of Man</span>
-by <span itemprop="author">Sony</span>,
-Platform: Playstation 3
-Rated:<span itemprop="contentRating">Mature</span>
-</div>
-
-RDFa
-<div vocab="http://schema.org/" typeof="CreativeWork">
-<img property="image" alt="Fall of Man cover art"
-src="videogame.jpg" />
-<span property="name">Resistance 3: Fall of Man</span>
-by <span property="author">Sony</span>,
-Platform: Playstation 3
-Rated:<span property="contentRating">Mature</span>
-</div>
-     */
     
 	/**
 	 * Parses sizes icon link attribute. (see
@@ -853,7 +847,7 @@ Rated:<span property="contentRating">Mature</span>
         // start a new scraper to parse links inside this text
         // parsing the content
         final ContentScraper scraper = new ContentScraper(this.root, this.maxLinks, this.vocabularyScraper, this.timezoneOffset);
-        final TransformerWriter writer = new TransformerWriter(null, null, scraper, null, false);
+        final TransformerWriter writer = new TransformerWriter(null, null, scraper, false);
         try {
             FileUtils.copy(new CharArrayReader(inlineHtml), writer);
         } catch (final IOException e) {
@@ -1407,14 +1401,14 @@ Rated:<span property="contentRating">Mature</span>
         if (page == null) throw new IOException("no content in file " + file.toString());
 
         // scrape document to look up charset
-        final ScraperInputStream htmlFilter = new ScraperInputStream(new ByteArrayInputStream(page), StandardCharsets.UTF_8.name(), new VocabularyScraper(), new MultiProtocolURL("http://localhost"), null, false, maxLinks, timezoneOffset);
+        final ScraperInputStream htmlFilter = new ScraperInputStream(new ByteArrayInputStream(page), StandardCharsets.UTF_8.name(), new VocabularyScraper(), new MultiProtocolURL("http://localhost"), false, maxLinks, timezoneOffset);
         String charset = htmlParser.patchCharsetEncoding(htmlFilter.detectCharset());
         htmlFilter.close();
         if (charset == null) charset = Charset.defaultCharset().toString();
 
         // scrape content
         final ContentScraper scraper = new ContentScraper(new MultiProtocolURL("http://localhost"), maxLinks, new VocabularyScraper(), timezoneOffset);
-        final Writer writer = new TransformerWriter(null, null, scraper, null, false);
+        final Writer writer = new TransformerWriter(null, null, scraper, false);
         FileUtils.copy(new ByteArrayInputStream(page), writer, Charset.forName(charset));
         writer.close();
         return scraper;

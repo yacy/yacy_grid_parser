@@ -63,7 +63,6 @@ public class ScraperInputStream extends InputStream implements ScraperListener {
             final String inputStreamCharset,
             final VocabularyScraper vocabularyScraper,
             final MultiProtocolURL rooturl,
-            final Transformer transformer,
             final boolean passbyIfBinarySuspect,
             final int maxLinks,
             final int timezoneOffset
@@ -80,7 +79,7 @@ public class ScraperInputStream extends InputStream implements ScraperListener {
 	} catch (final UnsupportedEncodingException e) {
 		this.reader = new InputStreamReader(this, StandardCharsets.UTF_8);
 	}
-        this.writer = new TransformerWriter(null,null,scraper,transformer,passbyIfBinarySuspect);
+        this.writer = new TransformerWriter(null,null,scraper,passbyIfBinarySuspect);
     }
 
     private static String extractCharsetFromMimetypeHeader(final String mimeType) {

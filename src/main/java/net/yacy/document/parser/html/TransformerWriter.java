@@ -39,6 +39,7 @@ import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Stack;
+
 import net.yacy.document.parser.html.ContentScraper.TagName;
 
 import net.yacy.kelondro.io.CharBuffer;
@@ -58,7 +59,6 @@ public final class TransformerWriter extends Writer {
     private CharBuffer buffer;
     private Stack<ContentScraper.Tag> tagStack;
     private final Scraper scraper;
-    private final Transformer transformer;
     private boolean inSingleQuote;
     private boolean inDoubleQuote;
     private boolean inComment;
@@ -69,23 +69,20 @@ public final class TransformerWriter extends Writer {
             final OutputStream outStream,
             final Charset charSet,
             final Scraper scraper,
-            final Transformer transformer,
             final boolean passbyIfBinarySuspect
     ) {
-    	this(outStream, charSet, scraper, transformer, passbyIfBinarySuspect, 64);
+    	this(outStream, charSet, scraper, passbyIfBinarySuspect, 64);
     }
 
     public TransformerWriter(
             final OutputStream outStream,
             final Charset charSet,
             final Scraper scraper,
-            final Transformer transformer,
             final boolean passbyIfBinarySuspect,
             final int initialBufferSize
     ) {
         this.outStream     = outStream;
         this.scraper       = scraper;
-        this.transformer   = transformer;
         this.buffer        = new CharBuffer(ContentScraper.MAX_DOCSIZE, initialBufferSize);
         this.tagStack      = new Stack<ContentScraper.Tag>();
         this.inSingleQuote = false;
@@ -232,7 +229,6 @@ public final class TransformerWriter extends Writer {
             // we are not collection tag text -> case (1) - (3)
             // case (1): this is not a tag opener/closer
             if (this.scraper != null && content.length > 0) this.scraper.scrapeText(content, null);
-            if (this.transformer != null) return this.transformer.transformText(content);
             return content;
         }
 
@@ -241,11 +237,7 @@ public final class TransformerWriter extends Writer {
         if (this.scraper != null) {
             this.scraper.scrapeText(content, this.tagStack.lastElement().name);
         }
-        if (this.transformer != null) {
-            this.tagStack.lastElement().appendToContent(this.transformer.transformText(content));
-        } else {
-            this.tagStack.lastElement().appendToContent(content);
-        }
+        this.tagStack.lastElement().appendToContent(content);
         return new char[0];
     }
             
@@ -290,43 +282,34 @@ public final class TransformerWriter extends Writer {
     private char[] filterTagOpening(final String tagname, final char[] content, final char quotechar) {
         final CharBuffer charBuffer = new CharBuffer(ContentScraper.MAX_DOCSIZE, content);
         ContentScraper.Tag tag = new ContentScraper.Tag(tagname, charBuffer.propParser());
+        tag.setDepth(this.tagStack.size());
         charBuffer.close();
         if (this.scraper != null && this.scraper.isTag0(tagname)) {
             // this single tag is collected at once here
             this.scraper.scrapeTag0(tag);
         }
-        if (this.transformer != null && this.transformer.isTag0(tagname)) {
-            // this single tag is collected at once here
-            char[] b = this.transformer.transformTag0(tag, quotechar);
-            return b;
-        } else if ((this.scraper != null && this.scraper.isTag1(tagname)) ||
-                   (this.transformer != null && this.transformer.isTag1(tagname))) {
+        if (this.scraper != null && this.scraper.isTag1(tagname)) {
             // ok, start collecting; we don't push this here to the scraper or transformer; we do that when the tag is closed.
-            tag.setDepth(this.tagStack.size());
             this.tagStack.push(tag);
             return new char[0];
         } else {
              // we ignore that thing and return it again
-             return genTag0raw(tagname, true, content);
+            return genTag0raw(tagname, true, content);
         }
     }
 
     private char[] filterTagCloseing(final char quotechar) {
         char[] ret;
         ContentScraper.Tag tag = this.tagStack.lastElement();
-        if (this.scraper != null) this.scraper.scrapeTag1(tag);
-        if (this.transformer != null) {
-            ret = this.transformer.transformTag1(tag, quotechar);
-        } else {
-            ret = genTag1(tag.name, tag.opts, tag.getContent(), quotechar);
-        }
-        if ((this.scraper != null && this.scraper.isTag1(tag.name)) ||
-            (this.transformer != null && this.transformer.isTag1(tag.name))) {
+        ret = genTag1(tag.name, tag.opts, tag.getContent(), quotechar);
+        if (this.scraper != null && this.scraper.isTag1(tag.name)) {
+            this.scraper.scrapeTag1(tag);
             // remove the tag from the stack as soon as the tag is processed
             this.tagStack.pop();
             // at this point the characters from the recently processed tag must be attached to the previous tag
             if (this.tagStack.size() > 0) this.tagStack.lastElement().appendToContent(ret);
         }
+        if (this.scraper != null && !this.scraper.isTag1(tag.name)) this.scraper.checkOpts(tag, new String(tag.getContent()));
         return ret;
     }
 
@@ -338,11 +321,7 @@ public final class TransformerWriter extends Writer {
         // it's our closing tag! return complete result.
         char[] ret;
         if (this.scraper != null) this.scraper.scrapeTag1(this.tagStack.lastElement());
-        if (this.transformer != null) {
-            ret = this.transformer.transformTag1(this.tagStack.lastElement(), quotechar);
-        } else {
-            ret = genTag1(this.tagStack.lastElement().name, this.tagStack.lastElement().opts, this.tagStack.lastElement().getContent(), quotechar);
-        }
+        ret = genTag1(this.tagStack.lastElement().name, this.tagStack.lastElement().opts, this.tagStack.lastElement().getContent(), quotechar);
         this.tagStack.pop();
         return ret;
     }

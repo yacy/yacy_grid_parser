@@ -24,6 +24,8 @@
 
 package net.yacy.document.parser.html;
 
+import net.yacy.document.parser.html.ContentScraper.Tag;
+
 public interface Scraper {
 
     public boolean isTag0(String tag);
@@ -37,6 +39,8 @@ public interface Scraper {
     public void scrapeTag1(ContentScraper.Tag tag);
 
     public void scrapeComment(final char[] comment);
+    
+    public void checkOpts(Tag tag, String content_text);
 
     public void finish();
 

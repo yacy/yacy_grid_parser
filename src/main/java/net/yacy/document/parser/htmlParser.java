@@ -196,7 +196,7 @@ public class htmlParser extends AbstractParser implements Parser {
         String scrapedCharset = null;
         ScraperInputStream htmlFilter = null;
         try {
-            htmlFilter = new ScraperInputStream(sourceStream, documentCharset, vocabularyScraper, location, null, false, maxLinks, timezoneOffset);
+            htmlFilter = new ScraperInputStream(sourceStream, documentCharset, vocabularyScraper, location, false, maxLinks, timezoneOffset);
             sourceStream = htmlFilter;
             scrapedCharset = htmlFilter.detectCharset();
             if (scrapedCharset != null) scrapedCharset = patchCharsetEncoding(scrapedCharset);
@@ -239,7 +239,7 @@ public class htmlParser extends AbstractParser implements Parser {
         // parsing the content
         // for this static methode no need to init local this.scraperObject here
         final ContentScraper scraper = new ContentScraper(location, maxLinks, vocabularyScraper, timezoneOffset);
-        final TransformerWriter writer = new TransformerWriter(null,null,scraper,null,false, Math.max(64, Math.min(4096, sourceStream.available())));
+        final TransformerWriter writer = new TransformerWriter(null,null,scraper,false, Math.max(64, Math.min(4096, sourceStream.available())));
         try {
             FileUtils.copy(sourceStream, writer, detectedcharsetcontainer[0]);
         } catch (final IOException e) {
@@ -373,7 +373,7 @@ public class htmlParser extends AbstractParser implements Parser {
             // parse from an etherpad
             String etherpad = args[0];
             String apikey = args[1];
-            String[] pads = new String[] {"05cc1575f55de2dc82f20f9010d71358", "c8f2a54127f96b38a85623cb472e33cd"};
+            String[] pads = new String[] {/*"05cc1575f55de2dc82f20f9010d71358", */"c8f2a54127f96b38a85623cb472e33cd"};
             for (String padid: pads) {
                 try {
                     String content = ClientConnection.loadFromEtherpad(etherpad, apikey, padid);
@@ -385,7 +385,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 }
             }
         }
-        
+        /*
         String[] testurl = new String[] {
                 "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
                 "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
@@ -402,5 +402,6 @@ public class htmlParser extends AbstractParser implements Parser {
                 e.printStackTrace();
             }
         }
+        */
     }
 }
