@@ -32,10 +32,7 @@
 package net.yacy.document.parser.html;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Stack;
@@ -54,8 +51,6 @@ public final class TransformerWriter extends Writer {
     public static final char singlequote = '\'';
     public static final char doublequote = '"';
 
-    private final OutputStream outStream;
-    private OutputStreamWriter out;
     private CharBuffer buffer;
     private Stack<ContentScraper.Tag> tagStack;
     private final Scraper scraper;
@@ -63,37 +58,15 @@ public final class TransformerWriter extends Writer {
     private boolean inDoubleQuote;
     private boolean inComment;
     private boolean binaryUnsuspect;
-    private final boolean passbyIfBinarySuspect;
     
-    public TransformerWriter(
-            final OutputStream outStream,
-            final Charset charSet,
-            final Scraper scraper,
-            final boolean passbyIfBinarySuspect
-    ) {
-    	this(outStream, charSet, scraper, passbyIfBinarySuspect, 64);
-    }
-
-    public TransformerWriter(
-            final OutputStream outStream,
-            final Charset charSet,
-            final Scraper scraper,
-            final boolean passbyIfBinarySuspect,
-            final int initialBufferSize
-    ) {
-        this.outStream     = outStream;
+    public TransformerWriter(final Scraper scraper) {
         this.scraper       = scraper;
-        this.buffer        = new CharBuffer(ContentScraper.MAX_DOCSIZE, initialBufferSize);
+        this.buffer        = new CharBuffer(ContentScraper.MAX_DOCSIZE, 64);
         this.tagStack      = new Stack<ContentScraper.Tag>();
         this.inSingleQuote = false;
         this.inDoubleQuote = false;
         this.inComment     = false;
         this.binaryUnsuspect = true;
-        this.passbyIfBinarySuspect = passbyIfBinarySuspect;
-
-        if (this.outStream != null) {
-            this.out = new OutputStreamWriter(this.outStream,(charSet == null)?Charset.defaultCharset():charSet);
-        }
     }
 
     public static char[] genTag0raw(final String tagname, final boolean opening, final char[] tagopts) {
@@ -104,9 +77,7 @@ public final class TransformerWriter extends Writer {
             }
             bb.append(tagname);
             if (tagopts.length > 0) {
-//              if (tagopts[0] == (byte) 32)
                 bb.append(tagopts);
-//              else bb.append((byte) 32).append(tagopts);
             }
             bb.append('>');
             final char[] result = bb.getChars();
@@ -118,9 +89,7 @@ public final class TransformerWriter extends Writer {
             final CharBuffer bb = new CharBuffer(ContentScraper.MAX_DOCSIZE, 2 * tagname.length() + tagopts.length + text.length + 5);
             bb.append('<').append(tagname);
             if (tagopts.length > 0) {
-//              if (tagopts[0] == (byte) 32)
                 bb.append(tagopts);
-//              else bb.append((byte) 32).append(tagopts);
             }
             bb.append('>');
             bb.append(text);
@@ -352,104 +321,90 @@ public final class TransformerWriter extends Writer {
         //System.out.println((char) c);
         if ((this.binaryUnsuspect) && (binaryHint((char)c))) {
             this.binaryUnsuspect = false;
-            if (this.passbyIfBinarySuspect) close();
         }
 
-        if (this.binaryUnsuspect || !this.passbyIfBinarySuspect) {
-            char[] filtered;
-            if (this.inSingleQuote) {
-                this.buffer.append(c);
-                if (c == singlequote) this.inSingleQuote = false;
-                // check error cases
-                if ((c == rb) && (this.buffer.length() > 0 && this.buffer.charAt(0) == lb)) {
-                    this.inSingleQuote = false;
-                    // the tag ends here. after filtering: pass on
-                    filtered = tokenProcessor(this.buffer.getChars(), singlequote);
-                    if (this.out != null) { this.out.write(filtered); }
-                    // this.buffer = new serverByteBuffer();
-                    this.buffer.reset();
-                }
-            } else if (this.inDoubleQuote) {
-                this.buffer.append(c);
-                if (c == doublequote) this.inDoubleQuote = false;
-                // check error cases
-                if (c == rb && this.buffer.length() > 0 && this.buffer.charAt(0) == lb) {
-                    this.inDoubleQuote = false;
-                    // the tag ends here. after filtering: pass on
-                    filtered = tokenProcessor(this.buffer.getChars(), doublequote);
-                    if (this.out != null) this.out.write(filtered);
-                    // this.buffer = new serverByteBuffer();
-                    this.buffer.reset();
-                }
-            } else if (this.inComment) {
-                this.buffer.append(c);
-                if (c == rb &&
-                    this.buffer.length() > 6 &&
-                    this.buffer.charAt(this.buffer.length() - 3) == dash) {
-                    // comment is at end
-                    this.inComment = false;
-                    final char[] comment = this.buffer.getChars();
-                    if (this.scraper != null) this.scraper.scrapeComment(comment);
-                    if (this.out != null) this.out.write(comment);
-                    // this.buffer = new serverByteBuffer();
-                    this.buffer.reset();
-                }
-            } else {
-                if (this.buffer.isEmpty()) {
-                    if (c == rb) {
-                        // very strange error case; we just let it pass
-                        if (this.out != null) this.out.write(c);
-                    } else {
-                        this.buffer.append(c);
-                    }
-                } else if (this.buffer.length() > 0 && this.buffer.charAt(0) == lb) {
-                    if (c == singlequote) this.inSingleQuote = true;
-                    if (c == doublequote) this.inDoubleQuote = true;
-                    // fill in tag text
-                    if ((this.buffer.length() >= 3) && (this.buffer.charAt(1) == excl) &&
-                        (this.buffer.charAt(2) == dash) && (c == dash)) {
-                        // this is the start of a comment
-                        this.inComment = true;
-                        this.buffer.append(c);
-                    } else if (c == rb) {
-                        this.buffer.append(c);
-                        // the tag ends here. after filtering: pass on
-                        filtered = tokenProcessor(this.buffer.getChars(), doublequote);
-                        if (this.out != null) this.out.write(filtered);
-                        // this.buffer = new serverByteBuffer();
-                        this.buffer.reset();
-                    } else if (c == lb) {
-                        // this is an error case
-                        // we consider that there is one rb missing
-                        if (this.buffer.length() > 0) {
-                            filtered = tokenProcessor(this.buffer.getChars(), doublequote);
-                            if (this.out != null) this.out.write(filtered);
-                        }
-                        // this.buffer = new serverByteBuffer();
-                        this.buffer.reset();
-                        this.buffer.append(c);
-                    } else {
-                        this.buffer.append(c);
-                    }
-                } else {
-                    // fill in plain text
-                    if (c == lb) {
-                        // the text ends here
-                        if (this.buffer.length() > 0) {
-                            filtered = tokenProcessor(this.buffer.getChars(), doublequote);
-                            if (this.out != null) this.out.write(filtered);
-                        }
-                        // this.buffer = new serverByteBuffer();
-                        this.buffer.reset();
-                        this.buffer.append(c);
-                    } else {
-                        // simply append
-                        this.buffer.append(c);
-                    }
-                }
+        char[] filtered;
+        if (this.inSingleQuote) {
+            this.buffer.append(c);
+            if (c == singlequote) this.inSingleQuote = false;
+            // check error cases
+            if ((c == rb) && (this.buffer.length() > 0 && this.buffer.charAt(0) == lb)) {
+                this.inSingleQuote = false;
+                // the tag ends here. after filtering: pass on
+                filtered = tokenProcessor(this.buffer.getChars(), singlequote);
+                // this.buffer = new serverByteBuffer();
+                this.buffer.reset();
+            }
+        } else if (this.inDoubleQuote) {
+            this.buffer.append(c);
+            if (c == doublequote) this.inDoubleQuote = false;
+            // check error cases
+            if (c == rb && this.buffer.length() > 0 && this.buffer.charAt(0) == lb) {
+                this.inDoubleQuote = false;
+                // the tag ends here. after filtering: pass on
+                filtered = tokenProcessor(this.buffer.getChars(), doublequote);
+                // this.buffer = new serverByteBuffer();
+                this.buffer.reset();
+            }
+        } else if (this.inComment) {
+            this.buffer.append(c);
+            if (c == rb &&
+                this.buffer.length() > 6 &&
+                this.buffer.charAt(this.buffer.length() - 3) == dash) {
+                // comment is at end
+                this.inComment = false;
+                final char[] comment = this.buffer.getChars();
+                if (this.scraper != null) this.scraper.scrapeComment(comment);
+                // this.buffer = new serverByteBuffer();
+                this.buffer.reset();
             }
         } else {
-            this.out.write(c);
+            if (this.buffer.isEmpty()) {
+                if (c != rb) {
+                    this.buffer.append(c);
+                }
+            } else if (this.buffer.length() > 0 && this.buffer.charAt(0) == lb) {
+                if (c == singlequote) this.inSingleQuote = true;
+                if (c == doublequote) this.inDoubleQuote = true;
+                // fill in tag text
+                if ((this.buffer.length() >= 3) && (this.buffer.charAt(1) == excl) &&
+                    (this.buffer.charAt(2) == dash) && (c == dash)) {
+                    // this is the start of a comment
+                    this.inComment = true;
+                    this.buffer.append(c);
+                } else if (c == rb) {
+                    this.buffer.append(c);
+                    // the tag ends here. after filtering: pass on
+                    filtered = tokenProcessor(this.buffer.getChars(), doublequote);
+                    // this.buffer = new serverByteBuffer();
+                    this.buffer.reset();
+                } else if (c == lb) {
+                    // this is an error case
+                    // we consider that there is one rb missing
+                    if (this.buffer.length() > 0) {
+                        filtered = tokenProcessor(this.buffer.getChars(), doublequote);
+                    }
+                    // this.buffer = new serverByteBuffer();
+                    this.buffer.reset();
+                    this.buffer.append(c);
+                } else {
+                    this.buffer.append(c);
+                }
+            } else {
+                // fill in plain text
+                if (c == lb) {
+                    // the text ends here
+                    if (this.buffer.length() > 0) {
+                        filtered = tokenProcessor(this.buffer.getChars(), doublequote);
+                    }
+                    // this.buffer = new serverByteBuffer();
+                    this.buffer.reset();
+                    this.buffer.append(c);
+                } else {
+                    // simply append
+                    this.buffer.append(c);
+                }
+            }
         }
     }
 
@@ -467,10 +422,6 @@ public final class TransformerWriter extends Writer {
 
     @Override
     public void flush() throws IOException {
-        // we cannot flush the current string this.buffer to prevent that
-        // the filter process is messed up
-        // instead, we simply flush the underlying output stream
-        if (this.out != null) this.out.flush();
         if (this.scraper != null) this.scraper.finish();
         // if you want to flush all, call close() at end of writing;
     }
@@ -482,17 +433,11 @@ public final class TransformerWriter extends Writer {
         if (this.buffer != null) {
             if (this.buffer.length() > 0) {
                 final char[] filtered = tokenProcessor(this.buffer.getChars(), quotechar);
-                if (this.out != null) this.out.write(filtered);
             }
             this.buffer.close();
             this.buffer = null;
         }
         final char[] finalized = filterFinalize(quotechar);
-        if (this.out != null) {
-            if (finalized != null) this.out.write(finalized);
-            this.out.flush();
-            this.out.close();
-        }
         this.tagStack.clear();
         this.tagStack = null;
         if (this.scraper != null) this.scraper.finish();

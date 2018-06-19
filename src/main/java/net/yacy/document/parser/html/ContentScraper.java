@@ -847,7 +847,7 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         // start a new scraper to parse links inside this text
         // parsing the content
         final ContentScraper scraper = new ContentScraper(this.root, this.maxLinks, this.vocabularyScraper, this.timezoneOffset);
-        final TransformerWriter writer = new TransformerWriter(null, null, scraper, false);
+        final TransformerWriter writer = new TransformerWriter(scraper);
         try {
             FileUtils.copy(new CharArrayReader(inlineHtml), writer);
         } catch (final IOException e) {
@@ -1401,14 +1401,14 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         if (page == null) throw new IOException("no content in file " + file.toString());
 
         // scrape document to look up charset
-        final ScraperInputStream htmlFilter = new ScraperInputStream(new ByteArrayInputStream(page), StandardCharsets.UTF_8.name(), new VocabularyScraper(), new MultiProtocolURL("http://localhost"), false, maxLinks, timezoneOffset);
+        final ScraperInputStream htmlFilter = new ScraperInputStream(new ByteArrayInputStream(page), StandardCharsets.UTF_8.name(), new VocabularyScraper(), new MultiProtocolURL("http://localhost"), maxLinks, timezoneOffset);
         String charset = htmlParser.patchCharsetEncoding(htmlFilter.detectCharset());
         htmlFilter.close();
         if (charset == null) charset = Charset.defaultCharset().toString();
 
         // scrape content
         final ContentScraper scraper = new ContentScraper(new MultiProtocolURL("http://localhost"), maxLinks, new VocabularyScraper(), timezoneOffset);
-        final Writer writer = new TransformerWriter(null, null, scraper, false);
+        final Writer writer = new TransformerWriter(scraper);
         FileUtils.copy(new ByteArrayInputStream(page), writer, Charset.forName(charset));
         writer.close();
         return scraper;

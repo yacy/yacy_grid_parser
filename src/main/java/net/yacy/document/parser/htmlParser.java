@@ -196,7 +196,7 @@ public class htmlParser extends AbstractParser implements Parser {
         String scrapedCharset = null;
         ScraperInputStream htmlFilter = null;
         try {
-            htmlFilter = new ScraperInputStream(sourceStream, documentCharset, vocabularyScraper, location, false, maxLinks, timezoneOffset);
+            htmlFilter = new ScraperInputStream(sourceStream, documentCharset, vocabularyScraper, location, maxLinks, timezoneOffset);
             sourceStream = htmlFilter;
             scrapedCharset = htmlFilter.detectCharset();
             if (scrapedCharset != null) scrapedCharset = patchCharsetEncoding(scrapedCharset);
@@ -239,7 +239,7 @@ public class htmlParser extends AbstractParser implements Parser {
         // parsing the content
         // for this static methode no need to init local this.scraperObject here
         final ContentScraper scraper = new ContentScraper(location, maxLinks, vocabularyScraper, timezoneOffset);
-        final TransformerWriter writer = new TransformerWriter(null,null,scraper,false, Math.max(64, Math.min(4096, sourceStream.available())));
+        final TransformerWriter writer = new TransformerWriter(scraper);
         try {
             FileUtils.copy(sourceStream, writer, detectedcharsetcontainer[0]);
         } catch (final IOException e) {
