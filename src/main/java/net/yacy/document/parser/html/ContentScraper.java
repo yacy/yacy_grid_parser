@@ -44,8 +44,6 @@ import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.swing.event.EventListenerList;
-
 import ai.susi.json.JsonLDNode;
 import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.sorting.ClusteredScoreMap;
@@ -203,7 +201,6 @@ public class ContentScraper extends AbstractScraper implements Scraper {
     private final ClusteredScoreMap<String> bold, italic, underline;
     private final List<String> li, dt, dd;
     private final CharBuffer content;
-    private final EventListenerList htmlFilterEventListeners;
     private double lon, lat;
     private AnchorURL canonical, publisher;
     private final int maxLinks;
@@ -269,7 +266,6 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         this.dt = new ArrayList<String>();
         this.dd = new ArrayList<String>();
         this.content = new CharBuffer(MAX_DOCSIZE, 1024);
-        this.htmlFilterEventListeners = new EventListenerList();
         this.lon = 0.0d;
         this.lat = 0.0d;
         this.evaluationScores.match(Element.url, root.toNormalform(true));
@@ -710,9 +706,6 @@ public class ContentScraper extends AbstractScraper implements Scraper {
             if (!lang.isEmpty()) // fake a language meta to preserv detection from <html lang="xx" />
                 this.metas.put("dc.language",lang.substring(0,2)); // fix found entries like "hu-hu"
         }
-
-        // fire event
-        this.fireScrapeTag0(tag.name, tag.opts);
     }
 
     @Override
@@ -815,9 +808,6 @@ public class ContentScraper extends AbstractScraper implements Scraper {
                 } catch (ParseException ex) { }
             }
         }
-
-        // fire event
-        this.fireScrapeTag1(tag.name, tag.opts, tag.content.getChars());
     }
     
     /**
@@ -826,7 +816,6 @@ public class ContentScraper extends AbstractScraper implements Scraper {
      */
     protected void addAnchor(AnchorURL anchor) {
     	this.anchors.add(anchor);
-    	this.fireAddAnchor(anchor.toNormalform(false));
     }
 
 
@@ -1326,67 +1315,6 @@ public class ContentScraper extends AbstractScraper implements Scraper {
         System.out.println("IMAGES   :" + this.images.toString());
         System.out.println("METAS    :" + this.metas.toString());
         System.out.println("TEXT     :" + this.content.toString());
-    }
-
-    /**
-     * Register a listener for some scrape events
-     * @param listener ScraperListener implementation
-     */
-    @Override
-    public void registerHtmlFilterEventListener(final ScraperListener listener) {
-        if (listener != null) {
-        	if(listener instanceof ContentScraperListener) {
-        		this.htmlFilterEventListeners.add(ContentScraperListener.class, (ContentScraperListener)listener);
-        	} else {
-        		this.htmlFilterEventListeners.add(ScraperListener.class, listener);
-        	}
-        }
-    }
-
-    /**
-     * Unregister a listener previously registered
-     * @param listener ScraperListener implementation
-     */
-    @Override
-    public void deregisterHtmlFilterEventListener(final ScraperListener listener) {
-        if (listener != null) {
-        	if(listener instanceof ContentScraperListener) {
-        		this.htmlFilterEventListeners.remove(ContentScraperListener.class, (ContentScraperListener)listener);
-        	} else {
-        		this.htmlFilterEventListeners.remove(ScraperListener.class, listener);
-        	}
-        }
-    }
-
-    private void fireScrapeTag0(final String tagname, final Properties tagopts) {
-        final Object[] listeners = this.htmlFilterEventListeners.getListenerList();
-        for (int i = 0; i < listeners.length; i += 2) {
-            if (listeners[i] == ScraperListener.class || listeners[i] == ContentScraperListener.class) {
-                    ((ScraperListener)listeners[i+1]).scrapeTag0(tagname, tagopts);
-            }
-        }
-    }
-
-    private void fireScrapeTag1(final String tagname, final Properties tagopts, final char[] text) {
-        final Object[] listeners = this.htmlFilterEventListeners.getListenerList();
-        for (int i = 0; i < listeners.length; i += 2) {
-            if (listeners[i] == ScraperListener.class  || listeners[i] == ContentScraperListener.class) {
-                    ((ScraperListener)listeners[i+1]).scrapeTag1(tagname, tagopts, text);
-            }
-        }
-    }
-    
-    /**
-     * Fire addAnchor event to any listener implemening {@link ContentScraperListener} interface
-     * @param url anchor url
-     */
-    private void fireAddAnchor(final String anchorURL) {
-        final Object[] listeners = this.htmlFilterEventListeners.getListenerList();
-        for (int i = 0; i < listeners.length; i += 2) {
-            if (listeners[i] == ContentScraperListener.class) {
-                    ((ContentScraperListener)listeners[i+1]).anchorAdded(anchorURL);
-            }
-        }
     }
 
 }

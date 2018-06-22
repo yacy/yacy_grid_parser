@@ -46,7 +46,4 @@ public interface Scraper {
 
     public void close();
 
-    public void registerHtmlFilterEventListener(ScraperListener listener);
-
-    public void deregisterHtmlFilterEventListener(ScraperListener listener);
 }

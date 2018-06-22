@@ -45,7 +45,6 @@ import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
 import net.yacy.document.parser.html.ContentScraper;
 import net.yacy.document.parser.html.ImageEntry;
-import net.yacy.document.parser.html.ScraperInputStream;
 import net.yacy.document.parser.html.TransformerWriter;
 import net.yacy.kelondro.util.FileUtils;
 
@@ -190,27 +189,6 @@ public class htmlParser extends AbstractParser implements Parser {
         // ah, we are lucky, we got a character-encoding via HTTP-header
         if (documentCharset != null) {
             charset = patchCharsetEncoding(documentCharset);
-        }
-
-        // try to find a meta-tag
-        String scrapedCharset = null;
-        ScraperInputStream htmlFilter = null;
-        try {
-            htmlFilter = new ScraperInputStream(sourceStream, documentCharset, vocabularyScraper, location, maxLinks, timezoneOffset);
-            sourceStream = htmlFilter;
-            scrapedCharset = htmlFilter.detectCharset();
-            if (scrapedCharset != null) scrapedCharset = patchCharsetEncoding(scrapedCharset);
-        } catch (final IOException e1) {
-            throw new Parser.Failure("Charset error:" + e1.getMessage(), location);
-        } finally {
-            if (htmlFilter != null) htmlFilter.close();
-        }
-        Charset scrapedCharsetCharset = null;
-        try {
-            scrapedCharsetCharset = Charset.forName(scrapedCharset);
-        } catch (IllegalArgumentException e) {}
-        if (charset == null || scrapedCharsetCharset != null) {
-            charset = scrapedCharset;
         }
 
         // the author didn't tell us the encoding, try the mozilla-heuristic
@@ -368,7 +346,7 @@ public class htmlParser extends AbstractParser implements Parser {
         // https://rdfa.info/play/
         // http://linter.structured-data.org/
         
-        /*
+        
         if (args.length == 2) {
             // parse from an etherpad
             String etherpad = args[0];
@@ -385,7 +363,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 }
             }
         }
-        */
+        /*
         String[] testurl = new String[] {
                 "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
                 "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
@@ -402,6 +380,6 @@ public class htmlParser extends AbstractParser implements Parser {
                 e.printStackTrace();
             }
         }
-        
+        */
     }
 }
