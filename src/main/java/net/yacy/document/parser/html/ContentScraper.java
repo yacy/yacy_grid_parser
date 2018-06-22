@@ -21,15 +21,10 @@
 package net.yacy.document.parser.html;
 
 import java.awt.Dimension;
-import java.io.ByteArrayInputStream;
 import java.io.CharArrayReader;
-import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,7 +55,6 @@ import net.yacy.cora.storage.SizeLimitedSet;
 import net.yacy.cora.util.NumberTools;
 import net.yacy.document.SentenceReader;
 import net.yacy.document.VocabularyScraper;
-import net.yacy.document.parser.htmlParser;
 import net.yacy.document.parser.html.Evaluation.Element;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
@@ -1393,25 +1387,6 @@ public class ContentScraper extends AbstractScraper implements Scraper {
                     ((ContentScraperListener)listeners[i+1]).anchorAdded(anchorURL);
             }
         }
-    }
-
-    public static ContentScraper parseResource(final File file, final int maxLinks, final int timezoneOffset) throws IOException {
-        // load page
-        final byte[] page = FileUtils.read(file);
-        if (page == null) throw new IOException("no content in file " + file.toString());
-
-        // scrape document to look up charset
-        final ScraperInputStream htmlFilter = new ScraperInputStream(new ByteArrayInputStream(page), StandardCharsets.UTF_8.name(), new VocabularyScraper(), new MultiProtocolURL("http://localhost"), maxLinks, timezoneOffset);
-        String charset = htmlParser.patchCharsetEncoding(htmlFilter.detectCharset());
-        htmlFilter.close();
-        if (charset == null) charset = Charset.defaultCharset().toString();
-
-        // scrape content
-        final ContentScraper scraper = new ContentScraper(new MultiProtocolURL("http://localhost"), maxLinks, new VocabularyScraper(), timezoneOffset);
-        final Writer writer = new TransformerWriter(scraper);
-        FileUtils.copy(new ByteArrayInputStream(page), writer, Charset.forName(charset));
-        writer.close();
-        return scraper;
     }
 
 }

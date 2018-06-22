@@ -368,12 +368,12 @@ public class htmlParser extends AbstractParser implements Parser {
         // https://rdfa.info/play/
         // http://linter.structured-data.org/
         
-        
+        /*
         if (args.length == 2) {
             // parse from an etherpad
             String etherpad = args[0];
             String apikey = args[1];
-            String[] pads = new String[] {/*"05cc1575f55de2dc82f20f9010d71358", */"c8f2a54127f96b38a85623cb472e33cd"};
+            String[] pads = new String[] {"05cc1575f55de2dc82f20f9010d71358", "c8f2a54127f96b38a85623cb472e33cd"};
             for (String padid: pads) {
                 try {
                     String content = ClientConnection.loadFromEtherpad(etherpad, apikey, padid);
@@ -385,7 +385,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 }
             }
         }
-        /*
+        */
         String[] testurl = new String[] {
                 "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
                 "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
@@ -402,6 +402,6 @@ public class htmlParser extends AbstractParser implements Parser {
                 e.printStackTrace();
             }
         }
-        */
+        
     }
 }

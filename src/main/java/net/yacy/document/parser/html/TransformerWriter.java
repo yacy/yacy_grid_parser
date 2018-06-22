@@ -44,12 +44,12 @@ import net.yacy.kelondro.io.CharBuffer;
 
 public final class TransformerWriter extends Writer {
 
-    public static final char lb = '<';
-    public static final char rb = '>';
-    public static final char dash = '-';
-    public static final char excl = '!';
-    public static final char singlequote = '\'';
-    public static final char doublequote = '"';
+	private static final char lb = '<';
+	private static final char rb = '>';
+	private static final char dash = '-';
+	private static final char excl = '!';
+	private static final char singlequote = '\'';
+	private static final char doublequote = '"';
 
     private CharBuffer buffer;
     private Stack<ContentScraper.Tag> tagStack;
@@ -69,7 +69,7 @@ public final class TransformerWriter extends Writer {
         this.binaryUnsuspect = true;
     }
 
-    public static char[] genTag0raw(final String tagname, final boolean opening, final char[] tagopts) {
+    private static char[] genTag0raw(final String tagname, final boolean opening, final char[] tagopts) {
             final CharBuffer bb = new CharBuffer(ContentScraper.MAX_DOCSIZE, tagname.length() + tagopts.length + 3);
             bb.append('<');
             if (!opening) {
@@ -85,7 +85,7 @@ public final class TransformerWriter extends Writer {
             return result;
     }
 
-    public static char[] genTag1raw(final String tagname, final char[] tagopts, final char[] text) {
+    private static char[] genTag1raw(final String tagname, final char[] tagopts, final char[] text) {
             final CharBuffer bb = new CharBuffer(ContentScraper.MAX_DOCSIZE, 2 * tagname.length() + tagopts.length + text.length + 5);
             bb.append('<').append(tagname);
             if (tagopts.length > 0) {
@@ -99,7 +99,7 @@ public final class TransformerWriter extends Writer {
             return result;
     }
 
-    public static char[] genTag0(final String tagname, final Properties tagopts, final char quotechar) {
+    private static char[] genTag0(final String tagname, final Properties tagopts, final char quotechar) {
             final char[] tagoptsx = (tagopts.isEmpty()) ? null : genOpts(tagopts, quotechar);
             final CharBuffer bb = new CharBuffer(ContentScraper.MAX_DOCSIZE, tagname.length() + ((tagoptsx == null) ? 0 : (tagoptsx.length + 1)) + tagname.length() + 2);
             bb.append('<').append(tagname);
@@ -113,7 +113,7 @@ public final class TransformerWriter extends Writer {
             return result;
     }
 
-    public static char[] genTag1(final String tagname, final Properties tagopts, final char[] text, final char quotechar) {
+    private static char[] genTag1(final String tagname, final Properties tagopts, final char[] text, final char quotechar) {
             final char[] gt0 = genTag0(tagname, tagopts, quotechar);
             final CharBuffer cb = new CharBuffer(ContentScraper.MAX_DOCSIZE, gt0, gt0.length + text.length + tagname.length() + 3);
             cb.append(text).append('<').append('/').append(tagname).append('>');
@@ -123,7 +123,7 @@ public final class TransformerWriter extends Writer {
     }
 
     // a helper method for pretty-printing of properties for html tags
-    public static char[] genOpts(final Properties prop, final char quotechar) {
+    private static char[] genOpts(final Properties prop, final char quotechar) {
             final Enumeration<?> e = prop.propertyNames();
             final CharBuffer bb = new CharBuffer(ContentScraper.MAX_DOCSIZE, prop.size() * 40);
             String key;
@@ -148,11 +148,14 @@ public final class TransformerWriter extends Writer {
      * @param quotechar
      * @return a processed version of the token
      */
-    private char[] tokenProcessor(final char[] in, final char quotechar) {
-        if (in.length == 0) return in;
+    private void tokenProcessor(final char[] in, final char quotechar) {
+        if (in.length == 0) return;
         
         // scan the string and parse structure
-        if (in.length <= 2 || in[0] != lb) return filterTag(in); // this is a text
+        if (in.length <= 2 || in[0] != lb) {
+        	filterTag(in); // this is a text
+        	return;
+        }
 
         // this is a tag
         String tag;
@@ -163,12 +166,13 @@ public final class TransformerWriter extends Writer {
             tag = new String(in, 2, tagend - 2).toLowerCase();
             final char[] text = new char[in.length - tagend - 1];
             System.arraycopy(in, tagend, text, 0, in.length - tagend - 1);
-            return filterTag(text, quotechar, tag, false);
+            filterTag(text, quotechar, tag, false);
+            return;
         }
 
         // don't add text from within <script> section, here e.g. a "if 1<a" expression could confuse tag detection
         if (this.tagStack.size()>0 && this.tagStack.lastElement().name.equals(TagName.script.name())) {
-            return new char[0];
+            return;
         }
 
         // an opening tag
@@ -176,7 +180,7 @@ public final class TransformerWriter extends Writer {
         tag = new String(in, 1, tagend - 1).toLowerCase();
         final char[] text = new char[in.length - tagend - 1];
         System.arraycopy(in, tagend, text, 0, in.length - tagend - 1);
-        return filterTag(text, quotechar, tag, true);
+        filterTag(text, quotechar, tag, true);
     }
     
     // distinguish the following cases:
@@ -193,24 +197,22 @@ public final class TransformerWriter extends Writer {
      * @param content
      * @return content or empty array
      */
-    private char[] filterTag(final char[] content) {
+    private void filterTag(final char[] content) {
         if (this.tagStack.size() == 0) {
             // we are not collection tag text -> case (1) - (3)
             // case (1): this is not a tag opener/closer
-            if (this.scraper != null && content.length > 0) this.scraper.scrapeText(content, null);
-            return content;
+            if (content.length > 0) this.scraper.scrapeText(content, null);
+            return;
         }
 
         // we are collection tag text for the tag 'filterTag' -> case (4) - (7)
         // case (4): getting no tag, go on collecting content
-        if (this.scraper != null) {
-            this.scraper.scrapeText(content, this.tagStack.lastElement().name);
-        }
+        this.scraper.scrapeText(content, this.tagStack.lastElement().name);
+        
         this.tagStack.lastElement().appendToContent(content);
-        return new char[0];
     }
             
-    private char[] filterTag(final char[] content, final char quotechar, final String tagname, final boolean opening) {
+    private void filterTag(final char[] content, final char quotechar, final String tagname, final boolean opening) {
         assert tagname != null;
         
         if (this.tagStack.size() == 0) {
@@ -219,12 +221,14 @@ public final class TransformerWriter extends Writer {
             // we have a new tag
             if (opening) {
                 // case (2):
-                return filterTagOpening(tagname, content, quotechar);
+                filterTagOpening(tagname, content, quotechar);
+                return;
             }
 
             // its a close tag where no should be
             // case (3): we ignore that thing and return it again
-            return genTag0raw(tagname, false, content);
+            genTag0raw(tagname, false, content);
+            return;
 
         }
 
@@ -235,17 +239,17 @@ public final class TransformerWriter extends Writer {
         if (opening) {
             // case (5): the opening should not be here. But we keep the order anyway
             this.tagStack.lastElement().appendToContent(filterTagOpening(tagname, content, quotechar));
-            return new char[0];
+            return;
         }
 
         if (!tagname.equalsIgnoreCase(this.tagStack.lastElement().name)) {
             // case (6): its a closing tag, but the wrong one. just add it.
             this.tagStack.lastElement().appendToContent(genTag0raw(tagname, opening, content));
-            return new char[0];
+            return;
         }
 
-        // it's our closing tag! return complete result.
-        return filterTagCloseing(quotechar);
+        // it's our closing tag! process complete result.
+        filterTagCloseing(quotechar);
     }
 
     private char[] filterTagOpening(final String tagname, final char[] content, final char quotechar) {
@@ -253,11 +257,11 @@ public final class TransformerWriter extends Writer {
         ContentScraper.Tag tag = new ContentScraper.Tag(tagname, charBuffer.propParser());
         tag.setDepth(this.tagStack.size());
         charBuffer.close();
-        if (this.scraper != null && this.scraper.isTag0(tagname)) {
+        if (this.scraper.isTag0(tagname)) {
             // this single tag is collected at once here
             this.scraper.scrapeTag0(tag);
         }
-        if (this.scraper != null && this.scraper.isTag1(tagname)) {
+        if (this.scraper.isTag1(tagname)) {
             // ok, start collecting; we don't push this here to the scraper or transformer; we do that when the tag is closed.
             this.tagStack.push(tag);
             return new char[0];
@@ -267,32 +271,27 @@ public final class TransformerWriter extends Writer {
         }
     }
 
-    private char[] filterTagCloseing(final char quotechar) {
+    private void filterTagCloseing(final char quotechar) {
         char[] ret;
         ContentScraper.Tag tag = this.tagStack.lastElement();
         ret = genTag1(tag.name, tag.opts, tag.getContent(), quotechar);
-        if (this.scraper != null && this.scraper.isTag1(tag.name)) {
+        if (this.scraper.isTag1(tag.name)) {
             this.scraper.scrapeTag1(tag);
             // remove the tag from the stack as soon as the tag is processed
             this.tagStack.pop();
             // at this point the characters from the recently processed tag must be attached to the previous tag
             if (this.tagStack.size() > 0) this.tagStack.lastElement().appendToContent(ret);
         }
-        if (this.scraper != null && !this.scraper.isTag1(tag.name)) this.scraper.checkOpts(tag, new String(tag.getContent()));
-        return ret;
+        if (!this.scraper.isTag1(tag.name)) this.scraper.checkOpts(tag, new String(tag.getContent()));
     }
 
-    private char[] filterFinalize(final char quotechar) {
-        if (this.tagStack.size() == 0) {
-            return new char[0];
-        }
+    private void filterFinalize(final char quotechar) {
+        if (this.tagStack.size() == 0) return;
 
         // it's our closing tag! return complete result.
-        char[] ret;
-        if (this.scraper != null) this.scraper.scrapeTag1(this.tagStack.lastElement());
-        ret = genTag1(this.tagStack.lastElement().name, this.tagStack.lastElement().opts, this.tagStack.lastElement().getContent(), quotechar);
+        this.scraper.scrapeTag1(this.tagStack.lastElement());
+        genTag1(this.tagStack.lastElement().name, this.tagStack.lastElement().opts, this.tagStack.lastElement().getContent(), quotechar);
         this.tagStack.pop();
-        return ret;
     }
 
     private static int tagEnd(final char[] tag, final int start) {
@@ -314,7 +313,7 @@ public final class TransformerWriter extends Writer {
      * - commented text parts
      * - tags (opening and closing)
      * - text content between all these parts
-     * The tokens are then parsed with the filterSentence method
+     * The tokens are then parsed with the tokenProcessor method
      */
     @Override
     public void write(final int c) throws IOException {
@@ -323,7 +322,6 @@ public final class TransformerWriter extends Writer {
             this.binaryUnsuspect = false;
         }
 
-        char[] filtered;
         if (this.inSingleQuote) {
             this.buffer.append(c);
             if (c == singlequote) this.inSingleQuote = false;
@@ -331,7 +329,7 @@ public final class TransformerWriter extends Writer {
             if ((c == rb) && (this.buffer.length() > 0 && this.buffer.charAt(0) == lb)) {
                 this.inSingleQuote = false;
                 // the tag ends here. after filtering: pass on
-                filtered = tokenProcessor(this.buffer.getChars(), singlequote);
+                tokenProcessor(this.buffer.getChars(), singlequote);
                 // this.buffer = new serverByteBuffer();
                 this.buffer.reset();
             }
@@ -342,7 +340,7 @@ public final class TransformerWriter extends Writer {
             if (c == rb && this.buffer.length() > 0 && this.buffer.charAt(0) == lb) {
                 this.inDoubleQuote = false;
                 // the tag ends here. after filtering: pass on
-                filtered = tokenProcessor(this.buffer.getChars(), doublequote);
+                tokenProcessor(this.buffer.getChars(), doublequote);
                 // this.buffer = new serverByteBuffer();
                 this.buffer.reset();
             }
@@ -354,7 +352,7 @@ public final class TransformerWriter extends Writer {
                 // comment is at end
                 this.inComment = false;
                 final char[] comment = this.buffer.getChars();
-                if (this.scraper != null) this.scraper.scrapeComment(comment);
+                this.scraper.scrapeComment(comment);
                 // this.buffer = new serverByteBuffer();
                 this.buffer.reset();
             }
@@ -375,14 +373,14 @@ public final class TransformerWriter extends Writer {
                 } else if (c == rb) {
                     this.buffer.append(c);
                     // the tag ends here. after filtering: pass on
-                    filtered = tokenProcessor(this.buffer.getChars(), doublequote);
+                    tokenProcessor(this.buffer.getChars(), doublequote);
                     // this.buffer = new serverByteBuffer();
                     this.buffer.reset();
                 } else if (c == lb) {
                     // this is an error case
                     // we consider that there is one rb missing
                     if (this.buffer.length() > 0) {
-                        filtered = tokenProcessor(this.buffer.getChars(), doublequote);
+                        tokenProcessor(this.buffer.getChars(), doublequote);
                     }
                     // this.buffer = new serverByteBuffer();
                     this.buffer.reset();
@@ -395,7 +393,7 @@ public final class TransformerWriter extends Writer {
                 if (c == lb) {
                     // the text ends here
                     if (this.buffer.length() > 0) {
-                        filtered = tokenProcessor(this.buffer.getChars(), doublequote);
+                        tokenProcessor(this.buffer.getChars(), doublequote);
                     }
                     // this.buffer = new serverByteBuffer();
                     this.buffer.reset();
@@ -422,7 +420,7 @@ public final class TransformerWriter extends Writer {
 
     @Override
     public void flush() throws IOException {
-        if (this.scraper != null) this.scraper.finish();
+        this.scraper.finish();
         // if you want to flush all, call close() at end of writing;
     }
 
@@ -431,16 +429,14 @@ public final class TransformerWriter extends Writer {
         flush();
         final char quotechar = (this.inSingleQuote) ? singlequote : doublequote;
         if (this.buffer != null) {
-            if (this.buffer.length() > 0) {
-                final char[] filtered = tokenProcessor(this.buffer.getChars(), quotechar);
-            }
+            if (this.buffer.length() > 0) tokenProcessor(this.buffer.getChars(), quotechar);
             this.buffer.close();
             this.buffer = null;
         }
-        final char[] finalized = filterFinalize(quotechar);
+        filterFinalize(quotechar);
         this.tagStack.clear();
         this.tagStack = null;
-        if (this.scraper != null) this.scraper.finish();
+        this.scraper.finish();
     }
 
     private static boolean binaryHint(final char c) {
