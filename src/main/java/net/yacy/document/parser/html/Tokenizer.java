@@ -242,6 +242,7 @@ public final class Tokenizer extends Writer {
      * @return a processed version of the token
      */
     private void tokenProcessor(final char[] in, final char quotechar) {
+        
         if (in.length == 0) return;
         
         // scan the string and parse structure
@@ -346,14 +347,15 @@ public final class Tokenizer extends Writer {
         // we are collection tag text for the tag 'filterTag' -> case (4) - (7)
         if (tagname.equals("!")) processTag(content);
 
-        // it's a tag! which one?
+        // it's an opening tag:
         if (opening) {
-            // case (5): the opening should not be here. But we keep the order anyway
+            // case (5): this opening is right after a previous one. Its a branch in a tree.
             Tag parentTag = this.tagStack.lastElement();
             parentTag.appendToContent(processTagOpening(tagname, content, quotechar));
             return;
         }
 
+        // it's a closing tag:
         Tag peerTag = this.tagStack.lastElement();
         if (!tagname.equalsIgnoreCase(peerTag.getName())) {
             // case (6): its a closing tag, but the wrong one. just add it.
@@ -362,6 +364,8 @@ public final class Tokenizer extends Writer {
         }
 
         // it's our closing tag! process complete result.
+        // we do not need to pass here anything to the close process because we are closing
+        // the one tag which is resting on top of the processing tagStack.
         processTagCloseing(quotechar);
     }
 
@@ -387,19 +391,29 @@ public final class Tokenizer extends Writer {
         }
     }
 
+    /**
+     * This method is called if a tag was closed. No attribute is passed here
+     * because the topmost element of the tagStack is the one which should be closed.
+     * @param quotechar
+     */
     private void processTagCloseing(final char quotechar) {
         assert this.tagStack.size() > 0;
-        Tag childTag = this.tagStack.lastElement();
-        char[] childTagText = childTag.toChars(quotechar);
+        Tag childTag = this.tagStack.lastElement(); // thats the one which shall be closed. It's called child because it relates to another elder one.
+        // we run this only if the tag is also a tag1 type. We should consider that this is always the case.
         if (Tag.isTag1(childTag.getName())) {
+            // scrape it. Thats the first moment the scraper sees it's content, only if it is closed / processed here.
             this.scraper.scrapeTag1(childTag);
             // remove the tag from the stack as soon as the tag is processed
             this.topmostTag = this.tagStack.pop(); // it's the same as the child tag but that tag is now removed from the stack
             // at this point the characters from the recently processed tag must be attached to the previous tag
             if (this.tagStack.size() > 0) {
                 Tag elderTag = this.tagStack.lastElement();
+                if (elderTag.getName().equals("div") && childTag.getName().equals("div")) {
+                    System.out.println();
+                }
                 // we append two attributes here: the textual content of the tag and the logical content from microdata parsing
                 // - append the reconstructed tag text
+                char[] childTagText = childTag.toChars(quotechar);
                 elderTag.appendToContent(childTagText);
                 // - append microdata
                 elderTag.addChildToParent(childTag);

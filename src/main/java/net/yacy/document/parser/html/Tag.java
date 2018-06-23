@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import ai.susi.json.JsonLDNode;
@@ -156,49 +157,63 @@ public class Tag {
         this.ld = new JsonLDNode();
         this.content = new CharBuffer(MAX_TAGSIZE);
     }
+    
     public void close() {
         this.name = null;
         this.opts = null;
         if (this.content != null) this.content.close();
         this.content = null;
     }
+    
     public String getName() {
         return this.name;
     }
+    
     public Properties getProperties() {
         return this.opts;
     }
+    
     public boolean hasName(String name) {
         return this.name.equalsIgnoreCase(name);
     }
+    
     public boolean hasProperty(String key) {
         return this.opts.containsKey(key);
     }
+    
     public String getProperty(String key) {
         return this.opts.getProperty(key);
     }
+    
     public String getProperty(String key, String defaultValue) {
         return this.opts.getProperty(key, defaultValue);
     }
+    
     public void setProperty(String key, String value) {
         this.opts.setProperty(key, value);
     }
+    
     public JsonLDNode ld() {
         return this.ld;
     }
+    
     public char[] getContent() {
         return this.content.getChars();
     }
+    
     public int getContenLength() {
         return this.content.length();
     }
+    
     public void appendToContent(char[] chars) {
         this.content.append(chars);
     }
+    
     public void addFlatToParent(Tag peer) {
         peer.learnLdFromProperties();
         this.ld.putAll(peer.ld);
     }
+    
     public void addChildToParent(Tag child) {
         child.learnLdFromProperties();
         // We call this method to give a hint that the new node data comes from a sub-structure of the html
@@ -206,8 +221,24 @@ public class Tag {
         // if the parent has the "itemprop" or "property" property
         String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
         if (itemprop == null) {
-            // not a child
-            this.ld.putAll(child.ld);
+            // not a child but we still must collect double entries and collect them into arrays
+            for (String key: child.ld.keySet()) {
+                if (this.ld.has(key)) {
+                    // prevent overwriting by creation or extension of an array
+                    Object o0 = this.ld.get(key);
+                    Object o1 = child.ld.get(key);
+                    if (o0 instanceof JSONArray) {
+                        ((JSONArray) o0).put(o1);
+                    } else {
+                        JSONArray a = new JSONArray();
+                        a.put(o0);
+                        a.put(o1);
+                        this.ld.put(key, a);
+                    }
+                } else {
+                    this.ld.put(key, child.ld.get(key));
+                }
+            }
         } else {
             // a child
             // check if the item is already set because then the new node must be appended to existing data
@@ -218,6 +249,7 @@ public class Tag {
             }
         }
     }
+    
     public char[] genOpts(final char quotechar) {
         if (this.opts.isEmpty()) return null;
         final Enumeration<?> e = this.opts.propertyNames();
@@ -249,16 +281,15 @@ public class Tag {
         String vocab = this.opts.getProperty("vocab", null); // RDFa
         if (vocab != null) {
             this.ld.addContext(null, vocab);
-            String typeof = this.opts.getProperty("typeof", null);
-            if (typeof != null) {
-                this.ld.addType(typeof);
-                return;
-            }
+        }
+        String typeof = this.opts.getProperty("typeof", null);
+        if (typeof != null) {
+            this.ld.addType(typeof);
         }
         
         // itemprop (schema.org)
         String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
-        if (itemprop != null && !this.ld.has(itemprop)) {
+        if (itemprop != null) {
             // set content text but do not overwrite properties to prevent that we overwrite embedded objects
             String content_text = null;
             if (this.opts.containsKey("content")) {
@@ -270,7 +301,9 @@ public class Tag {
                 content_text = stripAllTags(this.getContent());
             }
             if (content_text != null) {
-                this.ld.setPredicate(itemprop, content_text);
+                if (!this.ld.has(itemprop) || (this.ld.get(itemprop) instanceof JSONObject && this.ld.getJSONObject(itemprop).length() == 0)) {
+                    this.ld.setPredicate(itemprop, content_text);
+                }
             }
         }
     }
