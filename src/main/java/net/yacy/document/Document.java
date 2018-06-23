@@ -55,7 +55,7 @@ import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.cora.lod.vocabulary.Tagging;
 import net.yacy.cora.util.ByteBuffer;
 
-import net.yacy.document.parser.html.ContentScraper;
+import net.yacy.document.parser.html.Scraper;
 import net.yacy.document.parser.html.IconEntry;
 import net.yacy.document.parser.html.ImageEntry;
 import net.yacy.grid.mcp.Data;
@@ -200,9 +200,9 @@ public class Document {
      */
     public void setScraperObject(Object scraper) {
         if (this.scraperObject != null) {
-            if (this.scraperObject instanceof ContentScraper) {
+            if (this.scraperObject instanceof Scraper) {
                 // support garbage collection
-                ((ContentScraper) this.scraperObject).close();
+                ((Scraper) this.scraperObject).close();
             }
             this.scraperObject = null;
         }
@@ -999,8 +999,8 @@ dc_rights
         // clean up parser data
         for (final Document doc: docs) {
             Object scraper = doc.getScraperObject();
-            if (scraper instanceof ContentScraper) {
-                final ContentScraper html = (ContentScraper) scraper;
+            if (scraper instanceof Scraper) {
+                final Scraper html = (Scraper) scraper;
                 html.close();
                 doc.scraperObject = null;
             }
@@ -1048,8 +1048,8 @@ dc_rights
                 }
             }
             final Object scraper = d.getScraperObject();
-            if (scraper instanceof ContentScraper) {
-                final ContentScraper html = (ContentScraper) scraper;
+            if (scraper instanceof Scraper) {
+                final Scraper html = (Scraper) scraper;
                 String refresh = html.getRefreshPath();
                 if (refresh != null && refresh.length() > 0) try {result.put(new AnchorURL(refresh), "refresh");} catch (final MalformedURLException e) {}
                 AnchorURL canonical = html.getCanonical();

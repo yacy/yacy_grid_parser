@@ -48,7 +48,7 @@ import net.yacy.cora.protocol.ResponseHeader;
 import net.yacy.document.DateDetection;
 import net.yacy.document.Document;
 import net.yacy.document.SentenceReader;
-import net.yacy.document.parser.html.ContentScraper;
+import net.yacy.document.parser.html.Scraper;
 import net.yacy.document.parser.html.ImageEntry;
 import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.tools.AnchorURL;
@@ -275,8 +275,8 @@ public class WebConfiguration implements Serializable {
         final Object scraper = document.getScraperObject();
         MultiProtocolURL canonical = null;
         
-        if (scraper instanceof ContentScraper) {
-            final ContentScraper html = (ContentScraper) scraper;
+        if (scraper instanceof Scraper) {
+            final Scraper html = (Scraper) scraper;
             List<ImageEntry> images = html.getImages();
 
             // header tags

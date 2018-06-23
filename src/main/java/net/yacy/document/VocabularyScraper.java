@@ -27,7 +27,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import net.yacy.grid.tools.MultiProtocolURL;
-import net.yacy.kelondro.io.CharBuffer;
 
 public class VocabularyScraper {
 
@@ -71,7 +70,7 @@ public class VocabularyScraper {
         return this.scraperDefinition.toString();
     }
     
-    public void check(MultiProtocolURL root, String className, CharBuffer content) {
+    public void check(MultiProtocolURL root, String className, char[] content) {
         if (this.classVocabulary == null) return;
         String voc = this.classVocabulary.get(className);
         if (voc == null) return;
@@ -83,7 +82,7 @@ public class VocabularyScraper {
                 this.vocMap.put(root, vocmap);
             }
         }
-        if (!vocmap.containsKey(voc)) vocmap.put(voc, content.toString()); // we put only the first occurrence of the entity into the vocmap
+        if (!vocmap.containsKey(voc)) vocmap.put(voc, new String(content)); // we put only the first occurrence of the entity into the vocmap
     }
     
     public Map<String, String> removeVocMap(MultiProtocolURL root) {

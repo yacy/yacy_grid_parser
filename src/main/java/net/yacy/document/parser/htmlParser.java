@@ -43,9 +43,9 @@ import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
-import net.yacy.document.parser.html.ContentScraper;
+import net.yacy.document.parser.html.Scraper;
 import net.yacy.document.parser.html.ImageEntry;
-import net.yacy.document.parser.html.TransformerWriter;
+import net.yacy.document.parser.html.Tokenizer;
 import net.yacy.kelondro.util.FileUtils;
 
 import com.ibm.icu.text.CharsetDetector;
@@ -99,7 +99,7 @@ public class htmlParser extends AbstractParser implements Parser {
         try {
             // first get a document from the parsed html
             Charset[] detectedcharsetcontainer = new Charset[]{null};
-            ContentScraper scraper = parseToScraper(location, documentCharset, vocscraper, detectedcharsetcontainer, timezoneOffset, sourceStream, maxLinks);
+            Scraper scraper = parseToScraper(location, documentCharset, vocscraper, detectedcharsetcontainer, timezoneOffset, sourceStream, maxLinks);
             // parseToScraper also detects/corrects/sets charset from html content tag
             final Document document = transformScraper(location, mimeType, detectedcharsetcontainer[0].name(), scraper);
             return new Document[]{document};
@@ -116,7 +116,7 @@ public class htmlParser extends AbstractParser implements Parser {
      * @param scraper
      * @return a Document instance
      */
-    private Document transformScraper(final MultiProtocolURL location, final String mimeType, final String charSet, final ContentScraper scraper) {
+    private Document transformScraper(final MultiProtocolURL location, final String mimeType, final String charSet, final Scraper scraper) {
         final String[] sections = new String[
                  scraper.getHeadlines(1).length +
                  scraper.getHeadlines(2).length +
@@ -157,7 +157,7 @@ public class htmlParser extends AbstractParser implements Parser {
         return ppd;
     }
 
-    public static ContentScraper parseToScraper(final MultiProtocolURL location, final String documentCharset, final VocabularyScraper vocabularyScraper, final int timezoneOffset, final String input, final int maxLinks) throws IOException {
+    public static Scraper parseToScraper(final MultiProtocolURL location, final String documentCharset, final VocabularyScraper vocabularyScraper, final int timezoneOffset, final String input, final int maxLinks) throws IOException {
         Charset[] detectedcharsetcontainer = new Charset[]{null};
         InputStream sourceStream;
         try {
@@ -165,7 +165,7 @@ public class htmlParser extends AbstractParser implements Parser {
         } catch (UnsupportedEncodingException e) {
             sourceStream = new ByteArrayInputStream(UTF8.getBytes(input));
         }
-        ContentScraper scraper; // for this static methode no need to init local this.scraperObject
+        Scraper scraper; // for this static methode no need to init local this.scraperObject
         try {
             scraper = parseToScraper(location, documentCharset, vocabularyScraper, detectedcharsetcontainer, timezoneOffset, sourceStream, maxLinks);
         } catch (Failure e) {
@@ -174,7 +174,7 @@ public class htmlParser extends AbstractParser implements Parser {
         return scraper;
     }
     
-    public static ContentScraper parseToScraper(
+    public static Scraper parseToScraper(
             final MultiProtocolURL location,
             final String documentCharset,
             final VocabularyScraper vocabularyScraper,
@@ -216,8 +216,8 @@ public class htmlParser extends AbstractParser implements Parser {
         
         // parsing the content
         // for this static methode no need to init local this.scraperObject here
-        final ContentScraper scraper = new ContentScraper(location, maxLinks, vocabularyScraper, timezoneOffset);
-        final TransformerWriter writer = new TransformerWriter(scraper);
+        final Scraper scraper = new Scraper(location, maxLinks, vocabularyScraper, timezoneOffset);
+        final Tokenizer writer = new Tokenizer(scraper);
         try {
             FileUtils.copy(sourceStream, writer, detectedcharsetcontainer[0]);
         } catch (final IOException e) {
