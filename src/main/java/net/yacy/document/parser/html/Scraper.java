@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -71,11 +70,6 @@ public class Scraper {
 
     protected static final String EMPTY_STRING = new String();
 
-    public static final char sp = ' ';
-    public static final char lb = '<';
-    public static final char rb = '>';
-    public static final char sl = '/';
-
     private static final Pattern LB = Pattern.compile("\n");
 
     // class variables: collectors for links
@@ -101,7 +95,6 @@ public class Scraper {
     private final int timezoneOffset;
     private int breadcrumbs;
     private JsonLDNode ld;
-    private Stack<JsonLDNode> ldStack;
 
     /** links to icons that belongs to the document (mapped by absolute URL)*/
     private final Map<MultiProtocolURL, IconEntry> icons;
@@ -165,11 +158,14 @@ public class Scraper {
         this.canonical = null;
         this.publisher = null;
         this.breadcrumbs = 0;
-        this.ld = new JsonLDNode();
-        this.ldStack = new Stack<>();
+        this.ld = null;
     }
-
-    public JsonLDNode ld() {
+    
+    public void setLd(JsonLDNode ld) {
+        this.ld = ld;
+    }
+    
+    public JsonLDNode getLd() {
         return this.ld;
     }
     
@@ -239,7 +235,7 @@ public class Scraper {
             break location;
         }
         // find tags inside text
-        String b = cleanLine(stripAllTags(newtext));
+        String b = cleanLine(Tag.stripAllTags(newtext));
         if ((insideTag != null) && (!(insideTag.equals("a")))) {
             // texts inside tags sometimes have no punctuation at the line end
             // this is bad for the text semantics, because it is not possible for the
@@ -297,55 +293,16 @@ public class Scraper {
         }
     }
     
-    public void checkOpts(Tag tag, String content_text) {
+    public void checkOpts(Tag tag) {
         //System.out.println("### " + tag.toString());
         // vocabulary classes
         final String classprop = tag.getProperty("class", EMPTY_STRING);
         if (this.vocabularyScraper != null) this.vocabularyScraper.check(this.root, classprop, tag.getContent());
 
-        String itemtype = tag.getProperty("itemtype", null); // microdata
-        if (itemtype != null) {
-            this.ld.addContext(null, itemtype);
-            return;
-        }
-        
-        String vocab = tag.getProperty("vocab", null); // RDFa
-        if (vocab != null) {
-            this.ld.addContext(null, vocab);
-            String typeof = tag.getProperty("typeof", null);
-            if (typeof != null) {
-                this.ld.addType(typeof);
-                return;
-            }
-        }
-        
         // itemprop (schema.org)
         String itemprop = tag.getProperty("itemprop", tag.getProperty("property", null));
         if (itemprop != null) {
-            // content text
-            if (content_text == null && tag.hasProperty("content")) {
-                content_text = tag.getProperty("content");
-            }
-            if (content_text != null) {
-                // in case that the current predicate is on a lower level than the already stored, make a sub-object
-                if (tag.getDepth() < this.ld.getDepth()) {
-                    JsonLDNode deep = this.ld;
-                    this.ld = this.ldStack.isEmpty() ? new JsonLDNode() : this.ldStack.pop();
-                    this.ld.setPredicate(itemprop, deep);
-                } if (tag.getDepth() > this.ld.getDepth()) {
-                    // stack the current object and move on with fresh object
-                    if (!this.ld.isEmpty()) {
-                        this.ldStack.push(this.ld);
-                        //System.out.println("push to stack: " + this.ld.toString());
-                        this.ld = new JsonLDNode();
-                    }
-                    this.ld.setPredicate(itemprop, content_text);
-                } else {
-                    this.ld.setPredicate(itemprop, content_text);
-                }
-                this.ld.setDepth(tag.getDepth());
-            }
-            
+
             // special content (legacy, pre-JSON-LD-parsing)
             String propval = tag.getProperty("content"); // value for <meta itemprop="" content=""> see https://html.spec.whatwg.org/multipage/microdata.html#values
             if (propval == null) propval = tag.getProperty("datetime"); // html5 + schema.org#itemprop example: <time itemprop="startDate" datetime="2016-01-26">today</time> while each prop is optional
@@ -443,7 +400,7 @@ public class Scraper {
     }
 
     public void scrapeTag0(Tag tag) {
-        checkOpts(tag, null);
+        checkOpts(tag);
         if (tag.hasName("img")) {
             final String src = tag.getProperty("src", EMPTY_STRING);
             try {
@@ -599,8 +556,8 @@ public class Scraper {
     }
 
     public void scrapeTag1(Tag tag) {
-        String content_text = stripAllTags(tag.getContent());
-        checkOpts(tag, content_text);
+        String content_text = Tag.stripAllTags(tag.getContent());
+        checkOpts(tag);
         // System.out.println("ScrapeTag1: tag.tagname=" + tag.tagname + ", opts=" + tag.opts.toString() + ", text=" + UTF8.String(text));
         if (tag.hasName("a") && tag.getContenLength() < 2048) {
             String href = tag.getProperty("href", EMPTY_STRING);
@@ -712,27 +669,27 @@ public class Scraper {
     }
 
     private String recursiveParse(final AnchorURL linkurl, final char[] inlineHtml) {
-        if (inlineHtml.length < 14) return cleanLine(CharacterCoding.html2unicode(stripAllTags(inlineHtml)));
+        if (inlineHtml.length < 14) return cleanLine(CharacterCoding.html2unicode(Tag.stripAllTags(inlineHtml)));
 
         // start a new scraper to parse links inside this text
         // parsing the content
         final Scraper scraper = new Scraper(this.root, this.maxLinks, this.vocabularyScraper, this.timezoneOffset);
-        final Tokenizer writer = new Tokenizer(scraper);
+        final Tokenizer tokenizer = new Tokenizer(scraper, true);
         try {
-            FileUtils.copy(new CharArrayReader(inlineHtml), writer);
+            FileUtils.copy(new CharArrayReader(inlineHtml), tokenizer);
         } catch (final IOException e) {
             Data.logger.warn("", e);
-            return cleanLine(CharacterCoding.html2unicode(stripAllTags(inlineHtml)));
+            return cleanLine(CharacterCoding.html2unicode(Tag.stripAllTags(inlineHtml)));
         } finally {
             try {
-                writer.close();
+                tokenizer.close();
             } catch (final IOException e) {
             }
         }
         for (final AnchorURL entry: scraper.getAnchors()) {
             this.addAnchor(entry);
         }
-        String line = cleanLine(CharacterCoding.html2unicode(stripAllTags(scraper.content.getChars())));
+        String line = cleanLine(CharacterCoding.html2unicode(Tag.stripAllTags(scraper.content.getChars())));
         StringBuilder altakk = new StringBuilder();
         for (ImageEntry ie: scraper.images) {
             if (linkurl != null) {
@@ -1198,21 +1155,6 @@ public class Scraper {
         System.out.println("TEXT     :" + this.content.toString());
     }
 
-    public static String stripAllTags(final char[] s) {
-        final StringBuilder r = new StringBuilder(s.length);
-        int bc = 0;
-        for (final char c : s) {
-            if (c == lb) {
-                bc++;
-                if (r.length() > 0 && r.charAt(r.length() - 1) != sp) r.append(sp);
-            } else if (c == rb) {
-                bc--;
-            } else if (bc <= 0) {
-                r.append(c);
-            }
-        }
-        return r.toString().trim();
-    }
 
     protected final static String cleanLine(final String s) {
         final StringBuilder sb = new StringBuilder(s.length());

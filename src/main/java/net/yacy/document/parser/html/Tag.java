@@ -19,23 +19,32 @@
 
 package net.yacy.document.parser.html;
 
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import org.json.JSONObject;
+
+import ai.susi.json.JsonLDNode;
 import net.yacy.kelondro.io.CharBuffer;
 
 public class Tag {
     
     private final static int MAX_TAGSIZE = 1024 * 1024;
+
+    public static final char sp = ' ';
+    public static final char lb = '<';
+    public static final char rb = '>';
+    public static final char sl = '/';
     
     private static final Set<String> linkTags0 = new HashSet<String>(12,0.99f);
     private static final Set<String> linkTags1 = new HashSet<String>(15,0.99f);
     
     private String name;
     private Properties opts;
+    private JsonLDNode ld;
     private CharBuffer content;
-    private int depth = 0;
     
     static {
         for (final TagName tag: TagName.values()) {
@@ -73,7 +82,7 @@ public class Tag {
         bdo(TagType.pair),
         big(TagType.pair),
         blockquote(TagType.pair),
-        body(TagType.singleton), // scraped as singleton to get attached properties like 'class'
+        body(TagType.pair),
         br(TagType.singleton),
         button(TagType.pair),
         canvas(TagType.pair),
@@ -141,20 +150,11 @@ public class Tag {
     }
 
     
-    public Tag(final String name) {
-        this.name = name;
-        this.opts = new Properties();
-        this.content = new CharBuffer(MAX_TAGSIZE);
-    }
     public Tag(final String name, final Properties opts) {
         this.name = name;
         this.opts = opts;
+        this.ld = new JsonLDNode();
         this.content = new CharBuffer(MAX_TAGSIZE);
-    }
-    public Tag(final String name, final Properties opts, final CharBuffer content) {
-        this.name = name;
-        this.opts = opts;
-        this.content = content;
     }
     public void close() {
         this.name = null;
@@ -183,6 +183,9 @@ public class Tag {
     public void setProperty(String key, String value) {
         this.opts.setProperty(key, value);
     }
+    public JsonLDNode ld() {
+        return this.ld;
+    }
     public char[] getContent() {
         return this.content.getChars();
     }
@@ -192,18 +195,154 @@ public class Tag {
     public void appendToContent(char[] chars) {
         this.content.append(chars);
     }
-    public void setDepth(int d) {
-        this.depth = d;
+    public void addFlatToParent(Tag peer) {
+        peer.learnLdFromProperties();
+        this.ld.putAll(peer.ld);
     }
-    public int getDepth() {
-        return this.depth;
+    public void addChildToParent(Tag child) {
+        child.learnLdFromProperties();
+        // We call this method to give a hint that the new node data comes from a sub-structure of the html
+        // It may happen that we have sub-structures but still no child relationships. The child relationship is only here
+        // if the parent has the "itemprop" or "property" property
+        String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
+        if (itemprop == null) {
+            // not a child
+            this.ld.putAll(child.ld);
+        } else {
+            // a child
+            // check if the item is already set because then the new node must be appended to existing data
+            if (this.ld.has(itemprop) && this.ld.get(itemprop) instanceof JSONObject) {
+                this.ld.getJSONObject(itemprop).putAll(child.ld);
+            } else {
+                this.ld.put(itemprop, child.ld);
+            }
+        }
     }
+    public char[] genOpts(final char quotechar) {
+        if (this.opts.isEmpty()) return null;
+        final Enumeration<?> e = this.opts.propertyNames();
+        final CharBuffer bb = new CharBuffer(Scraper.MAX_DOCSIZE, this.opts.size() * 40);
+        String key;
+        while (e.hasMoreElements()) {
+            key = (String) e.nextElement();
+            bb.appendSpace().append(key).append('=').append(quotechar);
+            bb.append(this.opts.getProperty(key));
+            bb.append(quotechar);
+        }
+        final char[] result;
+        if (bb.length() > 0)
+            result = bb.getChars(1);
+        else
+            result = bb.getChars();
+        bb.close();
+        return result;
+    }
+    
+    public void learnLdFromProperties() {
+
+        String itemtype = this.opts.getProperty("itemtype", null); // microdata
+        if (itemtype != null) {
+            this.ld.addContext(null, itemtype);
+            return;
+        }
+        
+        String vocab = this.opts.getProperty("vocab", null); // RDFa
+        if (vocab != null) {
+            this.ld.addContext(null, vocab);
+            String typeof = this.opts.getProperty("typeof", null);
+            if (typeof != null) {
+                this.ld.addType(typeof);
+                return;
+            }
+        }
+        
+        // itemprop (schema.org)
+        String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
+        if (itemprop != null && !this.ld.has(itemprop)) {
+            // set content text but do not overwrite properties to prevent that we overwrite embedded objects
+            String content_text = null;
+            if (this.opts.containsKey("content")) {
+                // For RDFa and microdata the content property key is the same!
+                content_text = this.opts.getProperty("content");
+            } else {
+                // If no content is given within the tag properties, either the content of the tag or an embedded json-ld node is used.
+                // Embedded json-ld nodes are handled with the addChildToParent method. This here is for leaf objects.
+                content_text = stripAllTags(this.getContent());
+            }
+            if (content_text != null) {
+                this.ld.setPredicate(itemprop, content_text);
+            }
+        }
+    }
+        
     @Override
     public void finalize() {
         this.close();
     }
     @Override
     public String toString() {
-        return "<" + name + " " + opts + ">" + content + "</" + name + "> [" + this.depth + "]";
+        String s = "html:\n" + new String(toChars('"'));
+        s += "\nld:\n" + this.ld.toString(2);
+        return s;
+    }
+    
+    public char[] toChars(final char quotechar) {
+        char[] text = this.getContent();
+        boolean singleton = text.length == 0;
+        final char[] gt0 = this.tagHead(singleton, quotechar);
+        if (singleton) return gt0;
+        
+        final CharBuffer cb = new CharBuffer(Scraper.MAX_DOCSIZE, gt0, gt0.length + text.length + this.getName().length() + 3);
+        cb.append(text).append('<').append('/').append(this.getName()).append('>');
+        final char[] result = cb.getChars();
+        cb.close();
+        return result;
+    }
+
+    public static char[] toChars(final String tagname, final boolean opening, final char[] tagopts) {
+        final CharBuffer bb = new CharBuffer(Scraper.MAX_DOCSIZE, tagname.length() + tagopts.length + 3);
+        bb.append('<');
+        if (!opening) {
+            bb.append('/');
+        }
+        bb.append(tagname);
+        if (tagopts.length > 0) {
+            bb.append(tagopts);
+        }
+        bb.append('>');
+        final char[] result = bb.getChars();
+        bb.close();
+        return result;
+    }
+
+    private char[] tagHead(boolean singleton, final char quotechar) {
+        final char[] tagoptsx = this.genOpts(quotechar);
+        final CharBuffer bb = new CharBuffer(Scraper.MAX_DOCSIZE, this.getName().length() + ((tagoptsx == null) ? 0 : (tagoptsx.length + 1)) + this.getName().length() + 3);
+        bb.append('<').append(this.getName());
+        if (tagoptsx != null) {
+            bb.appendSpace();
+            bb.append(tagoptsx);
+        }
+        if (singleton) bb.append('/');
+        bb.append('>');
+        final char[] result = bb.getChars();
+        bb.close();
+        return result;
+    }
+    
+    public static String stripAllTags(final char[] s) {
+        final StringBuilder r = new StringBuilder(s.length);
+        int bc = 0;
+        for (final char c : s) {
+            if (c == lb) {
+                bc++;
+                if (r.length() > 0 && r.charAt(r.length() - 1) != sp) r.append(sp);
+            } else if (c == rb) {
+                bc--;
+            } else if (bc <= 0) {
+                r.append(c);
+            }
+        }
+        return r.toString().trim();
     }
 }

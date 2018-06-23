@@ -33,10 +33,9 @@ package net.yacy.document.parser.html;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Enumeration;
-import java.util.Properties;
 import java.util.Stack;
 
+import ai.susi.json.JsonLDNode;
 import net.yacy.document.parser.html.Tag.TagName;
 import net.yacy.kelondro.io.CharBuffer;
 
@@ -57,8 +56,10 @@ public final class Tokenizer extends Writer {
     private boolean inDoubleQuote;
     private boolean inComment;
     private boolean binaryUnsuspect;
+    private boolean recursively;
+    private Tag topmostTag;
     
-    public Tokenizer(final Scraper scraper) {
+    public Tokenizer(final Scraper scraper, boolean recursively) {
         this.scraper       = scraper;
         this.buffer        = new CharBuffer(Scraper.MAX_DOCSIZE, 64);
         this.tagStack      = new Stack<Tag>();
@@ -66,6 +67,8 @@ public final class Tokenizer extends Writer {
         this.inDoubleQuote = false;
         this.inComment     = false;
         this.binaryUnsuspect = true;
+        this.recursively = recursively;
+        this.topmostTag = null;
     }
 
     /*
@@ -178,7 +181,6 @@ public final class Tokenizer extends Writer {
 
     @Override
     public void write(final char b[], final int off, final int len) throws IOException {
-//      System.out.println(UTF8.String(b, off, len));
         if ((off | len | (b.length - (len + off)) | (off + len)) < 0) throw new IndexOutOfBoundsException();
         for (int i = off ; i < (len - off) ; i++) this.write(b[i]);
     }
@@ -191,6 +193,9 @@ public final class Tokenizer extends Writer {
 
     @Override
     public void close() throws IOException {
+        if (!this.recursively && this.topmostTag != null) {
+            System.out.println("Topmost Tag: "  + this.topmostTag.getName() + "\n" + new String(this.topmostTag.getContent()).trim());
+        }
         flush();
         final char quotechar = (this.inSingleQuote) ? singlequote : doublequote;
         if (this.buffer != null) {
@@ -205,7 +210,7 @@ public final class Tokenizer extends Writer {
     }
 
     private static boolean binaryHint(final char c) {
-        // space, punctiation and symbols, letters and digits (ASCII/latin)
+        // space, punctuation and symbols, letters and digits (ASCII/latin)
         //if (c >= 31 && c < 128) return false;
         if(c > 31) return false;
         //  8 = backspace
@@ -222,7 +227,9 @@ public final class Tokenizer extends Writer {
         return !this.binaryUnsuspect;
     }
     
-    
+    public JsonLDNode ld() {
+        return this.topmostTag == null ? new JsonLDNode() : this.topmostTag.ld();
+    }
     
     /*
      * Transformer
@@ -292,9 +299,8 @@ public final class Tokenizer extends Writer {
     // - (7) collecting data for a tag and getting the correct close tag for that collecting tag
     
     /**
-     * 
-     * @param content
-     * @return content or empty array
+     * We are collecting text (simply)
+     * @param content the text
      */
     private void processTag(final char[] content) {
         if (this.tagStack.size() == 0) {
@@ -306,11 +312,18 @@ public final class Tokenizer extends Writer {
 
         // we are collection tag text for the tag 'filterTag' -> case (4) - (7)
         // case (4): getting no tag, go on collecting content
-        this.scraper.scrapeText(content, this.tagStack.lastElement().getName());
-        
-        this.tagStack.lastElement().appendToContent(content);
+        Tag peerTag = this.tagStack.lastElement();
+        this.scraper.scrapeText(content, peerTag.getName());
+        peerTag.appendToContent(content);
     }
-            
+    
+    /**
+     * we are collecting a tag, either an opener or closer
+     * @param content everything which is inside the tag properties
+     * @param quotechar a quote character which is used
+     * @param tagname the name of the tag
+     * @param opening true if the tag is an opener tag, false if it is a closing tag
+     */
     private void processTag(final char[] content, final char quotechar, final String tagname, final boolean opening) {
         assert tagname != null;
         
@@ -325,8 +338,7 @@ public final class Tokenizer extends Writer {
             }
 
             // its a close tag where no should be
-            // case (3): we ignore that thing and return it again
-            genTag0raw(tagname, false, content);
+            // case (3): we just ignore that this happened
             return;
 
         }
@@ -337,13 +349,15 @@ public final class Tokenizer extends Writer {
         // it's a tag! which one?
         if (opening) {
             // case (5): the opening should not be here. But we keep the order anyway
-            this.tagStack.lastElement().appendToContent(processTagOpening(tagname, content, quotechar));
+            Tag parentTag = this.tagStack.lastElement();
+            parentTag.appendToContent(processTagOpening(tagname, content, quotechar));
             return;
         }
 
-        if (!tagname.equalsIgnoreCase(this.tagStack.lastElement().getName())) {
+        Tag peerTag = this.tagStack.lastElement();
+        if (!tagname.equalsIgnoreCase(peerTag.getName())) {
             // case (6): its a closing tag, but the wrong one. just add it.
-            this.tagStack.lastElement().appendToContent(genTag0raw(tagname, opening, content));
+            peerTag.appendToContent(Tag.toChars(tagname, false, content));
             return;
         }
 
@@ -354,11 +368,14 @@ public final class Tokenizer extends Writer {
     private char[] processTagOpening(final String tagname, final char[] content, final char quotechar) {
         final CharBuffer charBuffer = new CharBuffer(Scraper.MAX_DOCSIZE, content);
         Tag tag = new Tag(tagname, charBuffer.propParser());
-        tag.setDepth(this.tagStack.size());
         charBuffer.close();
         if (Tag.isTag0(tagname)) {
             // this single tag is collected at once here
             this.scraper.scrapeTag0(tag);
+            if (tagStack.size() > 0) {
+                Tag peerTag = this.tagStack.lastElement();
+                peerTag.addFlatToParent(tag);
+            }
         }
         if (Tag.isTag1(tagname)) {
             // ok, start collecting; we don't push this here to the scraper or transformer; we do that when the tag is closed.
@@ -366,92 +383,39 @@ public final class Tokenizer extends Writer {
             return new char[0];
         } else {
              // we ignore that thing and return it again
-            return genTag0raw(tagname, true, content);
+            return Tag.toChars(tagname, true, content);
         }
     }
 
     private void processTagCloseing(final char quotechar) {
-        char[] ret;
-        Tag tag = this.tagStack.lastElement();
-        ret = genTag1(tag.getName(), tag.getProperties(), tag.getContent(), quotechar);
-        if (Tag.isTag1(tag.getName())) {
-            this.scraper.scrapeTag1(tag);
+        assert this.tagStack.size() > 0;
+        Tag childTag = this.tagStack.lastElement();
+        char[] childTagText = childTag.toChars(quotechar);
+        if (Tag.isTag1(childTag.getName())) {
+            this.scraper.scrapeTag1(childTag);
             // remove the tag from the stack as soon as the tag is processed
-            this.tagStack.pop();
+            this.topmostTag = this.tagStack.pop(); // it's the same as the child tag but that tag is now removed from the stack
             // at this point the characters from the recently processed tag must be attached to the previous tag
-            if (this.tagStack.size() > 0) this.tagStack.lastElement().appendToContent(ret);
+            if (this.tagStack.size() > 0) {
+                Tag elderTag = this.tagStack.lastElement();
+                // we append two attributes here: the textual content of the tag and the logical content from microdata parsing
+                // - append the reconstructed tag text
+                elderTag.appendToContent(childTagText);
+                // - append microdata
+                elderTag.addChildToParent(childTag);
+                assert this.tagStack.size() > 0; // this is only here to be able to debug elderTag
+            } else {
+                childTag.learnLdFromProperties();
+            }
         }
-        if (!Tag.isTag1(tag.getName())) this.scraper.checkOpts(tag, new String(tag.getContent()));
     }
 
     private void processFinalize(final char quotechar) {
         if (this.tagStack.size() == 0) return;
 
         // it's our closing tag! return complete result.
-        this.scraper.scrapeTag1(this.tagStack.lastElement());
-        genTag1(this.tagStack.lastElement().getName(), this.tagStack.lastElement().getProperties(), this.tagStack.lastElement().getContent(), quotechar);
-        this.tagStack.pop();
+        this.topmostTag = this.tagStack.pop();
+        this.scraper.scrapeTag1(this.topmostTag);
     }
     
-
-    private static char[] genTag1(final String tagname, final Properties tagopts, final char[] text, final char quotechar) {
-            final char[] gt0 = genTag0(tagname, tagopts, quotechar);
-            final CharBuffer cb = new CharBuffer(Scraper.MAX_DOCSIZE, gt0, gt0.length + text.length + tagname.length() + 3);
-            cb.append(text).append('<').append('/').append(tagname).append('>');
-            final char[] result = cb.getChars();
-            cb.close();
-            return result;
-    }
-
-    
-    private static char[] genTag0raw(final String tagname, final boolean opening, final char[] tagopts) {
-            final CharBuffer bb = new CharBuffer(Scraper.MAX_DOCSIZE, tagname.length() + tagopts.length + 3);
-            bb.append('<');
-            if (!opening) {
-                bb.append('/');
-            }
-            bb.append(tagname);
-            if (tagopts.length > 0) {
-                bb.append(tagopts);
-            }
-            bb.append('>');
-            final char[] result = bb.getChars();
-            bb.close();
-            return result;
-    }
-
-    private static char[] genTag0(final String tagname, final Properties tagopts, final char quotechar) {
-            final char[] tagoptsx = (tagopts.isEmpty()) ? null : genOpts(tagopts, quotechar);
-            final CharBuffer bb = new CharBuffer(Scraper.MAX_DOCSIZE, tagname.length() + ((tagoptsx == null) ? 0 : (tagoptsx.length + 1)) + tagname.length() + 2);
-            bb.append('<').append(tagname);
-            if (tagoptsx != null) {
-                bb.appendSpace();
-                bb.append(tagoptsx);
-            }
-            bb.append('>');
-            final char[] result = bb.getChars();
-            bb.close();
-            return result;
-    }
-    
-    // a helper method for pretty-printing of properties for html tags
-    private static char[] genOpts(final Properties prop, final char quotechar) {
-            final Enumeration<?> e = prop.propertyNames();
-            final CharBuffer bb = new CharBuffer(Scraper.MAX_DOCSIZE, prop.size() * 40);
-            String key;
-            while (e.hasMoreElements()) {
-                key = (String) e.nextElement();
-                bb.appendSpace().append(key).append('=').append(quotechar);
-                bb.append(prop.getProperty(key));
-                bb.append(quotechar);
-            }
-            final char[] result;
-            if (bb.length() > 0)
-                result = bb.getChars(1);
-            else
-                result = bb.getChars();
-            bb.close();
-            return result;
-    }
-
 }

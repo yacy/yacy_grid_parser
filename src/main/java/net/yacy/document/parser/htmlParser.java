@@ -153,7 +153,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 scraper.getDate());
         ppd.setScraperObject(scraper);
         ppd.setIcons(scraper.getIcons());
-        ppd.ld().putAll(scraper.ld().simplify());
+        ppd.ld().putAll(scraper.getLd().simplify());
         return ppd;
     }
 
@@ -217,23 +217,24 @@ public class htmlParser extends AbstractParser implements Parser {
         // parsing the content
         // for this static methode no need to init local this.scraperObject here
         final Scraper scraper = new Scraper(location, maxLinks, vocabularyScraper, timezoneOffset);
-        final Tokenizer writer = new Tokenizer(scraper);
+        final Tokenizer tokenizer = new Tokenizer(scraper, false);
         try {
-            FileUtils.copy(sourceStream, writer, detectedcharsetcontainer[0]);
+            FileUtils.copy(sourceStream, tokenizer, detectedcharsetcontainer[0]);
         } catch (final IOException e) {
             throw new Parser.Failure("IO error:" + e.getMessage(), location);
         } finally {
-            writer.flush();
+            tokenizer.flush();
             //sourceStream.close(); keep open for multipe parsing (close done by caller)
-            writer.close();
+            tokenizer.close();
         }
         //OutputStream hfos = new htmlFilterOutputStream(null, scraper, null, false);
         //serverFileUtils.copy(sourceFile, hfos);
         //hfos.close();
-        if (writer.binarySuspect()) {
+        if (tokenizer.binarySuspect()) {
             final String errorMsg = "Binary data found in resource";
             throw new Parser.Failure(errorMsg, location);
         }
+        scraper.setLd(tokenizer.ld());
         return scraper;
     }
 
@@ -351,7 +352,7 @@ public class htmlParser extends AbstractParser implements Parser {
             // parse from an etherpad
             String etherpad = args[0];
             String apikey = args[1];
-            String[] pads = new String[] {"05cc1575f55de2dc82f20f9010d71358", "c8f2a54127f96b38a85623cb472e33cd"};
+            String[] pads = new String[] {/*"05cc1575f55de2dc82f20f9010d71358", */"c8f2a54127f96b38a85623cb472e33cd"};
             for (String padid: pads) {
                 try {
                     String content = ClientConnection.loadFromEtherpad(etherpad, apikey, padid);
