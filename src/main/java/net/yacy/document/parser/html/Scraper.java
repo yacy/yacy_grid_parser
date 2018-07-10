@@ -41,7 +41,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ai.susi.json.JsonLDNode;
+import ai.susi.json.JsonLD;
 import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.sorting.ClusteredScoreMap;
 import net.yacy.cora.storage.SizeLimitedMap;
@@ -94,7 +94,7 @@ public class Scraper {
     private final VocabularyScraper vocabularyScraper;
     private final int timezoneOffset;
     private int breadcrumbs;
-    private JsonLDNode ld;
+    private JsonLD ld;
 
     /** links to icons that belongs to the document (mapped by absolute URL)*/
     private final Map<MultiProtocolURL, IconEntry> icons;
@@ -161,11 +161,11 @@ public class Scraper {
         this.ld = null;
     }
     
-    public void setLd(JsonLDNode ld) {
+    public void setLd(JsonLD ld) {
         this.ld = ld;
     }
     
-    public JsonLDNode getLd() {
+    public JsonLD getLd() {
         return this.ld;
     }
     
@@ -674,7 +674,7 @@ public class Scraper {
         // start a new scraper to parse links inside this text
         // parsing the content
         final Scraper scraper = new Scraper(this.root, this.maxLinks, this.vocabularyScraper, this.timezoneOffset);
-        final Tokenizer tokenizer = new Tokenizer(scraper, true);
+        final Tokenizer tokenizer = new Tokenizer(scraper);
         try {
             FileUtils.copy(new CharArrayReader(inlineHtml), tokenizer);
         } catch (final IOException e) {

@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Stack;
 
-import ai.susi.json.JsonLDNode;
+import ai.susi.json.JsonLD;
 import net.yacy.document.parser.html.Tag.TagName;
 import net.yacy.kelondro.io.CharBuffer;
 
@@ -56,10 +56,9 @@ public final class Tokenizer extends Writer {
     private boolean inDoubleQuote;
     private boolean inComment;
     private boolean binaryUnsuspect;
-    private boolean recursively;
     private Tag topmostTag;
     
-    public Tokenizer(final Scraper scraper, boolean recursively) {
+    public Tokenizer(final Scraper scraper) {
         this.scraper       = scraper;
         this.buffer        = new CharBuffer(Scraper.MAX_DOCSIZE, 64);
         this.tagStack      = new Stack<Tag>();
@@ -67,7 +66,6 @@ public final class Tokenizer extends Writer {
         this.inDoubleQuote = false;
         this.inComment     = false;
         this.binaryUnsuspect = true;
-        this.recursively = recursively;
         this.topmostTag = null;
     }
 
@@ -193,9 +191,11 @@ public final class Tokenizer extends Writer {
 
     @Override
     public void close() throws IOException {
+        /*
         if (!this.recursively && this.topmostTag != null) {
             System.out.println("Topmost Tag: "  + this.topmostTag.getName() + "\n" + new String(this.topmostTag.getContent()).trim());
         }
+        */
         flush();
         final char quotechar = (this.inSingleQuote) ? singlequote : doublequote;
         if (this.buffer != null) {
@@ -227,8 +227,8 @@ public final class Tokenizer extends Writer {
         return !this.binaryUnsuspect;
     }
     
-    public JsonLDNode ld() {
-        return this.topmostTag == null ? new JsonLDNode() : this.topmostTag.ld();
+    public JsonLD ld() {
+        return this.topmostTag == null ? new JsonLD() : this.topmostTag.ld();
     }
     
     /*

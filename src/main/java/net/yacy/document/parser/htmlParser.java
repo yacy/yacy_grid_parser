@@ -153,7 +153,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 scraper.getDate());
         ppd.setScraperObject(scraper);
         ppd.setIcons(scraper.getIcons());
-        ppd.ld().putAll(scraper.getLd().simplify());
+        ppd.ld().putAll(scraper.getLd().getJSON());
         return ppd;
     }
 
@@ -217,11 +217,11 @@ public class htmlParser extends AbstractParser implements Parser {
         // parsing the content
         // for this static methode no need to init local this.scraperObject here
         final Scraper scraper = new Scraper(location, maxLinks, vocabularyScraper, timezoneOffset);
-        final Tokenizer tokenizer = new Tokenizer(scraper, false);
+        final Tokenizer tokenizer = new Tokenizer(scraper);
         try {
             FileUtils.copy(sourceStream, tokenizer, detectedcharsetcontainer[0]);
         } catch (final IOException e) {
-            throw new Parser.Failure("IO error:" + e.getMessage(), location);
+            throw new Parser.Failure("IO error:" + e.getMessage(), location, e);
         } finally {
             tokenizer.flush();
             //sourceStream.close(); keep open for multipe parsing (close done by caller)
@@ -335,7 +335,7 @@ public class htmlParser extends AbstractParser implements Parser {
                     new ByteArrayInputStream(context.getBytes("UTF-8")));
             return docs;
         } catch (Failure | InterruptedException e) {
-            throw new IOException(e.getMessage());
+            throw new IOException(e.getMessage(), e);
         }
     }
 

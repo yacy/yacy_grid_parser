@@ -27,6 +27,7 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import ai.susi.json.JsonLD;
 import ai.susi.json.JsonLDNode;
 import net.yacy.kelondro.io.CharBuffer;
 
@@ -44,7 +45,7 @@ public class Tag {
     
     private String name;
     private Properties opts;
-    private JsonLDNode ld;
+    private JsonLD ld;
     private CharBuffer content;
     
     static {
@@ -154,7 +155,7 @@ public class Tag {
     public Tag(final String name, final Properties opts) {
         this.name = name;
         this.opts = opts;
-        this.ld = new JsonLDNode();
+        this.ld = new JsonLD();
         this.content = new CharBuffer(MAX_TAGSIZE);
     }
     
@@ -193,7 +194,7 @@ public class Tag {
         this.opts.setProperty(key, value);
     }
     
-    public JsonLDNode ld() {
+    public JsonLD ld() {
         return this.ld;
     }
     
@@ -211,7 +212,7 @@ public class Tag {
     
     public void addFlatToParent(Tag peer) {
         peer.learnLdFromProperties();
-        this.ld.putAll(peer.ld);
+        this.ld.getCurrentNode().getJSON().putAll(peer.ld.getCurrentNode().getJSON());
     }
     
     public void addChildToParent(Tag child) {
@@ -220,32 +221,36 @@ public class Tag {
         // It may happen that we have sub-structures but still no child relationships. The child relationship is only here
         // if the parent has the "itemprop" or "property" property
         String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
+        JsonLDNode thisNode = this.ld.getCurrentNode();
+        JsonLDNode childNode = child.ld.getCurrentNode();
         if (itemprop == null) {
             // not a child but we still must collect double entries and collect them into arrays
-            for (String key: child.ld.keySet()) {
-                if (this.ld.has(key)) {
+            for (String key: childNode.getPredicates()) {
+                if (thisNode.hasPredicate(key)) {
                     // prevent overwriting by creation or extension of an array
-                    Object o0 = this.ld.get(key);
-                    Object o1 = child.ld.get(key);
+                    Object o0 = thisNode.getPredicateValue(key);
+                    Object o1 = childNode.getPredicateValue(key);
                     if (o0 instanceof JSONArray) {
                         ((JSONArray) o0).put(o1);
                     } else {
                         JSONArray a = new JSONArray();
                         a.put(o0);
                         a.put(o1);
-                        this.ld.put(key, a);
+                        thisNode.setPredicate(key, a);
                     }
                 } else {
-                    this.ld.put(key, child.ld.get(key));
+                    thisNode.setPredicate(key, childNode.getPredicateValue(key));
                 }
             }
+            if (childNode.hasType()) thisNode.setType(childNode.getType());
+            if (!this.ld.hasContext() && child.ld.hasContext()) this.ld.addContext(null, child.ld.getContext());
         } else {
             // a child
             // check if the item is already set because then the new node must be appended to existing data
-            if (this.ld.has(itemprop) && this.ld.get(itemprop) instanceof JSONObject) {
-                this.ld.getJSONObject(itemprop).putAll(child.ld);
+            if (thisNode.hasPredicate(itemprop) && thisNode.getPredicateValue(itemprop) instanceof JSONObject) {
+                thisNode.getJSON().getJSONObject(itemprop).putAll(childNode.getJSON());
             } else {
-                this.ld.put(itemprop, child.ld);
+                thisNode.setPredicate(itemprop, childNode.getJSON());
             }
         }
     }
@@ -284,7 +289,7 @@ public class Tag {
         }
         String typeof = this.opts.getProperty("typeof", null);
         if (typeof != null) {
-            this.ld.addType(typeof);
+            this.ld.addNode(typeof);
         }
         
         // itemprop (schema.org)
@@ -301,8 +306,9 @@ public class Tag {
                 content_text = stripAllTags(this.getContent());
             }
             if (content_text != null) {
-                if (!this.ld.has(itemprop) || (this.ld.get(itemprop) instanceof JSONObject && this.ld.getJSONObject(itemprop).length() == 0)) {
-                    this.ld.setPredicate(itemprop, content_text);
+                JsonLDNode thisNode = this.ld.getCurrentNode();
+                if (!thisNode.hasPredicate(itemprop) || (thisNode.getPredicateValue(itemprop) instanceof JSONObject && ((JSONObject) thisNode.getPredicateValue(itemprop)).length() == 0)) {
+                    thisNode.setPredicate(itemprop, content_text);
                 }
             }
         }
@@ -315,7 +321,7 @@ public class Tag {
     @Override
     public String toString() {
         String s = "html:\n" + new String(toChars('"'));
-        s += "\nld:\n" + this.ld.toString(2);
+        s += "\nld:\n" + this.ld.toString();
         return s;
     }
     
