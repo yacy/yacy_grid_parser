@@ -405,19 +405,16 @@ public final class Tokenizer extends Writer {
             this.scraper.scrapeTag1(childTag);
             // remove the tag from the stack as soon as the tag is processed
             this.topmostTag = this.tagStack.pop(); // it's the same as the child tag but that tag is now removed from the stack
+            
             // at this point the characters from the recently processed tag must be attached to the previous tag
             if (this.tagStack.size() > 0) {
-                Tag elderTag = this.tagStack.lastElement();
-                if (elderTag.getName().equals("div") && childTag.getName().equals("div")) {
-                    System.out.println();
-                }
+                this.topmostTag = this.tagStack.lastElement();
                 // we append two attributes here: the textual content of the tag and the logical content from microdata parsing
                 // - append the reconstructed tag text
                 char[] childTagText = childTag.toChars(quotechar);
-                elderTag.appendToContent(childTagText);
+                this.topmostTag.appendToContent(childTagText);
                 // - append microdata
-                elderTag.addChildToParent(childTag);
-                assert this.tagStack.size() > 0; // this is only here to be able to debug elderTag
+                this.topmostTag.addChildToParent(childTag);
             } else {
                 childTag.learnLdFromProperties();
             }

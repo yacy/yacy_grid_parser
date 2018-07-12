@@ -157,7 +157,7 @@ public class Document {
         this.lastModified = lastModified == null ? new Date() : lastModified;
         this.crawldepth = 999; // unknown yet
         this.scraperObject = null; // will be set by setScraperObject()
-        this.ld = new JSONObject();
+        this.ld = new JSONObject(true);
     }
 
     public JSONObject ld() {

@@ -215,41 +215,68 @@ public class Tag {
         this.ld.getCurrentNode().getJSON().putAll(peer.ld.getCurrentNode().getJSON());
     }
     
+    /**
+     * Called, if inside a tag another tag is embedded.
+     * The parent tag (this object) may learn it's semantic from the child by flat adding it,
+     * or it can be a sub-element of a current object.
+     * @param child the embedded tag
+     */
     public void addChildToParent(Tag child) {
+        
+        if (this.ld.graphSize() == 0 || (child.ld.hasContext() && !this.ld.hasContext())) {
+            child.learnLdFromProperties();
+            this.ld = child.ld;
+            return;
+        }
+        
+        JsonLDNode thisNode = this.ld.getCurrentNode();
+        JsonLDNode childNode = child.ld.getCurrentNode();
         child.learnLdFromProperties();
+
+        String typeof = this.opts.getProperty("typeof", null);
+        String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
+        
+        
         // We call this method to give a hint that the new node data comes from a sub-structure of the html
         // It may happen that we have sub-structures but still no child relationships. The child relationship is only here
         // if the parent has the "itemprop" or "property" property
-        String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
-        JsonLDNode thisNode = this.ld.getCurrentNode();
-        JsonLDNode childNode = child.ld.getCurrentNode();
         if (itemprop == null) {
             // not a child but we still must collect double entries and collect them into arrays
-            for (String key: childNode.getPredicates()) {
-                if (thisNode.hasPredicate(key)) {
-                    // prevent overwriting by creation or extension of an array
-                    Object o0 = thisNode.getPredicateValue(key);
-                    Object o1 = childNode.getPredicateValue(key);
-                    if (o0 instanceof JSONArray) {
-                        ((JSONArray) o0).put(o1);
+            if (thisNode.hasType() && childNode.hasType()) {
+                // both objects are graph elements of the parent node
+                this.ld.addNode();
+                this.ld.getCurrentNode().getJSON().putAll(childNode.getJSON());
+            } else {            
+                for (String key: childNode.getPredicates()) {
+                    if (thisNode.hasPredicate(key)) {
+                        // prevent overwriting by creation or extension of an array
+                        Object o0 = thisNode.getPredicateValue(key);
+                        Object o1 = childNode.getPredicateValue(key);
+                        if (o0 instanceof JSONArray) {
+                            ((JSONArray) o0).put(o1);
+                        } else {
+                            JSONArray a = new JSONArray();
+                            a.put(o0);
+                            a.put(o1);
+                            thisNode.setPredicate(key, a);
+                        }
                     } else {
-                        JSONArray a = new JSONArray();
-                        a.put(o0);
-                        a.put(o1);
-                        thisNode.setPredicate(key, a);
+                        thisNode.setPredicate(key, childNode.getPredicateValue(key));
                     }
-                } else {
-                    thisNode.setPredicate(key, childNode.getPredicateValue(key));
                 }
+                if (childNode.hasType()) thisNode.setType(childNode.getType());
             }
-            if (childNode.hasType()) thisNode.setType(childNode.getType());
             if (!this.ld.hasContext() && child.ld.hasContext()) this.ld.addContext(null, child.ld.getContext());
         } else {
             // a child
             // check if the item is already set because then the new node must be appended to existing data
+           
             if (thisNode.hasPredicate(itemprop) && thisNode.getPredicateValue(itemprop) instanceof JSONObject) {
                 thisNode.getJSON().getJSONObject(itemprop).putAll(childNode.getJSON());
             } else {
+                if (typeof != null) {
+                    childNode.setType(typeof);
+                }
                 thisNode.setPredicate(itemprop, childNode.getJSON());
             }
         }
@@ -287,13 +314,15 @@ public class Tag {
         if (vocab != null) {
             this.ld.addContext(null, vocab);
         }
+        
         String typeof = this.opts.getProperty("typeof", null);
-        if (typeof != null) {
-            this.ld.addNode(typeof);
+        String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
+        if (typeof != null && itemprop == null) {
+            this.ld.setType(typeof);
+            this.ld.addNode();
         }
         
         // itemprop (schema.org)
-        String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
         if (itemprop != null) {
             // set content text but do not overwrite properties to prevent that we overwrite embedded objects
             String content_text = null;
