@@ -261,7 +261,7 @@ public class Tag {
                             thisNode.setPredicate(key, a);
                         }
                     } else {
-                        thisNode.setPredicate(key, childNode.getPredicateValue(key));
+                        thisNode.getJSON().put(key, childNode.getJSON().get(key));
                     }
                 }
                 if (childNode.hasType()) thisNode.setType(childNode.getType());
@@ -274,9 +274,7 @@ public class Tag {
             if (thisNode.hasPredicate(itemprop) && thisNode.getPredicateValue(itemprop) instanceof JSONObject) {
                 thisNode.getJSON().getJSONObject(itemprop).putAll(childNode.getJSON());
             } else {
-                if (typeof != null) {
-                    childNode.setType(typeof);
-                }
+                //if (typeof != null) {childNode.setType(typeof);}
                 thisNode.setPredicate(itemprop, childNode.getJSON());
             }
         }
@@ -304,22 +302,31 @@ public class Tag {
     
     public void learnLdFromProperties() {
 
+        
         String itemtype = this.opts.getProperty("itemtype", null); // microdata
         if (itemtype != null) {
+            System.out.println("**CONTEXT " + itemtype);
             this.ld.addContext(null, itemtype);
             return;
         }
         
         String vocab = this.opts.getProperty("vocab", null); // RDFa
         if (vocab != null) {
+            System.out.println("**CONTEXT " + vocab);
             this.ld.addContext(null, vocab);
         }
         
         String typeof = this.opts.getProperty("typeof", null);
         String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
-        if (typeof != null && itemprop == null) {
-            this.ld.setType(typeof);
-            this.ld.addNode();
+        if (typeof != null) {
+            if (itemprop == null) {
+                System.out.println("**TYPE+NODE " + typeof);
+                this.ld.setType(typeof);
+                this.ld.addNode();
+            } else {
+                System.out.println("**TYPE      " + typeof);
+                this.ld.getCurrentNode().getJSON().getJSONObject(itemprop).put(JsonLD.TYPE, typeof);
+            }
         }
         
         // itemprop (schema.org)
@@ -338,6 +345,7 @@ public class Tag {
                 JsonLDNode thisNode = this.ld.getCurrentNode();
                 if (!thisNode.hasPredicate(itemprop) || (thisNode.getPredicateValue(itemprop) instanceof JSONObject && ((JSONObject) thisNode.getPredicateValue(itemprop)).length() == 0)) {
                     thisNode.setPredicate(itemprop, content_text);
+                    System.out.println("**PREDICATE key=" + itemprop + ", value=" + content_text);
                 }
             }
         }
