@@ -78,13 +78,15 @@ public final class TextParser {
     private static final Map<String, Object> denyMime = new ConcurrentHashMap<String, Object>();
     private static final Map<String, Object> denyExtensionx = new ConcurrentHashMap<String, Object>();
 
+    public final static Parser htmlParserReference = new htmlParser();
+    
     static {
         initParser(new apkParser());
         initParser(new bzipParser());
         initParser(new csvParser());
         initParser(new docParser());
         initParser(new gzipParser());
-        initParser(new htmlParser()); // called within rdfa parser
+        initParser(htmlParserReference); // called within rdfa parser
         initParser(new genericImageParser());
         initParser(new metadataImageParser());
         initParser(new linkScraperParser());
@@ -292,7 +294,7 @@ public final class TextParser {
         Thread.currentThread().setName("parsing + " + location.toString()); // set a name to get the address in Thread Dump
         for (final Parser parser: parsers) {
             	ByteArrayInputStream bis;
-            	if (mimeType.equals("text/plain") && parser.getName().equals("HTML Parser")) {
+            	if (mimeType.equals("text/plain") && parser == htmlParserReference) {
             	    // a hack to simulate html files .. is needed for NOLOAD queues. This throws their data into virtual text/plain messages.
             	    bis = new ByteArrayInputStream(UTF8.getBytes("<html><head></head><body><h1>" + UTF8.String(sourceArray) + "</h1></body><html>"));
             	} else {
