@@ -325,7 +325,11 @@ public class Tag {
                 this.ld.addNode();
             } else {
                 System.out.println("**TYPE      " + typeof);
-                this.ld.getCurrentNode().getJSON().getJSONObject(itemprop).put(JsonLD.TYPE, typeof);
+                JSONObject json = this.ld.getCurrentNode().getJSON();
+                if (!json.has(itemprop)) {
+                    json.put(itemprop, new JSONObject(true));
+                }
+                json.getJSONObject(itemprop).put(JsonLD.TYPE, typeof);                
             }
         }
         
