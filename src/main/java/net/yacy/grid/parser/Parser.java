@@ -143,7 +143,7 @@ public class Parser {
                     // This may actually not be in gzip format in case that a http process unzipped it already.
                     // In that case we simply ignore the exception and the sourcestream stays as it is
                 }
-    
+
                 // compute parsed documents
                 String crawlid = action.getStringAttr("id");
                 JSONObject crawl = SusiThought.selectData(data, "id", crawlid);
@@ -153,17 +153,24 @@ public class Parser {
                 JSONList targetgraph_object = new JSONList();
                 for (int i = 0; i < parsedDocuments.length(); i++) {
                     JSONObject docjson = parsedDocuments.getJSONObject(i);
-                    
-                    // create elasticsearch index line
                     String url = docjson.getString(WebMapping.url_s.name());
+
+                    // create elasticsearch index line
                     String urlid = Digest.encodeMD5Hex(url);
                     JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", urlid));
 
-                    // write web index document
-                    targetasset_object.add(bulkjson);
-                    //docjson.put("_id", id);
-                    targetasset_object.add(docjson);
-                    
+                    // omit documents which have a canonical tag and are not self-addressed canonical documents
+                    boolean is_canonical = false;
+                    String canonical_url = docjson.optString(WebMapping.canonical_s.name());
+                    if (canonical_url.length() > 0 && !url.equals(canonical_url)) is_canonical = false;
+
+                    // write web index document for canonical documents
+                    if (is_canonical) {
+                        targetasset_object.add(bulkjson);
+                        //docjson.put("_id", id);
+                        targetasset_object.add(docjson);
+                    }
+
                     // write graph document
                     if (targetgraph_object != null) {
                         targetgraph_object.add(bulkjson);
@@ -171,7 +178,7 @@ public class Parser {
                         //graphjson.put("_id", id);
                         targetgraph_object.add(graphjson);
                     }
-                    
+
                     // write crawler index
                     try {
                         CrawlerDocument crawlerDocument = CrawlerDocument.load(Data.gridIndex, urlid);
@@ -183,7 +190,7 @@ public class Parser {
                         Data.logger.warn("could not write crawler index", e);
                     }
                 }
-                
+
                 boolean storeToMessage = true; // debug version for now: always true TODO: set to false later
                 if (!storeToMessage) {
                     try {
