@@ -27,8 +27,11 @@ At this time, yacy_grid_parser is not provided in compiled form, you easily buil
     > cd yacy_grid_parser
     > gradle run
     
-This repository uses git submodules to integrate yacy_grid_mcp into yacy_grid_parser. This requires, that
-each subsequent
+This repository uses git submodules to integrate yacy_grid_mcp into yacy_grid_parser. In case that you clones this repository without the `--recursive` do now:
+
+    > git submodule update --init --recursive
+
+The submodules require, that each subsequent
 
     > git pull origin master
     
