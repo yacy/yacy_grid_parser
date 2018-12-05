@@ -95,6 +95,7 @@ public class Scraper {
     private final int timezoneOffset;
     private int breadcrumbs;
     private JsonLD ld;
+    private boolean googleoff;
 
     /** links to icons that belongs to the document (mapped by absolute URL)*/
     private final Map<MultiProtocolURL, IconEntry> icons;
@@ -159,6 +160,7 @@ public class Scraper {
         this.publisher = null;
         this.breadcrumbs = 0;
         this.ld = null;
+        this.googleoff = false; // if this is false, it means that we are outside of an googleoff event. If it is true, we are just between googleoff and googleon
     }
     
     public void setLd(JsonLD ld) {
@@ -174,6 +176,10 @@ public class Scraper {
     }
 
     public void scrapeText(final char[] newtext0, final String insideTag) {
+        if (this.googleoff) {
+            //System.out.println("SKIPPING TEXT:" + new String(newtext0));
+            return; // skip this
+        }
         // System.out.println("SCRAPE: " + UTF8.String(newtext));
         if (insideTag != null && (TagName.script.name().equals(insideTag) || TagName.style.name().equals(insideTag))) return;
         int p, pl, q, s = 0;
@@ -665,6 +671,14 @@ public class Scraper {
     }
 
     public void scrapeComment(final char[] comment) {
+        String s = new String(comment);
+        if (s.indexOf("googleoff:") >= 0) {
+            this.googleoff = true;
+        }
+        if (s.indexOf("googleon:") >= 0) {
+            this.googleoff = false;
+        }
+        //System.out.println("COMMENT:" + s);
         this.evaluationScores.match(Element.comment, LB.matcher(new String(comment)).replaceAll(" "));
     }
 
