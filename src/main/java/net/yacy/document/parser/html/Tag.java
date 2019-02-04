@@ -23,6 +23,8 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.Arrays;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -150,6 +152,8 @@ public class Tag {
             this.type = type;
         }
     }
+
+    private List<String> hrefAllowedTags = Arrays.asList("a", "area", "base", "link");
 
     
     public Tag(final String name, final Properties opts) {
@@ -301,8 +305,6 @@ public class Tag {
     }
     
     public void learnLdFromProperties() {
-
-        
         String itemtype = this.opts.getProperty("itemtype", null); // microdata
         if (itemtype != null) {
             System.out.println("**CONTEXT " + itemtype);
@@ -340,7 +342,7 @@ public class Tag {
             if (this.opts.containsKey("content")) {
                 // For RDFa and microdata the content property key is the same!
                 content_text = this.opts.getProperty("content");
-            } else if ((this.getName().equals("a")) && this.opts.containsKey("href")) {
+            } else if (hrefAllowedTags.contains(this.getName()) && this.opts.containsKey("href")) {
                 // For anchor tags it is common to take the 'content' from `href` attribute.
                 content_text = this.opts.getProperty("href");
             } else {
