@@ -341,7 +341,7 @@ public class Tag {
                 // For RDFa and microdata the content property key is the same!
                 content_text = this.opts.getProperty("content");
             } else if ((this.getName().equals("a")) && this.opts.containsKey("href")) {
-                // For anchor tags it is common to take the 'content'from `href` attribute.
+                // For anchor tags it is common to take the 'content' from `href` attribute.
                 content_text = this.opts.getProperty("href");
             } else {
                 // If no content is given within the tag properties, either the content of the tag or an embedded json-ld node is used.
