@@ -227,7 +227,7 @@ public class Tag {
      */
     public void addChildToParent(Tag child) {
         
-        if (this.ld.graphSize() == 0 || (child.ld.hasContext() && !this.ld.hasContext())) {
+        if (this.ld.graphSize() == 0 && (child.ld.hasContext() && !this.ld.hasContext())) {
             child.learnLdFromProperties();
             this.ld = child.ld;
             return;

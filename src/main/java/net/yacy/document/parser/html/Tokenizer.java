@@ -414,7 +414,6 @@ public final class Tokenizer extends Writer {
                 char[] childTagText = childTag.toChars(quotechar);
                 this.topmostTag.appendToContent(childTagText);
                 // - append microdata
-                this.topmostTag.learnLdFromProperties();
                 this.topmostTag.addChildToParent(childTag);
             } else {
                 childTag.learnLdFromProperties();
