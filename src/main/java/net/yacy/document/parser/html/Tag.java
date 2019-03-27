@@ -244,13 +244,14 @@ public class Tag {
         // We call this method to give a hint that the new node data comes from a sub-structure of the html
         // It may happen that we have sub-structures but still no child relationships. The child relationship is only here
         // if the parent has the "itemprop" or "property" property
-        if (itemprop == null) {
+        if (itemprop == null || itemprop.length() < 1) {
             // not a child but we still must collect double entries and collect them into arrays
             if (thisNode.hasType() && childNode.hasType()) {
                 // both objects are graph elements of the parent node
                 this.ld.addNode();
                 this.ld.getCurrentNode().getJSON().putAll(childNode.getJSON());
-            } else {            
+
+            } else {
                 for (String key: childNode.getPredicates()) {
                     if (thisNode.hasPredicate(key)) {
                         // prevent overwriting by creation or extension of an array
@@ -274,13 +275,7 @@ public class Tag {
         } else {
             // a child
             // check if the item is already set because then the new node must be appended to existing data
-           
-            if (thisNode.hasPredicate(itemprop) && thisNode.getPredicateValue(itemprop) instanceof JSONObject) {
-                thisNode.getJSON().getJSONObject(itemprop).putAll(childNode.getJSON());
-            } else {
-                //if (typeof != null) {childNode.setType(typeof);}
-                thisNode.setPredicate(itemprop, childNode.getJSON());
-            }
+            thisNode.addPredicate(itemprop, childNode.getJSON());
         }
     }
     
@@ -331,12 +326,18 @@ public class Tag {
                 if (!json.has(itemprop)) {
                     json.put(itemprop, new JSONObject(true));
                 }
-                json.getJSONObject(itemprop).put(JsonLD.TYPE, typeof);
+                if (json.get(itemprop) instanceof JSONArray) {
+                    for (Object jsonObject: json.getJSONArray(itemprop)) {
+                        ((JSONObject) jsonObject).put(JsonLD.TYPE, typeof);
+                    }
+                } else {
+                    json.getJSONObject(itemprop).put(JsonLD.TYPE, typeof);
+                }
             }
         }
         
         // itemprop (schema.org)
-        if (itemprop != null) {
+        if (itemprop != null && itemprop.length() > 0) {
             // set content text but do not overwrite properties to prevent that we overwrite embedded objects
             String content_text = null;
             if (this.opts.containsKey("content")) {
