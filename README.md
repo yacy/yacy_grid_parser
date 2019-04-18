@@ -51,7 +51,7 @@ First, crawl a site (here:publicplan.de):
     
 This produces the file "publicplan.de.warc.gz". That file can then be send to the hosted yacy_grid_parser with:
 
-    > curl -X POST -F "sourcebytes=@publicplan.de.warc.gz" -F "flatfile=true" -o "publicplan.de.flatjson" http://yacygrid.com:8500/yacy/grid/parser/parser.json
+    > curl -X POST -F "sourcebytes=@publicplan.de.warc.gz" -F "flatfile=true" -o "publicplan.de.flatjson" http://localhost:8500/yacy/grid/parser/parser.json
 
 The result is a file "publicplan.de.flatjson" with 774 single JSON objects, each printed in it's own line in the flatjson file.
 To index that file with legacy YaCy (YaCy/1.x) just copy it into the yacy_search_server/DATA/SURROGATES/in/ path.
