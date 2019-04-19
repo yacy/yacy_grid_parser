@@ -210,6 +210,10 @@ public class Response {
         this.status = newStatus;
     }
 
+    public RequestHeader getRequestHeader() {
+        return this.requestHeader;
+    }
+
     public ResponseHeader getResponseHeader() {
         return this.responseHeader;
     }

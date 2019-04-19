@@ -22,7 +22,12 @@ package net.yacy.grid.parser.api;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.AbstractMap;
+import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -47,6 +52,7 @@ import net.yacy.crawler.retrieval.Request;
 import net.yacy.crawler.retrieval.Response;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
+import net.yacy.document.Parser.Failure;
 import net.yacy.document.TextParser;
 import net.yacy.grid.http.APIHandler;
 import net.yacy.grid.http.ClientIdentification;
@@ -231,13 +237,83 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
     }
     
     /**
-     * WARC importer code from net.yacy.document.importer.WarcImporter.java 
+     * WARC importer code, original from net.yacy.document.importer.WarcImporter.java
+     * TODO: use original WARC request header instead of generated headers
      * @param f
      * @throws IOException
      */
     public static JSONArray indexWarcRecords(InputStream f, final Map<String, Pattern> collections) throws IOException {
 
-        JSONArray parsedDocuments = new JSONArray();
+        // create worker stacks
+        BlockingQueue<Response> responseQueue = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
+        BlockingQueue<Map.Entry<Response, Document>> bundleQueue = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
+        BlockingQueue<JSONObject> objectQueue = new LinkedBlockingQueue<>();
+
+        // create POISON objects
+        Response responsePoison = new Response(null, null, null, false, null);
+        Map.Entry<Response, Document> bundlePoison = new AbstractMap.SimpleEntry<>(null, null);
+
+        // create concurrent worker
+        Runnable parserWorker = new Runnable() {
+            @Override
+            public void run() {
+                Response response;
+                try {
+                    while ((response = responseQueue.take()) != responsePoison) {
+                        // parse the source to get a YaCy document
+                        Document[] documents;
+                        try {
+                            documents = TextParser.parseSource(
+                                new AnchorURL(response.url()), // or just use "location"?
+                                response.getMimeType(),
+                                response.getCharacterEncoding(),
+                                null, // no vocabulary scraper
+                                0, // no timezone offset
+                                response.depth(),
+                                response.getContent());
+                            for (Document d: documents) {
+                                bundleQueue.put(new AbstractMap.SimpleEntry<>(response, d));
+                            }
+                        } catch (Failure e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        Runnable documentCreator = new Runnable() {
+            @Override
+            public void run() {
+                Map.Entry<Response, Document> bundle;
+                try {
+                    while ((bundle = bundleQueue.take()) != bundlePoison) {
+                        JSONObject json = WebConfiguration.yacy2solr(
+                                collections, bundle.getKey().getResponseHeader(),
+                                bundle.getValue(), bundle.getKey().getRequestHeader().referer(), null /* language */, false,
+                                0 /* timezoneOffset */);
+                        objectQueue.put(json);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        // start worker
+        Thread[] parserThreads = new Thread[Runtime.getRuntime().availableProcessors()];
+        Thread[] documentThreads = new Thread[Runtime.getRuntime().availableProcessors()];
+        for (int i = 0; i < parserThreads.length; i++) {
+            parserThreads[i] = new Thread(parserWorker);
+            parserThreads[i].start();
+        }
+        for (int i = 0; i < documentThreads.length; i++) {
+            documentThreads[i] = new Thread(documentCreator);
+            documentThreads[i].start();
+        }
+
+        // read out WARC file
         byte[] content;
         int cnt = 0;
 
@@ -301,26 +377,9 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                         );
 
                         try {
-                            // parse the source to get a YaCy document
-                            Document[] documents =
-                                TextParser.parseSource(
-                                    new AnchorURL(response.url()), // or just use "location"?
-                                    response.getMimeType(),
-                                    response.getCharacterEncoding(),
-                                    null, // no vocabulary scraper
-                                    0, // no timezone offset
-                                    response.depth(),
-                                    response.getContent());
-                            // transform the YaCy document into a JSON
-                            for (Document d: documents) {
-                                JSONObject json = WebConfiguration.yacy2solr(
-                                        collections, responseHeader,
-                                        d, requestHeader.referer(), null /* language */, false,
-                                        0 /* timezoneOffset */);
-                                parsedDocuments.put(json);
-                            }
-                        } catch (Parser.Failure e) {
-                            Data.logger.warn("", e);
+                            responseQueue.put(response);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
                         }
                         cnt++;
                     }
@@ -330,7 +389,30 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             wrec = localwarcReader.getNextRecord();
         }
         localwarcReader.close();
-        Data.logger.info("Indexed " + cnt + " documents");
+        Data.logger.info("Processed " + cnt + " WARC documents");
+
+        // put poison into parser queues and wait for parser thread termination
+        for (int i = 0; i < parserThreads.length; i++) try {
+            responseQueue.put(responsePoison);
+        } catch (InterruptedException e) {}
+        for (int i = 0; i < parserThreads.length; i++) try {
+            parserThreads[i].join();
+        } catch (InterruptedException e) {}
+
+        // put poison into document queues and wait for document thread termination
+        for (int i = 0; i < documentThreads.length; i++) try {
+            bundleQueue.put(bundlePoison);
+        } catch (InterruptedException e) {}
+        for (int i = 0; i < documentThreads.length; i++) try {
+            documentThreads[i].join();
+        } catch (InterruptedException e) {}
+
+        // collect documents
+        JSONArray parsedDocuments = new JSONArray();
+        for (JSONObject object: objectQueue) parsedDocuments.put(object);
+
+        Data.logger.info("Created " + cnt + " JSON objects from " + cnt + " WARC documents");
+
         return parsedDocuments;
     }
 
