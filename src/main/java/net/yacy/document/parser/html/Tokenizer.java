@@ -373,22 +373,28 @@ public final class Tokenizer extends Writer {
         final CharBuffer charBuffer = new CharBuffer(Scraper.MAX_DOCSIZE, content);
         Tag tag = new Tag(tagname, charBuffer.propParser());
         charBuffer.close();
-        if (Tag.isTag0(tagname)) {
+        if (Tag.isTag0(tagname) || (tag.hasProperty("/") && tag.getProperty("/").isEmpty())) {
+            // This tag might not be allowed to ba a singleton tag, but as we are a search engine rather than a
+            // validator, we will overlook this and parse it as well. Otherwise we will end up with an opening tag on
+            // our tagStack, that is missing its appropriate closing tag and thus avoid correct processing of the
+            // contained json-ld data.
+            if (tag.hasProperty("/")) {
+                tag.getProperties().remove("/");
+            }
             // this single tag is collected at once here
             this.scraper.scrapeTag0(tag);
             if (tagStack.size() > 0) {
                 Tag peerTag = this.tagStack.lastElement();
                 peerTag.addFlatToParent(tag);
             }
-        }
-        if (Tag.isTag1(tagname)) {
+        } else if (Tag.isTag1(tagname)) {
             // ok, start collecting; we don't push this here to the scraper or transformer; we do that when the tag is closed.
             this.tagStack.push(tag);
             return new char[0];
-        } else {
-             // we ignore that thing and return it again
-            return Tag.toChars(tagname, true, content);
         }
+
+         // we ignore that thing and return it again
+        return Tag.toChars(tagname, true, content);
     }
 
     /**
