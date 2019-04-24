@@ -160,7 +160,7 @@ public class Parser {
                     JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", urlid));
 
                     // omit documents which have a canonical tag and are not self-addressed canonical documents
-                    boolean is_canonical = false;
+                    boolean is_canonical = true;
                     String canonical_url = docjson.optString(WebMapping.canonical_s.name());
                     if (canonical_url.length() > 0 && !url.equals(canonical_url)) is_canonical = false;
 
