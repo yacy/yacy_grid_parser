@@ -159,16 +159,33 @@ public class Parser {
                     String urlid = Digest.encodeMD5Hex(url);
                     JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", urlid));
 
+                    // load crawler entry
+                    CrawlerDocument crawlerDocument = CrawlerDocument.load(Data.gridIndex, urlid);
+
                     // omit documents which have a canonical tag and are not self-addressed canonical documents
                     boolean is_canonical = true;
                     String canonical_url = docjson.optString(WebMapping.canonical_s.name());
                     if (canonical_url.length() > 0 && !url.equals(canonical_url)) is_canonical = false;
 
-                    // write web index document for canonical documents
                     if (is_canonical) {
+                        // write web index document for canonical documents
                         targetasset_object.add(bulkjson);
                         //docjson.put("_id", id);
                         targetasset_object.add(docjson);
+                        // put success into crawler index
+                        crawlerDocument.setStatus(Status.parsed).setStatusDate(new Date()).setComment(docjson.optString(WebMapping.title.getMapping().name()));
+                    } else {
+                        // for non-canonical documents we suppress indexing and write to crawler index only
+                        crawlerDocument.setStatus(Status.noncanonical).setStatusDate(new Date()).setComment(docjson.optString("omitted, canonical: " + canonical_url));
+                    }
+
+                    // write crawler index
+                    try {
+                        crawlerDocument.store(Data.gridIndex);
+                        // check with http://localhost:9200/crawler/_search?q=status_s:parsed
+                    } catch (IOException e) {
+                        // well that should not happen
+                        Data.logger.warn("could not write crawler index", e);
                     }
 
                     // write graph document
@@ -177,17 +194,6 @@ public class Parser {
                         JSONObject graphjson = ParserService.extractGraph(docjson);
                         //graphjson.put("_id", id);
                         targetgraph_object.add(graphjson);
-                    }
-
-                    // write crawler index
-                    try {
-                        CrawlerDocument crawlerDocument = CrawlerDocument.load(Data.gridIndex, urlid);
-                        crawlerDocument.setStatus(Status.parsed).setStatusDate(new Date()).setComment(docjson.optString(WebMapping.title.getMapping().name()));
-                        crawlerDocument.store(Data.gridIndex);
-                        // check with http://localhost:9200/crawler/_search?q=status_s:parsed
-                    } catch (IOException e) {
-                        // well that should not happen
-                        Data.logger.warn("could not write crawler index", e);
                     }
                 }
 
