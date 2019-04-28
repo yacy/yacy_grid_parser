@@ -183,7 +183,7 @@ public class Parser {
                     try {
                         CrawlerDocument crawlerDocument = CrawlerDocument.load(Data.gridIndex, urlid);
                         crawlerDocument.setStatus(Status.parsed).setStatusDate(new Date()).setComment(docjson.optString(WebMapping.title.getMapping().name()));
-                        crawlerDocument.store(Data.gridIndex, urlid);
+                        crawlerDocument.store(Data.gridIndex);
                         // check with http://localhost:9200/crawler/_search?q=status_s:parsed
                     } catch (IOException e) {
                         // well that should not happen
