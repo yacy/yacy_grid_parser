@@ -226,21 +226,20 @@ public class Tag {
      * @param child the embedded tag
      */
     public void addChildToParent(Tag child) {
-        
+
         if (this.ld.graphSize() == 0 && (child.ld.hasContext() && !this.ld.hasContext())) {
             child.learnLdFromProperties();
             this.ld = child.ld;
             return;
         }
-        
+
         JsonLDNode thisNode = this.ld.getCurrentNode();
         JsonLDNode childNode = child.ld.getCurrentNode();
         child.learnLdFromProperties();
 
-        String typeof = this.opts.getProperty("typeof", null);
+        //String typeof = this.opts.getProperty("typeof", null);
         String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
-        
-        
+
         // We call this method to give a hint that the new node data comes from a sub-structure of the html
         // It may happen that we have sub-structures but still no child relationships. The child relationship is only here
         // if the parent has the "itemprop" or "property" property
@@ -274,7 +273,7 @@ public class Tag {
         } else {
             // a child
             // check if the item is already set because then the new node must be appended to existing data
-           
+
             if (thisNode.hasPredicate(itemprop) && thisNode.getPredicateValue(itemprop) instanceof JSONObject) {
                 thisNode.getJSON().getJSONObject(itemprop).putAll(childNode.getJSON());
             } else {
@@ -307,14 +306,14 @@ public class Tag {
     public void learnLdFromProperties() {
         String itemtype = this.opts.getProperty("itemtype", null); // microdata
         if (itemtype != null) {
-            System.out.println("**CONTEXT " + itemtype);
+            //System.out.println("**CONTEXT " + itemtype);
             this.ld.addContext(null, itemtype);
             return;
         }
         
         String vocab = this.opts.getProperty("vocab", null); // RDFa
         if (vocab != null) {
-            System.out.println("**CONTEXT " + vocab);
+            //System.out.println("**CONTEXT " + vocab);
             this.ld.addContext(null, vocab);
         }
         
@@ -322,11 +321,11 @@ public class Tag {
         String itemprop = this.opts.getProperty("itemprop", this.opts.getProperty("property", null));
         if (typeof != null) {
             if (itemprop == null) {
-                System.out.println("**TYPE+NODE " + typeof);
+                //System.out.println("**TYPE+NODE " + typeof);
                 this.ld.setType(typeof);
                 this.ld.addNode();
             } else {
-                System.out.println("**TYPE      " + typeof);
+                //System.out.println("**TYPE      " + typeof);
                 JSONObject json = this.ld.getCurrentNode().getJSON();
                 if (!json.has(itemprop)) {
                     json.put(itemprop, new JSONObject(true));
@@ -354,7 +353,7 @@ public class Tag {
                 JsonLDNode thisNode = this.ld.getCurrentNode();
                 if (!thisNode.hasPredicate(itemprop) || (thisNode.getPredicateValue(itemprop) instanceof JSONObject && ((JSONObject) thisNode.getPredicateValue(itemprop)).length() == 0)) {
                     thisNode.setPredicate(itemprop, content_text);
-                    System.out.println("**PREDICATE key=" + itemprop + ", value=" + content_text);
+                    //System.out.println("**PREDICATE key=" + itemprop + ", value=" + content_text);
                 }
             }
         }
