@@ -108,7 +108,7 @@ public class Parser {
              super(service, Runtime.getRuntime().availableProcessors());
         }
 
-        public boolean processAction(SusiAction action, JSONArray data, String processName, int processNumber) {
+        public ActionResult processAction(SusiAction action, JSONArray data, String processName, int processNumber) {
             
             // check short memory status
             if (Memory.shortStatus()) {
@@ -119,7 +119,7 @@ public class Parser {
             String targetasset_path = action.getStringAttr("targetasset");
             String targetgraph_path = action.getStringAttr("targetgraph");
             if (targetasset_path == null || targetasset_path.length() == 0 ||
-                sourceasset_path == null || sourceasset_path.length() == 0) return false;
+                sourceasset_path == null || sourceasset_path.length() == 0) return ActionResult.FAIL_IRREVERSIBLE;
 
             byte[] source = null;
             if (action.hasAsset(sourceasset_path)) {
@@ -132,7 +132,7 @@ public class Parser {
                 Data.logger.warn("Parser.processAction", e);
                 // if we do not get the payload from the storage, we look for attached data in the action
                 Data.logger.warn("Parser.processAction could not load asset: " + sourceasset_path, e);
-                return false;
+                return ActionResult.FAIL_IRREVERSIBLE;
             }
             try{
                 InputStream sourceStream = null;
@@ -230,10 +230,10 @@ public class Parser {
                 }
                 Data.logger.info("Parser.processAction processed message from queue and stored asset " + targetasset_path);
     
-                return true;
+                return ActionResult.SUCCESS;
             } catch (Throwable e) {
                 Data.logger.warn("", e);
-                return false;
+                return ActionResult.FAIL_IRREVERSIBLE;
             }
         }
     }
