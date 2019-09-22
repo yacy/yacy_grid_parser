@@ -23,7 +23,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.AbstractMap;
-import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -51,7 +50,6 @@ import net.yacy.cora.protocol.ResponseHeader;
 import net.yacy.crawler.retrieval.Request;
 import net.yacy.crawler.retrieval.Response;
 import net.yacy.document.Document;
-import net.yacy.document.Parser;
 import net.yacy.document.Parser.Failure;
 import net.yacy.document.TextParser;
 import net.yacy.grid.http.APIHandler;
@@ -165,7 +163,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             String sourceurl = call.get("sourceurl", "");
             if (sourceurl.length() > 0) try {
                 MultiProtocolURL url = new MultiProtocolURL(sourceurl);
-                sourceStream = url.getInputStream(ClientIdentification.browserAgent, "anonymous", "");
+                sourceStream = url.getInputStream(ClientIdentification.browserAgent, "anonymous", "", true);
                 if (sourceurl.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
             } catch (IOException e) {
                 Data.logger.error(e.getMessage(), e);
