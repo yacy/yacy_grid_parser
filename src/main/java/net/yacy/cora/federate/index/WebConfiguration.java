@@ -630,9 +630,18 @@ public class WebConfiguration implements Serializable {
         add(doc, WebMapping.audiolinkscount_i, document.getAudiolinks().size());
         add(doc, WebMapping.videolinkscount_i, document.getVideolinks().size());
         add(doc, WebMapping.applinkscount_i, document.getApplinks().size());
-        
+
         // LSON-LD object
-        add(doc, WebMapping.ld_o, document.ld());
+        JSONObject ld = document.ld();
+        String[] keys = ld.keySet().stream().toArray(String[]::new);
+        for (String key: keys) {
+            if (key.length() > 0 && key.charAt(0) == '@') {
+                ld.put(key.substring(1), ld.get(key));
+                ld.remove(key);
+            }
+        }
+        //System.out.println("**** LD for " + digestURL.toNormalform(true) + "\n" + ld.toString(2) + "\n"); // debug
+        add(doc, WebMapping.ld_o, ld);
         return doc;
     }
     
