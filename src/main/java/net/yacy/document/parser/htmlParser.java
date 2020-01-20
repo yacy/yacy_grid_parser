@@ -224,7 +224,7 @@ public class htmlParser extends AbstractParser implements Parser {
             throw new Parser.Failure("IO error:" + e.getMessage(), location, e);
         } finally {
             tokenizer.flush();
-            //sourceStream.close(); keep open for multipe parsing (close done by caller)
+            //sourceStream.close(); keep open for multiple parsing (close done by caller)
             tokenizer.close();
         }
         //OutputStream hfos = new htmlFilterOutputStream(null, scraper, null, false);

@@ -22,6 +22,7 @@ package net.yacy.grid.parser.api;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -323,7 +324,18 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             if (hl != null && hl.value.equals(WarcConstants.RT_RESPONSE)) { // filter responses
 
                 hl = wrec.getHeader(WarcConstants.FN_WARC_TARGET_URI);
-                MultiProtocolURL location = new MultiProtocolURL(hl.value);
+                String uri = hl.value;
+                MultiProtocolURL location = new MultiProtocolURL("http://127.0.0.1");
+                if (uri != null) {
+                    if (uri.startsWith("<") && (uri.endsWith(">"))) {
+                        uri = uri.substring(1, uri.length() - 1);
+                    }
+                    try {
+                        location = new MultiProtocolURL(uri);
+                    } catch (MalformedURLException e) {
+                        // ignore this
+                    }
+                }
 
                 HttpHeader http = wrec.getHttpHeader();
 
