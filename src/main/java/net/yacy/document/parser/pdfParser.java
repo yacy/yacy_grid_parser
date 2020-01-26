@@ -211,7 +211,7 @@ public class pdfParser extends AbstractParser implements Parser {
                         }
                     };
                     t.start();
-                    t.join(3000); // pdfbox likes to forget to terminate ... (quite often)
+                    t.join(10000); // pdfbox likes to forget to terminate ... (quite often)
                     if (t.isAlive()) t.interrupt();
                     contentBytes = writer.getBytes(); // get final text before closing writer
                     writer.close(); // free writer resources
