@@ -371,15 +371,21 @@ public class htmlParser extends AbstractParser implements Parser {
                 //"https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
                 //"https://developers.google.com/search/docs/guides/intro-structured-data",
                 //"https://www.bbcgoodfood.com/recipes/9652/bestever-tiramisu",
-                //"https://www.livegigs.de/konzert/madball/duesseldorf-stone-im-ratinger-hof/2018-06-19"
-                "https://www.mags.nrw/arbeit"
+                //"https://www.livegigs.de/konzert/madball/duesseldorf-stone-im-ratinger-hof/2018-06-19",
+                //"https://www.mags.nrw/arbeit",
+                "https://release-8-0-x-dev-224m2by-lj6ob4e22x2mc.eu.platform.sh/test", // unvollständig
+                "http://fim-landesredaktion.nrw/ultimateRdfa.html", // unvollständig
+                "https://files.gitter.im/yacy/publicplan/OJR0/error1.html", // 2. Anschrift und kommunikation fehlt
+                "https://files.gitter.im/yacy/publicplan/eol2/error2.html", // OK!
+                "https://files.gitter.im/yacy/publicplan/41gy/error2-wirdSoIndexiert.html" // 2. Kommunikation fehlt
         };
         for (String url: testurl) {
             try {
                 Document[] docs = load(url);
-                System.out.println(docs[0].dc_title());
-                System.out.println(docs[0].getTextString());
-                System.out.println(docs[0].ld().toString(2));
+                System.out.println("URL     : " + url);
+                System.out.println("Title   : " + docs[0].dc_title());
+                System.out.println("Content : " + docs[0].getTextString());
+                System.out.println("JSON-LD : " + docs[0].ld().toString(2));
             } catch (Throwable e) {
                 e.printStackTrace();
             }
