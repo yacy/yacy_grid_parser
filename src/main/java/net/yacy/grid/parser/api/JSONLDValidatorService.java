@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import net.yacy.document.Document;
@@ -38,6 +39,7 @@ import net.yacy.grid.mcp.Data;
  * call examples:
  * http://127.0.0.1:8500/yacy/grid/parser/jsonldvalidator.json?etherpad=05cc1575f55de2dc82f20f9010d71358
  * http://127.0.0.1:8500/yacy/grid/parser/jsonldvalidator.json?url=http://ebay.de
+ * http://127.0.0.1:8500/yacy/grid/parser/jsonldvalidator.json?url=https://release-8-0-x-dev-224m2by-lj6ob4e22x2mc.eu.platform.sh/test
  */
 public class JSONLDValidatorService extends ObjectAPIHandler implements APIHandler {
 
@@ -64,8 +66,11 @@ public class JSONLDValidatorService extends ObjectAPIHandler implements APIHandl
         
         if (url.length() > 0) {
             try {
-                Document[] docs = htmlParser.load(url);
+                byte[] b = ClientConnection.load(url);
+                Document[] docs = htmlParser.parse(url, b);
+                JSONArray jsona = htmlParser.parseRDFa(url, b);
                 json.put("ld", docs[0].ld());
+                json.put("ldnew", jsona);
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of url content successfull");
             } catch (Throwable e) {
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of url content failed: " + e.getMessage());

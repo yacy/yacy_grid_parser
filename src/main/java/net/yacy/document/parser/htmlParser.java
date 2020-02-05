@@ -26,6 +26,7 @@ package net.yacy.document.parser;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -34,6 +35,13 @@ import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.LinkedHashMap;
+
+import org.apache.any23.Any23;
+import org.apache.any23.extractor.ExtractionException;
+import org.apache.any23.source.ByteArrayDocumentSource;
+import org.apache.any23.writer.JSONLDWriter;
+import org.apache.any23.writer.TripleHandlerException;
+import org.json.JSONArray;
 
 import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.grid.http.ClientConnection;
@@ -312,31 +320,54 @@ public class htmlParser extends AbstractParser implements Parser {
 
         return encoding;
     }
-    
+
     public static Document[] load(String url) throws IOException {
+        byte[] b = ClientConnection.load(url);
+        return parse(url, b);
+    }
+    
+    public static Document[] parse(String url, byte[] b) throws IOException {
         MultiProtocolURL location = new MultiProtocolURL(url);
         htmlParser parser = new htmlParser();
         Document[] docs;
         try {
-            docs = parser.parse(location, "text/html", "UTF-8", null, -60,
-                    new ByteArrayInputStream(ClientConnection.load(url)));
+            docs = parser.parse(location, "text/html", "UTF-8", null, -60, new ByteArrayInputStream(b));
         } catch (Failure | InterruptedException e) {
             throw new IOException (e.getMessage());
         }
         return docs;
     }
-    
+
     public static Document[] parse(String context) throws IOException {
         htmlParser parser = new htmlParser();
         MultiProtocolURL location = new MultiProtocolURL("http://context.local");
         Document[] docs;
+        byte[] b = context.getBytes("UTF-8");
         try {
-            docs = parser.parse(location, "text/html", "UTF-8", null, -60,
-                    new ByteArrayInputStream(context.getBytes("UTF-8")));
+            docs = parser.parse(location, "text/html", "UTF-8", null, -60, new ByteArrayInputStream(b));
             return docs;
         } catch (Failure | InterruptedException e) {
             throw new IOException(e.getMessage(), e);
         }
+    }
+
+    public static JSONArray parseRDFa(String url, byte[] b) throws IOException {
+        // compile group: 'org.apache.any23', name: 'apache-any23-core', version: '2.+'
+        Any23 any23 = new Any23();
+        ByteArrayDocumentSource ds = new ByteArrayDocumentSource(b, url, "text/html"); // text/html; application/xhtml+xml
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        JSONLDWriter th = new JSONLDWriter(baos);
+        try {
+            any23.extract(ds, th);
+            th.close();
+            baos.close();
+        } catch (IOException | ExtractionException | TripleHandlerException e) {
+            throw new IOException(e.getCause());
+        }
+        String jsons = new String(baos.toByteArray(), "UTF-8");
+        JSONArray jsona = new JSONArray(jsons);
+        return jsona;
+        //System.out.println("Any23   :" + new String(baos.toByteArray(), "UTF-8"));
     }
 
     public static void main(String[] args) {
