@@ -69,7 +69,7 @@ public class Parser {
             ParserService.class,
             JSONLDValidatorService.class
     };
-    
+
     /*
      * test this with
      * curl -X POST -F "message=@job.json" -F "serviceName=parser" -F "queueName=yacyparser" http://yacygrid.com:8100/yacy/grid/mcp/messages/send.json
@@ -109,12 +109,12 @@ public class Parser {
         }
 
         public ActionResult processAction(SusiAction action, JSONArray data, String processName, int processNumber) {
-            
+
             // check short memory status
             if (Memory.shortStatus()) {
                 pdfParser.clean_up_idiotic_PDFParser_font_cache_which_eats_up_tons_of_megabytes();
             }
-            
+
             String sourceasset_path = action.getStringAttr("sourceasset");
             String targetasset_path = action.getStringAttr("targetasset");
             String targetgraph_path = action.getStringAttr("targetgraph");
@@ -207,16 +207,16 @@ public class Parser {
                         Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
                         Data.logger.info("Parser.processAction stored asset " + targetasset_path);
                     } catch (Throwable ee) {
-                    	    Data.logger.warn("Parser.processAction asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
-                    	    storeToMessage = true;
+                        Data.logger.warn("Parser.processAction asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
+                        storeToMessage = true;
                     }
                     try {
                         String targetgraph = targetgraph_object.toString();
                         Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
                         Data.logger.info("Parser.processAction stored graph " + targetgraph_path);
                     } catch (Throwable ee) {
-                    	    Data.logger.info("Parser.processAction asset " + targetgraph_path + " could not be stored, carrying the asset within the next action", ee);
-                    	    storeToMessage = true;
+                        Data.logger.info("Parser.processAction asset " + targetgraph_path + " could not be stored, carrying the asset within the next action", ee);
+                        storeToMessage = true;
                     }
                 }
                 // emergency storage to message
@@ -229,7 +229,7 @@ public class Parser {
                     });
                 }
                 Data.logger.info("Parser.processAction processed message from queue and stored asset " + targetasset_path);
-    
+
                 return ActionResult.SUCCESS;
             } catch (Throwable e) {
                 Data.logger.warn("", e);
@@ -239,6 +239,9 @@ public class Parser {
     }
 
     public static void main(String[] args) {
+        System.getProperties().put("jdk.xml.totalEntitySizeLimit", "0");
+        System.getProperties().put("jdk.xml.entityExpansionLimit", "0");
+
         // initialize environment variables
         List<Class<? extends Servlet>> services = new ArrayList<>();
         services.addAll(Arrays.asList(MCP.MCP_SERVICES));
@@ -255,5 +258,5 @@ public class Parser {
         Service.runService(null);
         brokerListener.terminate();
     }
-    
+
 }
