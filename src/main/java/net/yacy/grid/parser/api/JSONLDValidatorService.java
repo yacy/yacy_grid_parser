@@ -74,11 +74,14 @@ public class JSONLDValidatorService extends ObjectAPIHandler implements APIHandl
                 JSONArray jaExpand = new JSONArray(s);
                 JSONArray jaFlatten = new JSONArray(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.FLATTEN));
                 JSONObject jaCompact = new JSONObject(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT));
-
+                String compactString = jaCompact.toString(2); // store the compact json-ld into a string because compact2tree is destructive
+                JSONObject jaTree = htmlParser.compact2tree(jaCompact);
+                
                 json.put("ld", docs[0].ld());
                 json.put("ldnew-expand", jaExpand);
                 json.put("ldnew-flat", jaFlatten);
-                json.put("ldnew-compact", jaCompact);
+                json.put("ldnew-compact", new JSONObject(compactString));
+                json.put("ldnew-tree", jaTree);
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of url content successfull");
             } catch (Throwable e) {
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of url content failed: " + e.getMessage());
