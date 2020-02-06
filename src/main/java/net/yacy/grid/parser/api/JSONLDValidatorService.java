@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.rdf4j.rio.helpers.JSONLDMode;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -68,9 +69,16 @@ public class JSONLDValidatorService extends ObjectAPIHandler implements APIHandl
             try {
                 byte[] b = ClientConnection.load(url);
                 Document[] docs = htmlParser.parse(url, b);
-                JSONArray jsona = htmlParser.parseRDFa(url, b);
+
+                String s = htmlParser.RDFa2JSONLDExpandString(url, b);
+                JSONArray jaExpand = new JSONArray(s);
+                JSONArray jaFlatten = new JSONArray(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.FLATTEN));
+                JSONObject jaCompact = new JSONObject(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT));
+
                 json.put("ld", docs[0].ld());
-                json.put("ldnew", jsona);
+                json.put("ldnew-expand", jaExpand);
+                json.put("ldnew-flat", jaFlatten);
+                json.put("ldnew-compact", jaCompact);
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of url content successfull");
             } catch (Throwable e) {
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of url content failed: " + e.getMessage());

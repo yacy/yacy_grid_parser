@@ -41,7 +41,15 @@ import org.apache.any23.extractor.ExtractionException;
 import org.apache.any23.source.ByteArrayDocumentSource;
 import org.apache.any23.writer.JSONLDWriter;
 import org.apache.any23.writer.TripleHandlerException;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFWriter;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.JSONLDMode;
+import org.eclipse.rdf4j.rio.helpers.JSONLDSettings;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.grid.http.ClientConnection;
@@ -342,7 +350,7 @@ public class htmlParser extends AbstractParser implements Parser {
         htmlParser parser = new htmlParser();
         MultiProtocolURL location = new MultiProtocolURL("http://context.local");
         Document[] docs;
-        byte[] b = context.getBytes("UTF-8");
+        byte[] b = context.getBytes(StandardCharsets.UTF_8);
         try {
             docs = parser.parse(location, "text/html", "UTF-8", null, -60, new ByteArrayInputStream(b));
             return docs;
@@ -351,8 +359,23 @@ public class htmlParser extends AbstractParser implements Parser {
         }
     }
 
-    public static JSONArray parseRDFa(String url, byte[] b) throws IOException {
-        // compile group: 'org.apache.any23', name: 'apache-any23-core', version: '2.+'
+    public static String JSONLDExpand2Mode(String url, String jsons, JSONLDMode mode) throws IOException {
+        byte[] jsonb = jsons.getBytes(StandardCharsets.UTF_8);
+        ByteArrayInputStream bais = new ByteArrayInputStream(jsonb);
+        Model model = Rio.parse(bais, url, RDFFormat.JSONLD);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        RDFWriter writer = Rio.createWriter(RDFFormat.JSONLD, baos);
+        writer.getWriterConfig().set(JSONLDSettings.JSONLD_MODE, mode);
+        writer.startRDF();
+        for (Statement st: model) writer.handleStatement(st);
+        writer.endRDF();
+        baos.close();
+        jsonb = baos.toByteArray();
+        jsons = new String(jsonb, StandardCharsets.UTF_8);
+        return jsons;
+    }
+
+    public static String RDFa2JSONLDExpandString(String url, byte[] b) throws IOException {
         Any23 any23 = new Any23();
         ByteArrayDocumentSource ds = new ByteArrayDocumentSource(b, url, "text/html"); // text/html; application/xhtml+xml
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -364,10 +387,9 @@ public class htmlParser extends AbstractParser implements Parser {
         } catch (IOException | ExtractionException | TripleHandlerException e) {
             throw new IOException(e.getCause());
         }
-        String jsons = new String(baos.toByteArray(), "UTF-8");
-        JSONArray jsona = new JSONArray(jsons);
-        return jsona;
-        //System.out.println("Any23   :" + new String(baos.toByteArray(), "UTF-8"));
+        byte[] jsonb = baos.toByteArray();
+        String jsons = new String(jsonb, StandardCharsets.UTF_8);
+        return jsons;
     }
 
     public static void main(String[] args) {
@@ -412,11 +434,19 @@ public class htmlParser extends AbstractParser implements Parser {
         };
         for (String url: testurl) {
             try {
-                Document[] docs = load(url);
+                byte[] b = ClientConnection.load(url);
+                String s = RDFa2JSONLDExpandString(url, b);
+                JSONArray jaExpand = new JSONArray(s);
+                JSONArray jaFlatten = new JSONArray(JSONLDExpand2Mode(url, s, JSONLDMode.FLATTEN));
+                JSONObject jaCompact = new JSONObject(JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT));
+                Document[] docs = parse(url, b);
                 System.out.println("URL     : " + url);
                 System.out.println("Title   : " + docs[0].dc_title());
                 System.out.println("Content : " + docs[0].getTextString());
                 System.out.println("JSON-LD : " + docs[0].ld().toString(2));
+                System.out.println("any23-e : " + jaExpand.toString(2));
+                System.out.println("any23-f : " + jaFlatten.toString(2));
+                System.out.println("any23-c : " + jaCompact.toString(2));
             } catch (Throwable e) {
                 e.printStackTrace();
             }
