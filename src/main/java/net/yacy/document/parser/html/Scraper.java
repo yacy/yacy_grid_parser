@@ -43,7 +43,6 @@ import java.util.regex.Pattern;
 
 import org.json.JSONObject;
 
-import ai.susi.json.JsonLD;
 import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.sorting.ClusteredScoreMap;
 import net.yacy.cora.storage.SizeLimitedMap;
