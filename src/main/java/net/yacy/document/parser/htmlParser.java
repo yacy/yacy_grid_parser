@@ -175,7 +175,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 scraper.getDate());
         ppd.setScraperObject(scraper);
         ppd.setIcons(scraper.getIcons());
-        ppd.ld().putAll(scraper.getLd().getJSON());
+        ppd.ld().putAll(scraper.getLd());
         return ppd;
     }
 
@@ -195,7 +195,7 @@ public class htmlParser extends AbstractParser implements Parser {
         }
         return scraper;
     }
-    
+
     public static Scraper parseToScraper(
             final MultiProtocolURL location,
             final String documentCharset,
@@ -235,7 +235,16 @@ public class htmlParser extends AbstractParser implements Parser {
                 detectedcharsetcontainer[0] = Charset.defaultCharset();
             }
         }
-        
+
+        // read the complete source stream into a buffer because we need a copy
+        // for the microformat parser
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final byte[] buffer = new byte[8096];
+        int n = 0;
+        while ((n = sourceStream.read(buffer)) >= 0) baos.write(buffer, 0, n);
+        byte[] bytes = baos.toByteArray();
+        sourceStream = new ByteArrayInputStream(bytes);
+
         // parsing the content
         // for this static methode no need to init local this.scraperObject here
         final Scraper scraper = new Scraper(location, maxLinks, vocabularyScraper, timezoneOffset);
@@ -256,7 +265,15 @@ public class htmlParser extends AbstractParser implements Parser {
             final String errorMsg = "Binary data found in resource";
             throw new Parser.Failure(errorMsg, location);
         }
-        scraper.setLd(tokenizer.ld());
+
+        // parse linked data (microformats etc)
+        //scraper.setLd(tokenizer.ld());
+        String url = location.toNormalform(true);
+        String s = RDFa2JSONLDExpandString(url, bytes); // read first into EXPAND mode, this is the default (and cannot be changed?)
+        JSONObject jaCompact = new JSONObject(JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT)); // transcode EXPAND into COMPACT
+        JSONObject jaTree = compact2tree(jaCompact); // transcode COMPACT into TREE
+        scraper.setLd(jaTree);
+
         return scraper;
     }
 
@@ -445,7 +462,7 @@ public class htmlParser extends AbstractParser implements Parser {
         }
 
         // clean up
-        //node.remove("@id");
+        if (node.has("@id") && node.getString("@id").startsWith("_")) node.remove("@id");
         // create a "@context"
         if (!node.has("@context") && contexts.size() == 1) {
             String context = contexts.iterator().next();
