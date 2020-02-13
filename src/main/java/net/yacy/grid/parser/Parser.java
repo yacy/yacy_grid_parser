@@ -43,6 +43,7 @@ import net.yacy.document.parser.pdfParser;
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.io.index.CrawlerDocument;
+import net.yacy.grid.io.index.CrawlerMapping;
 import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.io.index.CrawlerDocument.Status;
 import net.yacy.grid.mcp.AbstractBrokerListener;
@@ -52,6 +53,7 @@ import net.yacy.grid.mcp.MCP;
 import net.yacy.grid.mcp.Service;
 import net.yacy.grid.parser.api.JSONLDValidatorService;
 import net.yacy.grid.parser.api.ParserService;
+import net.yacy.grid.tools.DateParser;
 import net.yacy.grid.tools.Digest;
 import net.yacy.grid.tools.GitTool;
 import net.yacy.grid.tools.JSONList;
@@ -159,32 +161,32 @@ public class Parser {
                     String urlid = Digest.encodeMD5Hex(url);
                     JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", urlid));
 
-                    // load crawler entry
-                    CrawlerDocument crawlerDocument = null;
-                    try {
-                        crawlerDocument = CrawlerDocument.load(Data.gridIndex, urlid);
-                    } catch (IOException e) {} // it might be that this is not there during debugging
-
                     // omit documents which have a canonical tag and are not self-addressed canonical documents
                     boolean is_canonical = true;
                     String canonical_url = docjson.optString(WebMapping.canonical_s.name());
                     if (canonical_url.length() > 0 && !url.equals(canonical_url)) is_canonical = false;
 
+                    JSONObject updater = new JSONObject();
+                    updater.put(CrawlerMapping.status_date_dt.getMapping().name(), DateParser.iso8601MillisFormat.format(new Date()));
                     if (is_canonical) {
                         // write web index document for canonical documents
                         targetasset_object.add(bulkjson);
                         //docjson.put("_id", id);
                         targetasset_object.add(docjson);
                         // put success into crawler index
-                        if (crawlerDocument != null) crawlerDocument.setStatus(Status.parsed).setStatusDate(new Date()).setComment(docjson.optString(WebMapping.title.getMapping().name()));
+                        updater
+                            .put(CrawlerMapping.status_s.getMapping().name(), Status.parsed.name())
+                            .put(CrawlerMapping.comment_t.getMapping().name(), docjson.optString(WebMapping.title.getMapping().name()));
                     } else {
                         // for non-canonical documents we suppress indexing and write to crawler index only
-                        if (crawlerDocument != null) crawlerDocument.setStatus(Status.noncanonical).setStatusDate(new Date()).setComment(docjson.optString("omitted, canonical: " + canonical_url));
+                        updater
+                            .put(CrawlerMapping.status_s.getMapping().name(), Status.noncanonical.name())
+                            .put(CrawlerMapping.comment_t.getMapping().name(), docjson.optString("omitted, canonical: " + canonical_url));
                     }
 
                     // write crawler index
-                    if (crawlerDocument != null) try {
-                        crawlerDocument.store(Data.gridIndex);
+                    try {
+                        CrawlerDocument.update(Data.gridIndex, urlid, updater);
                         // check with http://localhost:9200/crawler/_search?q=status_s:parsed
                     } catch (IOException e) {
                         // well that should not happen
