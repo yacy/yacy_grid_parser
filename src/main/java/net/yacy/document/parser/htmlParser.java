@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -452,7 +453,8 @@ public class htmlParser extends AbstractParser implements Parser {
             if (object instanceof JSONArray) {
                 JSONArray values = (JSONArray) object;
                 for (int i = 0; i < values.length(); i++) {
-                    enrichObject4Node(node, key, values.getJSONObject(i), index);
+                    Object v = values.get(i);
+                    if (v instanceof JSONObject) enrichObject4Node(node, key, (JSONObject) v, index);
                 }
             }
             if (key.charAt(0) != '@') {
@@ -493,6 +495,24 @@ public class htmlParser extends AbstractParser implements Parser {
         }
     }
 
+    public static Set<String> getLdContext(JSONObject ld) {
+        Set<String> context = new LinkedHashSet<>();
+        if (ld.has("@graph")) {
+            JSONArray lda = ld.optJSONArray("@graph");
+            lda.forEach(o -> context.addAll(getLdContext((JSONObject) o)));
+        } else {
+            for (String key: ld.keySet()) {
+                if (key.equals("@context")) {
+                    context.add(ld.getString(key));
+                } else if (!key.startsWith("@")) {
+                    Object j = ld.get(key);
+                    if (j instanceof JSONObject) context.addAll(getLdContext((JSONObject) j));
+                }
+            }
+        }
+        return context;
+    }
+
     public static void main(String[] args) {
 
         // verify RDFa with
@@ -521,14 +541,14 @@ public class htmlParser extends AbstractParser implements Parser {
         */
 
         String[] testurl = new String[] {
-                //"https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
-                //"https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
-                //"https://developers.google.com/search/docs/guides/intro-structured-data",
-                //"https://www.bbcgoodfood.com/recipes/9652/bestever-tiramisu",
-                //"https://www.livegigs.de/konzert/madball/duesseldorf-stone-im-ratinger-hof/2018-06-19",
-                //"https://www.mags.nrw/arbeit",
-                "https://release-8-0-x-dev-224m2by-lj6ob4e22x2mc.eu.platform.sh/test", // unvollständig
+                "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
+                "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
+                "https://developers.google.com/search/docs/guides/intro-structured-data",
+                "https://www.bbcgoodfood.com/recipes/9652/bestever-tiramisu",
+                "https://www.livegigs.de/konzert/madball/duesseldorf-stone-im-ratinger-hof/2018-06-19",
+                "https://www.mags.nrw/arbeit",
                 "https://redaktion.vsm.nrw/ultimateRdfa2.html", // unvollständig
+                "https://release-8-0-x-dev-224m2by-lj6ob4e22x2mc.eu.platform.sh/test", // unvollständig
                 "https://files.gitter.im/yacy/publicplan/OJR0/error1.html", // 2. Anschrift und kommunikation fehlt
                 "https://files.gitter.im/yacy/publicplan/eol2/error2.html", // OK!
                 "https://files.gitter.im/yacy/publicplan/41gy/error2-wirdSoIndexiert.html" // 2. Kommunikation fehlt
@@ -536,21 +556,23 @@ public class htmlParser extends AbstractParser implements Parser {
         for (String url: testurl) {
             try {
                 byte[] b = ClientConnection.load(url);
-                String s = RDFa2JSONLDExpandString(url, b);
-                JSONArray jaExpand = new JSONArray(s);
-                JSONArray jaFlatten = new JSONArray(JSONLDExpand2Mode(url, s, JSONLDMode.FLATTEN));
-                JSONObject jaCompact = new JSONObject(JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT));
-                String compactString = jaCompact.toString(2); // store the compact json-ld into a string because compact2tree is destructive
-                JSONObject jaTree = compact2tree(jaCompact);
+                //String s = RDFa2JSONLDExpandString(url, b);
+                //JSONArray jaExpand = new JSONArray(s);
+                //JSONArray jaFlatten = new JSONArray(JSONLDExpand2Mode(url, s, JSONLDMode.FLATTEN));
+                //JSONObject jaCompact = new JSONObject(JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT));
+                //String compactString = jaCompact.toString(2); // store the compact json-ld into a string because compact2tree is destructive
+                //JSONObject jaTree = compact2tree(jaCompact);
                 Document[] docs = parse(url, b);
                 System.out.println("URL     : " + url);
                 System.out.println("Title   : " + docs[0].dc_title());
                 System.out.println("Content : " + docs[0].getTextString());
                 System.out.println("JSON-LD : " + docs[0].ld().toString(2));
-                System.out.println("any23-e : " + jaExpand.toString(2));
-                System.out.println("any23-f : " + jaFlatten.toString(2));
-                System.out.println("any23-c : " + compactString);
-                System.out.println("any23-t : " + jaTree.toString(2));
+                for (String cs: getLdContext(docs[0].ld())) System.out.println("Context : " + cs);
+                //System.out.println("any23-e : " + jaExpand.toString(2));
+                //System.out.println("any23-f : " + jaFlatten.toString(2));
+                //System.out.println("any23-c : " + compactString);
+                //System.out.println("any23-t : " + jaTree.toString(2));
+                System.out.println();
             } catch (Throwable e) {
                 e.printStackTrace();
             }

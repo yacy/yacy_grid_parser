@@ -49,6 +49,7 @@ import net.yacy.document.DateDetection;
 import net.yacy.document.Document;
 import net.yacy.document.SentenceReader;
 import net.yacy.document.parser.html.Scraper;
+import net.yacy.document.parser.htmlParser;
 import net.yacy.document.parser.html.ImageEntry;
 import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.tools.AnchorURL;
@@ -95,7 +96,7 @@ public class WebConfiguration implements Serializable {
         for (Date s: values) a.put(DateParser.iso8601MillisFormat.format(s));
         json.put(field.getMapping().name(), a);
     }
-    private static void add(JSONObject json, WebMapping field, List<?> values) {
+    private static void add(JSONObject json, WebMapping field, Collection<?> values) {
         JSONArray a = new JSONArray();
         for (Object s: values) {
             if (s instanceof Date) a.put(DateParser.iso8601MillisFormat.format((Date) s));
@@ -633,15 +634,12 @@ public class WebConfiguration implements Serializable {
 
         // LSON-LD object
         JSONObject ld = document.ld();
-        String[] keys = ld.keySet().stream().toArray(String[]::new);
-        for (String key: keys) {
-            if (key.length() > 0 && key.charAt(0) == '@') {
-                ld.put(key.substring(1), ld.get(key));
-                ld.remove(key);
-            }
-        }
         //System.out.println("**** LD for " + digestURL.toNormalform(true) + "\n" + ld.toString(2) + "\n"); // debug
         add(doc, WebMapping.ld_o, ld);
+        String lds = ld.toString(0);
+        add(doc, WebMapping.ld_s, lds);
+        Collection<String> context = htmlParser.getLdContext(ld);
+        add(doc, WebMapping.ld_context_sxt, context);
         return doc;
     }
     
