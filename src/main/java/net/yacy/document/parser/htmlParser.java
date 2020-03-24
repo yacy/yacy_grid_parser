@@ -35,6 +35,7 @@ import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -48,7 +49,6 @@ import org.apache.any23.extractor.ExtractionException;
 import org.apache.any23.source.ByteArrayDocumentSource;
 import org.apache.any23.writer.JSONLDWriter;
 import org.apache.any23.writer.TripleHandlerException;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -418,7 +418,7 @@ public class htmlParser extends AbstractParser implements Parser {
     }
 
     public static JSONObject compact2tree(JSONObject compact) {
-        JSONObject tree = new JSONObject(true);
+        Map<String, Set<String>> contextcollector = new LinkedHashMap<>();
         JSONArray treegraph = new JSONArray();
         LinkedHashMap<String, JSONObject> index = new LinkedHashMap<>();
         String id = compact.optString("@id", "");
@@ -433,19 +433,76 @@ public class htmlParser extends AbstractParser implements Parser {
         }
         while (!index.isEmpty()) {
             JSONObject node = index.remove(index.keySet().iterator().next());
-            enrichNode(node, index);
+            enrichNode(node, index, contextcollector);
             treegraph.put(node);
         }
+
+        // compute the context
+        JSONObject context = new JSONObject(true);
+        contextcollector.forEach((context_name, context_ids) -> {
+            if (context_ids.size() == 1) context.put(context_name, context_ids.iterator().next());
+        });
+
+        // replace all ids with the shortened context name
+        Map<String, String> reverse_context = new HashMap<>();
+        context.keySet().forEach(key -> reverse_context.put(context.getString(key), key));
+        replaceContext(treegraph, reverse_context);
+
+        // set up the tree object with the used context
+        JSONObject tree = new JSONObject(true);
         tree.put("@id", id);
+
+        if (context.length() > 0) tree.put("@context", context);
         tree.put("@graph", treegraph);
         return tree;
     }
 
-    private static void enrichNode(JSONObject node, Map<String, JSONObject> index) {
+    private static void replaceContext(JSONArray treegraph, Map<String, String> reverse_context) {
+        for (int i = 0; i < treegraph.length(); i++) {
+            Object j = treegraph.get(i);
+            if (j instanceof JSONObject) {
+                replaceContext((JSONObject) j, reverse_context);
+            } else if (j instanceof JSONArray) {
+                replaceContext((JSONArray) j, reverse_context);
+            }
+        }
+    }
+
+    private static void replaceContext(JSONObject treegraph, Map<String, String> reverse_context) {
+        JSONObject newgraph = new JSONObject(true);
+        List<String> oldkeys = new ArrayList<>();
+        for (String key: treegraph.keySet()) {
+            // remember all old keys
+            oldkeys.add(key);
+
+            // recursion into next level
+            Object j = treegraph.get(key);
+            if (j instanceof JSONObject) {
+                replaceContext((JSONObject) j, reverse_context);
+            } else if (j instanceof JSONArray) {
+                replaceContext((JSONArray) j, reverse_context);
+            }
+
+            // rewrite keys
+            String context_id = reverse_context.get(key);
+            if (context_id == null) {
+                newgraph.put(key, j);
+            } else {
+                newgraph.put(context_id, j);
+            }
+        }
+
+        // copy new graph into place of old graph
+        oldkeys.forEach(key -> treegraph.remove(key));
+        for (String key: newgraph.keySet()) {
+            treegraph.put(key, newgraph.get(key));
+        }
+    }
+
+    private static void enrichNode(JSONObject node, Map<String, JSONObject> index, Map<String, Set<String>> contextcollector) {
         Iterator<String> keyi = node.keys();
         List<String> keys = new ArrayList<>();
         while (keyi.hasNext()) keys.add(keyi.next());
-        Set<String> contexts = new LinkedHashSet<>();
         for (String key: keys) {
             Object object = node.get(key);
 
@@ -457,7 +514,7 @@ public class htmlParser extends AbstractParser implements Parser {
                     JSONObject branch = index.get(id);
                     if (branch != null) {
                         index.remove(id);
-                        enrichNode(branch, index);
+                        enrichNode(branch, index, contextcollector);
                         node.put(key, branch);
                     }
                 } else if (value.has("@value")) {
@@ -474,7 +531,7 @@ public class htmlParser extends AbstractParser implements Parser {
                         JSONObject branch = index.get(id);
                         if (branch != null) {
                             index.remove(id);
-                            enrichNode(branch, index);
+                            enrichNode(branch, index, contextcollector);
                             values.put(i, branch);
                         }
                     } else if (value.has("@value")) {
@@ -488,26 +545,21 @@ public class htmlParser extends AbstractParser implements Parser {
             // record all contexts
             if (key.charAt(0) != '@') {
                 int p = key.lastIndexOf('/');
-                if (p >= 0) contexts.add(key.substring(0, p + 1));
+                if (p >= 0) {
+                    String context_name = key.substring(p + 1);
+                    String context_id = key;
+                    Set<String> context_ids = contextcollector.get(context_name);
+                    if (context_ids == null) {
+                        context_ids = new HashSet<>();
+                        contextcollector.put(context_name, context_ids);
+                    }
+                    context_ids.add(context_id);
+                }
             }
         }
 
         // clean up
         if (node.has("@id") && node.getString("@id").startsWith("_")) node.remove("@id");
-/*
-        // create a "@context" object in case that we have only one context
-        if (!node.has("@context") && contexts.size() == 1) {
-            String context = contexts.iterator().next();
-            node.put("@context", context);
-            // replace all keys with preceding context with a key without that prefix
-            for (String key: keys) {
-                if (key.startsWith(context)) {
-                    Object object = node.remove(key);
-                    node.put(key.substring(context.length()), object);
-                }
-            }
-        }
-        */
     }
 
     public static Set<String> getLdContext(JSONObject ld) {
@@ -585,10 +637,10 @@ public class htmlParser extends AbstractParser implements Parser {
                 System.out.println("Content : " + docs[0].getTextString());
                 System.out.println("JSON-LD : " + docs[0].ld().toString(2));
                 //for (String cs: getLdContext(docs[0].ld())) System.out.println("Context : " + cs);
-                //System.out.println("any23-e : " + jaExpand.toString(2)); // ok
-                //System.out.println("any23-f : " + jaFlatten.toString(2)); // ok
-                //System.out.println("any23-c : " + compactString); // ok
-                //System.out.println("any23-t : " + jaTree.toString(2)); // nok
+                //System.out.println("any23-e : " + jaExpand.toString(2));
+                //System.out.println("any23-f : " + jaFlatten.toString(2));
+                //System.out.println("any23-c : " + compactString);
+                //System.out.println("any23-t : " + jaTree.toString(2));
                 System.out.println();
             } catch (Throwable e) {
                 e.printStackTrace();
