@@ -48,6 +48,7 @@ import org.apache.any23.extractor.ExtractionException;
 import org.apache.any23.source.ByteArrayDocumentSource;
 import org.apache.any23.writer.JSONLDWriter;
 import org.apache.any23.writer.TripleHandlerException;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -427,6 +428,7 @@ public class htmlParser extends AbstractParser implements Parser {
         for (int i = 0; i < graph.length(); i++) {
             JSONObject node = graph.getJSONObject(i);
             String nodeid = node.optString("@id", "");
+            assert !index.containsKey(nodeid);
             index.put(nodeid, node);
         }
         while (!index.isEmpty()) {
@@ -443,20 +445,47 @@ public class htmlParser extends AbstractParser implements Parser {
         Iterator<String> keyi = node.keys();
         List<String> keys = new ArrayList<>();
         while (keyi.hasNext()) keys.add(keyi.next());
-        Set<String> contexts = new HashSet<>();
+        Set<String> contexts = new LinkedHashSet<>();
         for (String key: keys) {
             Object object = node.get(key);
+
+            // branch either into another object or array
             if (object instanceof JSONObject) {
                 JSONObject value = (JSONObject) object;
-                enrichObject4Node(node, key, value, index);
-            }
-            if (object instanceof JSONArray) {
+                if (value.has("@id")) {
+                    String id = value.getString("@id");
+                    JSONObject branch = index.get(id);
+                    if (branch != null) {
+                        index.remove(id);
+                        enrichNode(branch, index);
+                        node.put(key, branch);
+                    }
+                } else if (value.has("@value")) {
+                    Object vobject = value.get("@value");
+                    if (vobject instanceof String) vobject = ((String) vobject).trim();
+                    node.put(key, vobject);
+                }
+            } else if (object instanceof JSONArray) {
                 JSONArray values = (JSONArray) object;
                 for (int i = 0; i < values.length(); i++) {
-                    Object v = values.get(i);
-                    if (v instanceof JSONObject) enrichObject4Node(node, key, (JSONObject) v, index);
+                    JSONObject value = values.getJSONObject(i);
+                    if (value.has("@id")) {
+                        String id = value.getString("@id");
+                        JSONObject branch = index.get(id);
+                        if (branch != null) {
+                            index.remove(id);
+                            enrichNode(branch, index);
+                            values.put(i, branch);
+                        }
+                    } else if (value.has("@value")) {
+                        Object vobject = value.get("@value");
+                        if (vobject instanceof String) vobject = ((String) vobject).trim();
+                        values.put(i, vobject);
+                    }
                 }
             }
+
+            // record all contexts
             if (key.charAt(0) != '@') {
                 int p = key.lastIndexOf('/');
                 if (p >= 0) contexts.add(key.substring(0, p + 1));
@@ -465,10 +494,12 @@ public class htmlParser extends AbstractParser implements Parser {
 
         // clean up
         if (node.has("@id") && node.getString("@id").startsWith("_")) node.remove("@id");
-        // create a "@context"
+/*
+        // create a "@context" object in case that we have only one context
         if (!node.has("@context") && contexts.size() == 1) {
             String context = contexts.iterator().next();
             node.put("@context", context);
+            // replace all keys with preceding context with a key without that prefix
             for (String key: keys) {
                 if (key.startsWith(context)) {
                     Object object = node.remove(key);
@@ -476,23 +507,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 }
             }
         }
-    }
-
-    private static void enrichObject4Node(JSONObject node, String key, JSONObject object, Map<String, JSONObject> index) {
-        JSONObject value = (JSONObject) object;
-        if (value.has("@id")) {
-            String id = value.getString("@id");
-            JSONObject branch = index.get(id);
-            if (branch != null) {
-                index.remove(id);
-                enrichNode(branch, index);
-                node.put(key, branch);
-            }
-        } else if (value.has("@value")) {
-            Object vobject = value.get("@value");
-            if (vobject instanceof String) vobject = ((String) vobject).trim();
-            node.put(key, vobject);
-        }
+        */
     }
 
     public static Set<String> getLdContext(JSONObject ld) {
@@ -514,7 +529,6 @@ public class htmlParser extends AbstractParser implements Parser {
     }
 
     public static void main(String[] args) {
-
         // verify RDFa with
         // https://www.w3.org/2012/pyRdfa/Overview.html#distill_by_input
         // http://rdf.greggkellogg.net/distiller?command=serialize&format=rdfa&output_format=jsonld
@@ -541,6 +555,7 @@ public class htmlParser extends AbstractParser implements Parser {
         */
 
         String[] testurl = new String[] {
+                /*
                 "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
                 "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
                 "https://developers.google.com/search/docs/guides/intro-structured-data",
@@ -551,7 +566,9 @@ public class htmlParser extends AbstractParser implements Parser {
                 "https://release-8-0-x-dev-224m2by-lj6ob4e22x2mc.eu.platform.sh/test", // unvollständig
                 "https://files.gitter.im/yacy/publicplan/OJR0/error1.html", // 2. Anschrift und kommunikation fehlt
                 "https://files.gitter.im/yacy/publicplan/eol2/error2.html", // OK!
-                "https://files.gitter.im/yacy/publicplan/41gy/error2-wirdSoIndexiert.html" // 2. Kommunikation fehlt
+                "https://files.gitter.im/yacy/publicplan/41gy/error2-wirdSoIndexiert.html", // 2. Kommunikation fehlt
+                */
+                "https://redaktion.vsm.nrw/rdfa-mit-duplikate.html"
         };
         for (String url: testurl) {
             try {
@@ -567,11 +584,11 @@ public class htmlParser extends AbstractParser implements Parser {
                 System.out.println("Title   : " + docs[0].dc_title());
                 System.out.println("Content : " + docs[0].getTextString());
                 System.out.println("JSON-LD : " + docs[0].ld().toString(2));
-                for (String cs: getLdContext(docs[0].ld())) System.out.println("Context : " + cs);
-                //System.out.println("any23-e : " + jaExpand.toString(2));
-                //System.out.println("any23-f : " + jaFlatten.toString(2));
-                //System.out.println("any23-c : " + compactString);
-                //System.out.println("any23-t : " + jaTree.toString(2));
+                //for (String cs: getLdContext(docs[0].ld())) System.out.println("Context : " + cs);
+                //System.out.println("any23-e : " + jaExpand.toString(2)); // ok
+                //System.out.println("any23-f : " + jaFlatten.toString(2)); // ok
+                //System.out.println("any23-c : " + compactString); // ok
+                //System.out.println("any23-t : " + jaTree.toString(2)); // nok
                 System.out.println();
             } catch (Throwable e) {
                 e.printStackTrace();
