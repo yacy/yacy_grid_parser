@@ -525,7 +525,9 @@ public class htmlParser extends AbstractParser implements Parser {
             } else if (object instanceof JSONArray) {
                 JSONArray values = (JSONArray) object;
                 for (int i = 0; i < values.length(); i++) {
-                    JSONObject value = values.getJSONObject(i);
+                    Object o = values.get(i);
+                    if (!(o instanceof JSONObject)) continue;
+                    JSONObject value = (JSONObject) o;
                     if (value.has("@id")) {
                         String id = value.getString("@id");
                         JSONObject branch = index.get(id);
@@ -564,18 +566,9 @@ public class htmlParser extends AbstractParser implements Parser {
 
     public static Set<String> getLdContext(JSONObject ld) {
         Set<String> context = new LinkedHashSet<>();
-        if (ld.has("@graph")) {
-            JSONArray lda = ld.optJSONArray("@graph");
-            lda.forEach(o -> context.addAll(getLdContext((JSONObject) o)));
-        } else {
-            for (String key: ld.keySet()) {
-                if (key.equals("@context")) {
-                    context.add(ld.getString(key));
-                } else if (!key.startsWith("@")) {
-                    Object j = ld.get(key);
-                    if (j instanceof JSONObject) context.addAll(getLdContext((JSONObject) j));
-                }
-            }
+        if (ld.has("@context")) {
+            JSONObject lda = ld.optJSONObject("@context");
+            lda.keySet().forEach(key -> context.add(lda.getString(key)));
         }
         return context;
     }
@@ -607,7 +600,7 @@ public class htmlParser extends AbstractParser implements Parser {
         */
 
         String[] testurl = new String[] {
-                /*
+                
                 "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
                 "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
                 "https://developers.google.com/search/docs/guides/intro-structured-data",
@@ -619,7 +612,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 "https://files.gitter.im/yacy/publicplan/OJR0/error1.html", // 2. Anschrift und kommunikation fehlt
                 "https://files.gitter.im/yacy/publicplan/eol2/error2.html", // OK!
                 "https://files.gitter.im/yacy/publicplan/41gy/error2-wirdSoIndexiert.html", // 2. Kommunikation fehlt
-                */
+                
                 "https://redaktion.vsm.nrw/rdfa-mit-duplikate.html"
         };
         for (String url: testurl) {
@@ -636,7 +629,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 System.out.println("Title   : " + docs[0].dc_title());
                 System.out.println("Content : " + docs[0].getTextString());
                 System.out.println("JSON-LD : " + docs[0].ld().toString(2));
-                //for (String cs: getLdContext(docs[0].ld())) System.out.println("Context : " + cs);
+                for (String cs: getLdContext(docs[0].ld())) System.out.println("Context : " + cs);
                 //System.out.println("any23-e : " + jaExpand.toString(2));
                 //System.out.println("any23-f : " + jaFlatten.toString(2));
                 //System.out.println("any23-c : " + compactString);
