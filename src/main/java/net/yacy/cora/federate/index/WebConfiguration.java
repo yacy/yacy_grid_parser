@@ -52,6 +52,7 @@ import net.yacy.document.parser.html.Scraper;
 import net.yacy.document.parser.htmlParser;
 import net.yacy.document.parser.html.ImageEntry;
 import net.yacy.grid.io.index.WebMapping;
+import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.Classification.ContentDomain;
 import net.yacy.grid.tools.CommonPattern;
@@ -65,7 +66,7 @@ public class WebConfiguration implements Serializable {
 
     public static boolean UNIQUE_HEURISTIC_PREFER_HTTPS = false;
     public static boolean UNIQUE_HEURISTIC_PREFER_WWWPREFIX = true;
-    
+
     private static void add(JSONObject json, WebMapping field, String value) {
         json.put(field.getMapping().name(), value);
     }
@@ -137,7 +138,7 @@ public class WebConfiguration implements Serializable {
         subgraph.urlAnchorTexts[ioidx].add(text);
         return inbound;
     }
-    
+
     /**
      * add uri attributes to json document and assign the document id
      * @param doc
@@ -164,7 +165,7 @@ public class WebConfiguration implements Serializable {
             add(doc, WebMapping.host_organizationdnc_s, orga + '.' + dnc);
             add(doc, WebMapping.host_subdomain_s, subdom);
         }
-        
+
         // path elements of link
         String filename = MultiProtocolURL.getFileName();
         String extension = net.yacy.grid.tools.MultiProtocolURL.getFileExtension(filename);
@@ -172,18 +173,18 @@ public class WebConfiguration implements Serializable {
         // remove possible jsession (or other url parm like "img.jpg;jsession=123") 
         // TODO: consider to implement ";jsession=123" check in getFileExtension()
         if (extension.indexOf(';') >= 0) extension = extension.substring(0,extension.indexOf(';'));
-        
+
         add(doc, WebMapping.url_chars_i, us.length());
         add(doc, WebMapping.url_protocol_s, MultiProtocolURL.getProtocol());
-        
+
         String[] paths = MultiProtocolURL.getPaths();
         add(doc, WebMapping.url_paths_count_i, paths.length);
         add(doc, WebMapping.url_paths_sxt, paths);
-        
+
         add(doc, WebMapping.url_file_name_s, filenameStub);
         add(doc, WebMapping.url_file_name_tokens_t, net.yacy.grid.tools.MultiProtocolURL.toTokens(filenameStub));
         add(doc, WebMapping.url_file_ext_s, extension);
-        
+
         Map<String, String> searchpart = MultiProtocolURL.getSearchpartMap();
         if (searchpart == null) {
             add(doc, WebMapping.url_parameter_i, 0);
@@ -206,10 +207,10 @@ public class WebConfiguration implements Serializable {
         add(doc, WebMapping.content_type, new String[]{document.dc_format()}); // content_type (mime) is defined a schema field and we rely on it in some queries like imagequery (makes it mandatory, no need to check)
 
         String host = digestURL.getHost();
-        
+
         int crawldepth = document.getDepth();
         add(doc, WebMapping.crawldepth_i, crawldepth);
-      
+
         if (collections != null && collections.size() > 0) {
             List<String> cs = new ArrayList<String>();
             for (Map.Entry<String, Pattern> e: collections.entrySet()) {
@@ -224,7 +225,7 @@ public class WebConfiguration implements Serializable {
         ArrayList<Integer> cv = new ArrayList<Integer>(titles.size());
         for (String s: titles) cv.add(new Integer(s.length()));
         add(doc, WebMapping.title_chars_val, cv);
-        
+
         cv = new ArrayList<Integer>(titles.size());
         for (String s: titles) cv.add(new Integer(CommonPattern.SPACES.split(s).length));
         add(doc, WebMapping.title_words_val, cv);
@@ -236,7 +237,7 @@ public class WebConfiguration implements Serializable {
         cv = new ArrayList<Integer>(descriptions.length);
         for (String s: descriptions) cv.add(new Integer(s.length()));
         add(doc, WebMapping.description_chars_val, cv);
-        
+
         cv = new ArrayList<Integer>(descriptions.length);
         for (String s: descriptions) cv.add(new Integer(CommonPattern.SPACES.split(s).length));
         add(doc, WebMapping.description_words_val, cv);
@@ -247,7 +248,7 @@ public class WebConfiguration implements Serializable {
             add(doc, WebMapping.author, author);
             add(doc, WebMapping.author_sxt, new String[]{author}); // this was a copy-field when used with solr
         }
-        
+
         Date lastModified = responseHeader == null ? new Date() : responseHeader.lastModified();
         if (lastModified == null) lastModified = new Date();
         if (document.getLastModified().before(lastModified)) lastModified = document.getLastModified();
@@ -256,9 +257,9 @@ public class WebConfiguration implements Serializable {
         String content = document.getTextString();
 
         LinkedHashSet<Date> dates_in_content = DateDetection.parse(content, timezoneOffset);
-       
+
         add(doc, WebMapping.dates_in_content_count_i, dates_in_content.size());
-            
+
         add(doc, WebMapping.dates_in_content_dts, dates_in_content.toArray(new Date[dates_in_content.size()]));
 
         String keywords = document.dc_subject(' ');
@@ -267,7 +268,7 @@ public class WebConfiguration implements Serializable {
         // unique-fields; these values must be corrected during postprocessing. (the following logic is !^ (not-xor) but I prefer to write it that way as it is)
         add(doc, WebMapping.http_unique_b, setUnique || UNIQUE_HEURISTIC_PREFER_HTTPS ? digestURL.isHTTPS() : digestURL.isHTTP()); // this must be corrected afterwards during storage!
         add(doc, WebMapping.www_unique_b, setUnique || host != null && (UNIQUE_HEURISTIC_PREFER_WWWPREFIX ? host.startsWith("www.") : !host.startsWith("www."))); // this must be corrected afterwards during storage!
-        
+
         // get list of all links; they will be shrinked by urls that appear in other fields of the solr schema
         LinkedHashMap<MultiProtocolURL,String> inboundLinks = document.inboundLinks();
         LinkedHashMap<MultiProtocolURL,String> outboundLinks = document.outboundLinks();
@@ -275,7 +276,7 @@ public class WebConfiguration implements Serializable {
         int c = 0;
         final Object scraper = document.getScraperObject();
         MultiProtocolURL canonical = null;
-        
+
         if (scraper instanceof Scraper) {
             final Scraper html = (Scraper) scraper;
             List<ImageEntry> images = html.getImages();
@@ -291,7 +292,7 @@ public class WebConfiguration implements Serializable {
             hs = html.getHeadlines(4); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h4_txt, hs); add(doc, WebMapping.h4_i, hs.length);
             hs = html.getHeadlines(5); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h5_txt, hs); add(doc, WebMapping.h5_i, hs.length);
             hs = html.getHeadlines(6); h = h | (hs.length > 0 ? f : 0); f = f * 2; add(doc, WebMapping.h6_txt, hs); add(doc, WebMapping.h6_i, hs.length);
-       
+
             add(doc, WebMapping.htags_i, h);
             add(doc, WebMapping.schema_org_breadcrumb_i, html.breadcrumbCount());
 
@@ -374,7 +375,7 @@ public class WebConfiguration implements Serializable {
             final String[] li = html.getLi();
             add(doc, WebMapping.licount_i, li.length);
             if (li.length > 0) add(doc, WebMapping.li_txt, li);
-            
+
             final String[] dt = html.getDt();
             add(doc, WebMapping.dtcount_i, dt.length);
             if (dt.length > 0) add(doc, WebMapping.dt_txt, dt);
@@ -387,7 +388,7 @@ public class WebConfiguration implements Serializable {
             if (startDates.size() > 0) add(doc, WebMapping.startDates_dts, startDates.toArray(new Date[startDates.size()]));
             final List<Date> endDates = html.getEndDates();
             if (endDates.size() > 0) add(doc, WebMapping.endDates_dts, endDates.toArray(new Date[endDates.size()]));
-            
+
             final List<String> articles = html.getArticles();
             add(doc, WebMapping.articlecount_i, articles.size());
             if (articles.size() > 0) add(doc, WebMapping.article_txt, articles);
@@ -518,7 +519,7 @@ public class WebConfiguration implements Serializable {
 
             // response time
             add(doc, WebMapping.responsetime_i, responseHeader == null ? 0 : Integer.parseInt(responseHeader.get(HeaderFramework.RESPONSE_TIME_MILLIS, "0")));
-            
+
             // hreflang link tag, see http://support.google.com/webmasters/bin/answer.py?hl=de&answer=189077
             final String[] ccs = new String[html.getHreflang().size()];
             String[] urls = new String[html.getHreflang().size()];
@@ -584,7 +585,7 @@ public class WebConfiguration implements Serializable {
             for (int i = content.length() - 1; i >= 0; i--) if (content.charAt(i) == ' ') contentwc++;
             add(doc, WebMapping.wordcount_i, contentwc);
         }
-        
+
         // statistics about the links
         add(doc, WebMapping.linkscount_i, inboundLinks.size() + outboundLinks.size());
         add(doc, WebMapping.linksnofollowcount_i, document.inboundLinkNofollowCount() + document.outboundLinkNofollowCount());
@@ -593,19 +594,18 @@ public class WebConfiguration implements Serializable {
         add(doc, WebMapping.outboundlinkscount_i, outboundLinks.size());
         add(doc, WebMapping.outboundlinksnofollowcount_i, document.outboundLinkNofollowCount());
 
-        
         // create a subgraph
         Subgraph subgraph = new Subgraph(inboundLinks.size(), outboundLinks.size());
         for (final AnchorURL target_url: document.getHyperlinks().keySet()) {
             enrichSubgraph(subgraph, digestURL, target_url);
         }
-       
+
         // attach the subgraph content
         add(doc, WebMapping.inboundlinks_sxt, subgraph.urls[0]);
         add(doc, WebMapping.inboundlinks_anchortext_txt, subgraph.urlAnchorTexts[0]);
         add(doc, WebMapping.outboundlinks_sxt, subgraph.urls[1]);
         add(doc, WebMapping.outboundlinks_anchortext_txt, subgraph.urlAnchorTexts[1]);
-        
+
         // charset
         add(doc, WebMapping.charset_s, document.getCharset());
 
@@ -635,14 +635,14 @@ public class WebConfiguration implements Serializable {
         // LSON-LD object
         JSONObject ld = document.ld();
         //System.out.println("**** LD for " + digestURL.toNormalform(true) + "\n" + ld.toString(2) + "\n"); // debug
-        add(doc, WebMapping.ld_o, ld);
+        if (Data.config.getOrDefault("parser.html.enable_ld_o", "false").equals("true")) add(doc, WebMapping.ld_o, ld);
         String lds = ld.toString(0);
         add(doc, WebMapping.ld_s, lds);
         Collection<String> context = htmlParser.getLdContext(ld);
         add(doc, WebMapping.ld_context_sxt, context);
         return doc;
     }
-    
+
     /**
      * Add images metadata to Solr doc when corresponding schema attributes are enabled. 
      * Remove images urls from inboudLinks and outboundLinks.
@@ -652,46 +652,46 @@ public class WebConfiguration implements Serializable {
      * @param outboundLinks all document outbound links
      * @param images document images
      */
-	private static void processImages(JSONObject doc, LinkedHashMap<MultiProtocolURL, String> inboundLinks,
-			LinkedHashMap<MultiProtocolURL, String> outboundLinks, List<ImageEntry> images) {
-		final ArrayList<String> imgurls = new ArrayList<String>(images.size());
-		final Integer[] imgheights = new Integer[images.size()];
-		final Integer[] imgwidths = new Integer[images.size()];
-		final Integer[] imgpixels = new Integer[images.size()];
-		final String[] imgalts  = new String[images.size()];
-		int withalt = 0;
-		int i = 0;
-		LinkedHashSet<String> images_text_map = new LinkedHashSet<String>();
-		/* Prepare flat solr field values */
-		for (final ImageEntry ie: images) {
-		    final MultiProtocolURL uri = ie.url();
-		    inboundLinks.remove(uri);
-		    outboundLinks.remove(uri);
-		    imgheights[i] = ie.height();
-		    imgwidths[i] = ie.width();
-		    imgpixels[i] = ie.height() < 0 || ie.width() < 0 ? -1 : ie.height() * ie.width();
-		    imgurls.add(uri.toNormalform(true));
-		    imgalts[i] = ie.alt();
-		    for (String it: CommonPattern.SPACE.split(uri.toTokens())) images_text_map.add(it);
-		    if (ie.alt() != null && ie.alt().length() > 0) {
-		        SentenceReader sr = new SentenceReader(ie.alt());
-		        while (sr.hasNext()) images_text_map.add(sr.next().toString());
-		        withalt++;
-		    }
-		    i++;
-		}
-		StringBuilder images_text = new StringBuilder(images_text_map.size() * 6 + 1);
-		for (String s: images_text_map) images_text.append(s.trim()).append(' ');
-		add(doc, WebMapping.imagescount_i, images.size());
-		add(doc, WebMapping.images_sxt, imgurls);
-		add(doc, WebMapping.images_alt_sxt, imgalts);
-		add(doc, WebMapping.images_height_val, imgheights);
-		add(doc, WebMapping.images_width_val, imgwidths);
-		add(doc, WebMapping.images_pixel_val, imgpixels);
-		add(doc, WebMapping.images_withalt_i, withalt);
-		add(doc, WebMapping.images_text_t, images_text.toString().trim());
-	}
-    
+    private static void processImages(JSONObject doc, LinkedHashMap<MultiProtocolURL, String> inboundLinks,
+            LinkedHashMap<MultiProtocolURL, String> outboundLinks, List<ImageEntry> images) {
+        final ArrayList<String> imgurls = new ArrayList<String>(images.size());
+        final Integer[] imgheights = new Integer[images.size()];
+        final Integer[] imgwidths = new Integer[images.size()];
+        final Integer[] imgpixels = new Integer[images.size()];
+        final String[] imgalts  = new String[images.size()];
+        int withalt = 0;
+        int i = 0;
+        LinkedHashSet<String> images_text_map = new LinkedHashSet<String>();
+        /* Prepare flat solr field values */
+        for (final ImageEntry ie: images) {
+            final MultiProtocolURL uri = ie.url();
+            inboundLinks.remove(uri);
+            outboundLinks.remove(uri);
+            imgheights[i] = ie.height();
+            imgwidths[i] = ie.width();
+            imgpixels[i] = ie.height() < 0 || ie.width() < 0 ? -1 : ie.height() * ie.width();
+            imgurls.add(uri.toNormalform(true));
+            imgalts[i] = ie.alt();
+            for (String it: CommonPattern.SPACE.split(uri.toTokens())) images_text_map.add(it);
+            if (ie.alt() != null && ie.alt().length() > 0) {
+                SentenceReader sr = new SentenceReader(ie.alt());
+                while (sr.hasNext()) images_text_map.add(sr.next().toString());
+                withalt++;
+            }
+            i++;
+        }
+        StringBuilder images_text = new StringBuilder(images_text_map.size() * 6 + 1);
+        for (String s: images_text_map) images_text.append(s.trim()).append(' ');
+        add(doc, WebMapping.imagescount_i, images.size());
+        add(doc, WebMapping.images_sxt, imgurls);
+        add(doc, WebMapping.images_alt_sxt, imgalts);
+        add(doc, WebMapping.images_height_val, imgheights);
+        add(doc, WebMapping.images_width_val, imgwidths);
+        add(doc, WebMapping.images_pixel_val, imgpixels);
+        add(doc, WebMapping.images_withalt_i, withalt);
+        add(doc, WebMapping.images_text_t, images_text.toString().trim());
+    }
+
     /**
      * this method compresses a list of protocol names to an indexed list.
      * To do this, all 'http' entries are removed and considered as default.
@@ -705,7 +705,7 @@ public class WebConfiguration implements Serializable {
         List<String> a = new ArrayList<String>();
         String p;
         for (int i = 0; i < protocol.size(); i++) {
-        	p = protocol.get(i);
+            p = protocol.get(i);
             if (!p.equals("http")) {
                 String c = Integer.toString(i);
                 while (c.length() < 3) c = "0" + c;
@@ -714,7 +714,7 @@ public class WebConfiguration implements Serializable {
         }
         return a;
     }
-    
+
     /**
      * Uncompress indexed iplist of protocol names to a list of specified dimension.
      * @param iplist indexed list typically produced by protocolList2indexedList
@@ -727,14 +727,14 @@ public class WebConfiguration implements Serializable {
         if (iplist == null) return a;
         for (Object ip : iplist) {
             // ip format is 001-https but can be 4 digits  1011-https
-        	String indexedProtocol = ((String) ip); 
+            String indexedProtocol = ((String) ip); 
             int i = indexedProtocol.indexOf('-');
             /* Silently ignore badly formatted entry */
             if(i > 0 && indexedProtocol.length() > (i + 1)) {
-            	a.set(Integer.parseInt(indexedProtocol.substring(0, i)), indexedProtocol.substring(i+1));
+                a.set(Integer.parseInt(indexedProtocol.substring(0, i)), indexedProtocol.substring(i+1));
             }
         }
         return a;
     }
-    
+
 }
