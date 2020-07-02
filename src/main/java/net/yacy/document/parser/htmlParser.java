@@ -427,6 +427,7 @@ public class htmlParser extends AbstractParser implements Parser {
         JSONArray graph = compact.getJSONArray("@graph");
         for (int i = 0; i < graph.length(); i++) {
             JSONObject node = graph.getJSONObject(i);
+            assert node.has("@id");
             String nodeid = node.optString("@id", "");
             assert !index.containsKey(nodeid);
             index.put(nodeid, node);
@@ -500,6 +501,10 @@ public class htmlParser extends AbstractParser implements Parser {
     }
 
     private static void enrichNode(JSONObject node, Map<String, JSONObject> index, Map<String, Set<String>> contextcollector) {
+        String type = node.optString("@type");
+        if ("https://vsm.nrw/rdfa/v1.0/Anschrift".equals(type)) {
+            System.out.println();
+        }
         Iterator<String> keyi = node.keys();
         List<String> keys = new ArrayList<>();
         while (keyi.hasNext()) keys.add(keyi.next());
@@ -561,7 +566,7 @@ public class htmlParser extends AbstractParser implements Parser {
         }
 
         // clean up
-        if (node.has("@id") && node.getString("@id").startsWith("_")) node.remove("@id");
+        //if (node.has("@id") && node.getString("@id").startsWith("_")) node.remove("@id");
     }
 
     public static Set<String> getLdContext(JSONObject ld) {
@@ -579,6 +584,7 @@ public class htmlParser extends AbstractParser implements Parser {
         // http://rdf.greggkellogg.net/distiller?command=serialize&format=rdfa&output_format=jsonld
         // https://rdfa.info/play/
         // http://linter.structured-data.org/
+        // http://etherpad.searchlab.eu a98855cb2d3f2fe48b2b7e698c40603cfa3f56097ebcf8e926aa6853f821d86e
 
         /*
         if (args.length == 2) {
@@ -600,7 +606,7 @@ public class htmlParser extends AbstractParser implements Parser {
         */
 
         String[] testurl = new String[] {
-                
+                /*
                 "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
                 "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
                 "https://developers.google.com/search/docs/guides/intro-structured-data",
@@ -612,8 +618,8 @@ public class htmlParser extends AbstractParser implements Parser {
                 "https://files.gitter.im/yacy/publicplan/OJR0/error1.html", // 2. Anschrift und kommunikation fehlt
                 "https://files.gitter.im/yacy/publicplan/eol2/error2.html", // OK!
                 "https://files.gitter.im/yacy/publicplan/41gy/error2-wirdSoIndexiert.html", // 2. Kommunikation fehlt
-                
-                "https://redaktion.vsm.nrw/rdfa-mit-duplikate.html"
+                "https://redaktion.vsm.nrw/rdfa-mit-duplikate.html",*/
+                "https://service.duesseldorf.de/suche/-/egov-bis-detail/dienstleistung/86000/show"
         };
         for (String url: testurl) {
             try {
@@ -629,7 +635,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 System.out.println("Title   : " + docs[0].dc_title());
                 System.out.println("Content : " + docs[0].getTextString());
                 System.out.println("JSON-LD : " + docs[0].ld().toString(2));
-                for (String cs: getLdContext(docs[0].ld())) System.out.println("Context : " + cs);
+                //for (String cs: getLdContext(docs[0].ld())) System.out.println("Context : " + cs);
                 //System.out.println("any23-e : " + jaExpand.toString(2));
                 //System.out.println("any23-f : " + jaFlatten.toString(2));
                 //System.out.println("any23-c : " + compactString);
