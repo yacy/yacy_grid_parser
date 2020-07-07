@@ -419,8 +419,7 @@ public class htmlParser extends AbstractParser implements Parser {
 
     public static JSONObject compact2tree(JSONObject compact) {
         Map<String, Set<String>> contextcollector = new LinkedHashMap<>();
-        JSONArray treegraph = new JSONArray();
-        LinkedHashMap<String, JSONObject> index = new LinkedHashMap<>();
+        LinkedHashMap<String, JSONObject> nodes = new LinkedHashMap<>();
         String id = compact.optString("@id", "");
 
         // first create a node index to look up tree nodes
@@ -429,15 +428,22 @@ public class htmlParser extends AbstractParser implements Parser {
             JSONObject node = graph.getJSONObject(i);
             assert node.has("@id");
             String nodeid = node.optString("@id", "");
-            assert !index.containsKey(nodeid);
-            index.put(nodeid, node);
+            assert !nodes.containsKey(nodeid);
+            nodes.put(nodeid, node);
         }
-        while (!index.isEmpty()) {
-            JSONObject node = index.remove(index.keySet().iterator().next());
-            enrichNode(node, index, contextcollector);
-            treegraph.put(node);
+        LinkedHashMap<String, JSONObject> forest = new LinkedHashMap<>();
+        while (!nodes.isEmpty()) {
+            JSONObject node = nodes.remove(nodes.keySet().iterator().next());
+            enrichNode(node, contextcollector, nodes, forest);
+            assert node.has("@id");
+            String nodeid = node.optString("@id", "");
+            forest.put(nodeid, node);
         }
 
+        // put remaining forest into the resulting treegraph array
+        JSONArray treegraph = new JSONArray();
+        for (JSONObject tree: forest.values()) treegraph.put(tree);
+        
         // compute the context
         JSONObject context = new JSONObject(true);
         contextcollector.forEach((context_name, context_ids) -> {
@@ -462,7 +468,9 @@ public class htmlParser extends AbstractParser implements Parser {
         for (int i = 0; i < treegraph.length(); i++) {
             Object j = treegraph.get(i);
             if (j instanceof JSONObject) {
-                replaceContext((JSONObject) j, reverse_context);
+                JSONObject node = (JSONObject) j;
+                if (node.has("@id") && node.getString("@id").startsWith("_")) node.remove("@id");
+                replaceContext(node, reverse_context);
             } else if (j instanceof JSONArray) {
                 replaceContext((JSONArray) j, reverse_context);
             }
@@ -479,7 +487,9 @@ public class htmlParser extends AbstractParser implements Parser {
             // recursion into next level
             Object j = treegraph.get(key);
             if (j instanceof JSONObject) {
-                replaceContext((JSONObject) j, reverse_context);
+                JSONObject node = (JSONObject) j;
+                if (node.has("@id") && node.getString("@id").startsWith("_")) node.remove("@id");
+                replaceContext(node, reverse_context);
             } else if (j instanceof JSONArray) {
                 replaceContext((JSONArray) j, reverse_context);
             }
@@ -500,11 +510,8 @@ public class htmlParser extends AbstractParser implements Parser {
         }
     }
 
-    private static void enrichNode(JSONObject node, Map<String, JSONObject> index, Map<String, Set<String>> contextcollector) {
-        String type = node.optString("@type");
-        if ("https://vsm.nrw/rdfa/v1.0/Anschrift".equals(type)) {
-            System.out.println();
-        }
+    @SafeVarargs
+    private static void enrichNode(JSONObject node, Map<String, Set<String>> contextcollector, Map<String, JSONObject>... xs) {
         Iterator<String> keyi = node.keys();
         List<String> keys = new ArrayList<>();
         while (keyi.hasNext()) keys.add(keyi.next());
@@ -516,11 +523,13 @@ public class htmlParser extends AbstractParser implements Parser {
                 JSONObject value = (JSONObject) object;
                 if (value.has("@id")) {
                     String id = value.getString("@id");
-                    JSONObject branch = index.get(id);
-                    if (branch != null) {
-                        index.remove(id);
-                        enrichNode(branch, index, contextcollector);
-                        node.put(key, branch);
+                    for (Map<String, JSONObject> index: xs) {
+                        JSONObject branch = index.get(id);
+                        if (branch != null) {
+                            index.remove(id);
+                            enrichNode(branch, contextcollector, xs);
+                            node.put(key, branch);
+                        }
                     }
                 } else if (value.has("@value")) {
                     Object vobject = value.get("@value");
@@ -535,11 +544,13 @@ public class htmlParser extends AbstractParser implements Parser {
                     JSONObject value = (JSONObject) o;
                     if (value.has("@id")) {
                         String id = value.getString("@id");
-                        JSONObject branch = index.get(id);
-                        if (branch != null) {
-                            index.remove(id);
-                            enrichNode(branch, index, contextcollector);
-                            values.put(i, branch);
+                        for (Map<String, JSONObject> index: xs) {
+                            JSONObject branch = index.get(id);
+                            if (branch != null) {
+                                index.remove(id);
+                                enrichNode(branch, contextcollector, xs);
+                                values.put(i, branch);
+                            }
                         }
                     } else if (value.has("@value")) {
                         Object vobject = value.get("@value");
@@ -564,9 +575,6 @@ public class htmlParser extends AbstractParser implements Parser {
                 }
             }
         }
-
-        // clean up
-        //if (node.has("@id") && node.getString("@id").startsWith("_")) node.remove("@id");
     }
 
     public static Set<String> getLdContext(JSONObject ld) {
@@ -606,7 +614,7 @@ public class htmlParser extends AbstractParser implements Parser {
         */
 
         String[] testurl = new String[] {
-                /*
+               
                 "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
                 "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
                 "https://developers.google.com/search/docs/guides/intro-structured-data",
@@ -614,11 +622,10 @@ public class htmlParser extends AbstractParser implements Parser {
                 "https://www.livegigs.de/konzert/madball/duesseldorf-stone-im-ratinger-hof/2018-06-19",
                 "https://www.mags.nrw/arbeit",
                 "https://redaktion.vsm.nrw/ultimateRdfa2.html", // unvollständig
-                "https://release-8-0-x-dev-224m2by-lj6ob4e22x2mc.eu.platform.sh/test", // unvollständig
                 "https://files.gitter.im/yacy/publicplan/OJR0/error1.html", // 2. Anschrift und kommunikation fehlt
                 "https://files.gitter.im/yacy/publicplan/eol2/error2.html", // OK!
                 "https://files.gitter.im/yacy/publicplan/41gy/error2-wirdSoIndexiert.html", // 2. Kommunikation fehlt
-                "https://redaktion.vsm.nrw/rdfa-mit-duplikate.html",*/
+                "https://redaktion.vsm.nrw/rdfa-mit-duplikate.html",
                 "https://service.duesseldorf.de/suche/-/egov-bis-detail/dienstleistung/86000/show"
         };
         for (String url: testurl) {
