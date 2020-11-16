@@ -60,7 +60,7 @@ import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.cora.storage.Files;
 import net.yacy.grid.mcp.Data;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import org.mozilla.intl.chardet.nsDetector;
 import org.mozilla.intl.chardet.nsPSMDetector;

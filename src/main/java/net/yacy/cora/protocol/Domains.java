@@ -795,11 +795,8 @@ public class Domains {
         NAME_CACHE_HIT.insertIfAbsent(host, i);
         cacheHit_Insert++;
     }
-    
-	final private static ExecutorService getByNameService = Executors
-			.newCachedThreadPool(new NamePrefixThreadFactory("InetAddress.getByName"));
-	
-	final private static TimeLimiter timeLimiter = new SimpleTimeLimiter(getByNameService);
+
+    final private static ExecutorService getByNameService = Executors.newCachedThreadPool(new NamePrefixThreadFactory("InetAddress.getByName"));
 
     /**
      * strip off any parts of an url, address string (containing host/ip:port) or raw IPs/Hosts,
