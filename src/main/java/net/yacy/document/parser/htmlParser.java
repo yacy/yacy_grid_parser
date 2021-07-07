@@ -59,20 +59,20 @@ import org.eclipse.rdf4j.rio.helpers.JSONLDSettings;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.ibm.icu.text.CharsetDetector;
+
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.http.ClientConnection;
-import net.yacy.grid.tools.CommonPattern;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
-import net.yacy.document.parser.html.Scraper;
 import net.yacy.document.parser.html.ImageEntry;
+import net.yacy.document.parser.html.Scraper;
 import net.yacy.document.parser.html.Tokenizer;
+import net.yacy.grid.http.ClientConnection;
+import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.util.FileUtils;
-
-import com.ibm.icu.text.CharsetDetector;
 
 public class htmlParser extends AbstractParser implements Parser {
 
@@ -80,35 +80,35 @@ public class htmlParser extends AbstractParser implements Parser {
 
     public htmlParser() {
         super("Streaming HTML Parser");
-        this.SUPPORTED_EXTENSIONS.add("htm");
-        this.SUPPORTED_EXTENSIONS.add("html");
-        this.SUPPORTED_EXTENSIONS.add("shtml");
-        this.SUPPORTED_EXTENSIONS.add("shtm");
-        this.SUPPORTED_EXTENSIONS.add("stm");
-        this.SUPPORTED_EXTENSIONS.add("xhtml");
-        this.SUPPORTED_EXTENSIONS.add("phtml");
-        this.SUPPORTED_EXTENSIONS.add("phtm");
-        this.SUPPORTED_EXTENSIONS.add("tpl");
-        this.SUPPORTED_EXTENSIONS.add("php");
-        this.SUPPORTED_EXTENSIONS.add("php2");
-        this.SUPPORTED_EXTENSIONS.add("php3");
-        this.SUPPORTED_EXTENSIONS.add("php4");
-        this.SUPPORTED_EXTENSIONS.add("php5");
-        this.SUPPORTED_EXTENSIONS.add("cfm");
-        this.SUPPORTED_EXTENSIONS.add("asp");
-        this.SUPPORTED_EXTENSIONS.add("aspx");
-        this.SUPPORTED_EXTENSIONS.add("tex");
-        this.SUPPORTED_EXTENSIONS.add("txt");
-        this.SUPPORTED_EXTENSIONS.add("msg");
+        SUPPORTED_EXTENSIONS.add("htm");
+        SUPPORTED_EXTENSIONS.add("html");
+        SUPPORTED_EXTENSIONS.add("shtml");
+        SUPPORTED_EXTENSIONS.add("shtm");
+        SUPPORTED_EXTENSIONS.add("stm");
+        SUPPORTED_EXTENSIONS.add("xhtml");
+        SUPPORTED_EXTENSIONS.add("phtml");
+        SUPPORTED_EXTENSIONS.add("phtm");
+        SUPPORTED_EXTENSIONS.add("tpl");
+        SUPPORTED_EXTENSIONS.add("php");
+        SUPPORTED_EXTENSIONS.add("php2");
+        SUPPORTED_EXTENSIONS.add("php3");
+        SUPPORTED_EXTENSIONS.add("php4");
+        SUPPORTED_EXTENSIONS.add("php5");
+        SUPPORTED_EXTENSIONS.add("cfm");
+        SUPPORTED_EXTENSIONS.add("asp");
+        SUPPORTED_EXTENSIONS.add("aspx");
+        SUPPORTED_EXTENSIONS.add("tex");
+        SUPPORTED_EXTENSIONS.add("txt");
+        SUPPORTED_EXTENSIONS.add("msg");
 
-        this.SUPPORTED_MIME_TYPES.add("text/html");
-        this.SUPPORTED_MIME_TYPES.add("text/xhtml+xml");
-        this.SUPPORTED_MIME_TYPES.add("application/xhtml+xml");
-        this.SUPPORTED_MIME_TYPES.add("application/x-httpd-php");
-        this.SUPPORTED_MIME_TYPES.add("application/x-tex");
-        this.SUPPORTED_MIME_TYPES.add("application/vnd.ms-outlook");
-        this.SUPPORTED_MIME_TYPES.add("text/plain");
-        this.SUPPORTED_MIME_TYPES.add("text/csv");
+        SUPPORTED_MIME_TYPES.add("text/html");
+        SUPPORTED_MIME_TYPES.add("text/xhtml+xml");
+        SUPPORTED_MIME_TYPES.add("application/xhtml+xml");
+        SUPPORTED_MIME_TYPES.add("application/x-httpd-php");
+        SUPPORTED_MIME_TYPES.add("application/x-tex");
+        SUPPORTED_MIME_TYPES.add("application/vnd.ms-outlook");
+        SUPPORTED_MIME_TYPES.add("text/plain");
+        SUPPORTED_MIME_TYPES.add("text/csv");
     }
 
     @Override
@@ -358,7 +358,7 @@ public class htmlParser extends AbstractParser implements Parser {
         byte[] b = ClientConnection.load(url);
         return parse(url, b);
     }
-    
+
     public static Document[] parse(String url, byte[] b) throws IOException {
         MultiProtocolURL location = new MultiProtocolURL(url);
         htmlParser parser = new htmlParser();
@@ -443,7 +443,7 @@ public class htmlParser extends AbstractParser implements Parser {
         // put remaining forest into the resulting treegraph array
         JSONArray treegraph = new JSONArray();
         for (JSONObject tree: forest.values()) treegraph.put(tree);
-        
+
         // compute the context
         JSONObject context = new JSONObject(true);
         contextcollector.forEach((context_name, context_ids) -> {
@@ -585,8 +585,19 @@ public class htmlParser extends AbstractParser implements Parser {
         }
         return context;
     }
+    public static void printVersion(Class<?> clazz) {
+        Package p = clazz.getPackage();
+        System.out.printf("%s%n  Title: %s%n  Version: %s%n  Vendor: %s%n",
+                          clazz.getName(),
+                          p.getImplementationTitle(),
+                          p.getImplementationVersion(),
+                          p.getImplementationVendor());
+    }
 
     public static void main(String[] args) {
+        printVersion(org.eclipse.rdf4j.model.Model.class);
+        printVersion(org.eclipse.rdf4j.model.Statement.class);
+
         // verify RDFa with
         // https://www.w3.org/2012/pyRdfa/Overview.html#distill_by_input
         // http://rdf.greggkellogg.net/distiller?command=serialize&format=rdfa&output_format=jsonld
@@ -614,7 +625,8 @@ public class htmlParser extends AbstractParser implements Parser {
         */
 
         String[] testurl = new String[] {
-               
+                "https://www.bochum.de/Umwelt--und-Gruenflaechenamt/Dienstleistungen-und-Infos/Abfallentsorgung",
+                "https://buergerportal.schlossholtestukenbrock.de/informationen-und-auftrage/-/egov-bis-detail/dienstleistung/1469/show"/*
                 "https://www.foodnetwork.com/recipes/tyler-florence/chicken-marsala-recipe-1951778",
                 "https://www.amazon.de/Hitchhikers-Guide-Galaxy-Paperback-Douglas/dp/B0043WOFQG",
                 "https://developers.google.com/search/docs/guides/intro-structured-data",
@@ -626,7 +638,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 "https://files.gitter.im/yacy/publicplan/eol2/error2.html", // OK!
                 "https://files.gitter.im/yacy/publicplan/41gy/error2-wirdSoIndexiert.html", // 2. Kommunikation fehlt
                 "https://redaktion.vsm.nrw/rdfa-mit-duplikate.html",
-                "https://service.duesseldorf.de/suche/-/egov-bis-detail/dienstleistung/86000/show"
+                "https://service.duesseldorf.de/suche/-/egov-bis-detail/dienstleistung/86000/show"*/
         };
         for (String url: testurl) {
             try {
