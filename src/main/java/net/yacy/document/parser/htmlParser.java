@@ -664,6 +664,6 @@ public class htmlParser extends AbstractParser implements Parser {
                 e.printStackTrace();
             }
         }
-
     }
+
 }
