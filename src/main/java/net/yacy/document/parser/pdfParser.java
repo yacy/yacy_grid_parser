@@ -52,13 +52,13 @@ import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
 import org.apache.pdfbox.text.PDFTextStripper;
 
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.AnchorURL;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
+import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.AnchorURL;
+import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.io.CharBuffer;
 import net.yacy.kelondro.util.FileUtils;
 
@@ -67,16 +67,16 @@ public class pdfParser extends AbstractParser implements Parser {
 
     public static boolean individualPages = false;
     public static String individualPagePropertyname = "page";
-    
+
     public pdfParser() {
         super("Acrobat Portable Document Parser");
-        this.SUPPORTED_EXTENSIONS.add("pdf");
-        this.SUPPORTED_MIME_TYPES.add("application/pdf");
-        this.SUPPORTED_MIME_TYPES.add("application/x-pdf");
-        this.SUPPORTED_MIME_TYPES.add("application/acrobat");
-        this.SUPPORTED_MIME_TYPES.add("applications/vnd.pdf");
-        this.SUPPORTED_MIME_TYPES.add("text/pdf");
-        this.SUPPORTED_MIME_TYPES.add("text/x-pdf");
+        SUPPORTED_EXTENSIONS.add("pdf");
+        SUPPORTED_MIME_TYPES.add("application/pdf");
+        SUPPORTED_MIME_TYPES.add("application/x-pdf");
+        SUPPORTED_MIME_TYPES.add("application/acrobat");
+        SUPPORTED_MIME_TYPES.add("applications/vnd.pdf");
+        SUPPORTED_MIME_TYPES.add("text/pdf");
+        SUPPORTED_MIME_TYPES.add("text/x-pdf");
     }
 
     static {
@@ -88,10 +88,10 @@ public class pdfParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source) throws Parser.Failure, InterruptedException {
-        
+
         // create a pdf parser
         PDDocument pdfDoc;
         try {
@@ -130,7 +130,7 @@ public class pdfParser extends AbstractParser implements Parser {
         info = null;
 
         if (docTitle == null || docTitle.isEmpty()) {
-            docTitle = MultiProtocolURL.unescape(location.getFileName());
+            docTitle = location == null ? "" : MultiProtocolURL.unescape(location.getFileName());
         }
         if (docTitle == null) {
             docTitle = docSubject;
@@ -139,20 +139,20 @@ public class pdfParser extends AbstractParser implements Parser {
         if (docKeywordStr != null) {
             docKeywords = docKeywordStr.split(" |,");
         }
-        
+
         Collection<AnchorURL>[] pdflinks = null;
         Document[] result = null;
         try {
             // get the links
             pdflinks = extractPdfLinks(pdfDoc);
-            
+
             // get the fulltext (either per document or for each page)
             final PDFTextStripper stripper = new PDFTextStripper(/*StandardCharsets.UTF_8.name()*/);
 
             if (individualPages) {
                 // this is a hack which stores individual pages of the source pdf into individual index documents
                 // the new documents will get a virtual link with a post argument page=X appended to the original url
-                
+
                 // collect text
                 int pagecount = pdfDoc.getNumberOfPages();
                 String[] pages = new String[pagecount];
@@ -162,12 +162,12 @@ public class pdfParser extends AbstractParser implements Parser {
                     pages[page - 1] = stripper.getText(pdfDoc);
                     //System.out.println("PAGE " + page + ": " + pages[page - 1]);
                 }
-                
+
                 // create individual documents for each page
                 assert pages.length == pdflinks.length : "pages.length = " + pages.length + ", pdflinks.length = " + pdflinks.length;
                 result = new Document[Math.min(pages.length, pdflinks.length)];
                 String loc = location.toNormalform(true);
-                for (int page = 0; page < result.length; page++) {                    
+                for (int page = 0; page < result.length; page++) {
                     result[page] = new Document(
                             new MultiProtocolURL(loc + (loc.indexOf('?') > 0 ? '&' : '?') + individualPagePropertyname + '=' + (page + 1)), // these are virtual new pages; we cannot combine them with '#' as that would be removed when computing the urlhash
                             mimeType,
@@ -216,7 +216,7 @@ public class pdfParser extends AbstractParser implements Parser {
                     contentBytes = writer.getBytes(); // get final text before closing writer
                     writer.close(); // free writer resources
                 }
-                
+
                 Collection<AnchorURL> pdflinksCombined = new HashSet<>();
                 for (Collection<AnchorURL> pdflinksx: pdflinks) if (pdflinksx != null) pdflinksCombined.addAll(pdflinksx);
                 result = new Document[]{new Document(
@@ -238,7 +238,7 @@ public class pdfParser extends AbstractParser implements Parser {
                         null,
                         false,
                         docDate)};
-            }         
+            }
         } catch (final Throwable e) {
             //throw new Parser.Failure(e.getMessage(), location);
         } finally {
@@ -256,7 +256,7 @@ public class pdfParser extends AbstractParser implements Parser {
         // the great number of these objects can easily be seen in Java Visual VM
         // we try to get this shit out of the memory here by forced clear calls, hope the best the rubbish gets out.
         pdfDoc = null;
-        
+
         return result;
     }
 
@@ -318,19 +318,19 @@ public class pdfParser extends AbstractParser implements Parser {
         private ClassLoader sys;
         public ResourceCleaner() {
             try {
-                this.findLoadedClass = ClassLoader.class.getDeclaredMethod("findLoadedClass", new Class[] { String.class });
-                this.findLoadedClass.setAccessible(true);
-                this.sys = ClassLoader.getSystemClassLoader();
+                findLoadedClass = ClassLoader.class.getDeclaredMethod("findLoadedClass", new Class[] { String.class });
+                findLoadedClass.setAccessible(true);
+                sys = ClassLoader.getSystemClassLoader();
             } catch (Throwable e) {
                 Data.logger.warn("", e);
-                this.findLoadedClass = null;
-                this.sys = null;
+                findLoadedClass = null;
+                sys = null;
             }
         }
         public void clearClassResources(String name) {
-            if (this.findLoadedClass == null) return;
+            if (findLoadedClass == null) return;
             try {
-                Object pdfparserpainclass = this.findLoadedClass.invoke(this.sys, name);
+                Object pdfparserpainclass = findLoadedClass.invoke(sys, name);
                 if (pdfparserpainclass != null) {
                     Method clearResources = ((Class) pdfparserpainclass).getDeclaredMethod("clearResources", new Class[] {});
                     if (clearResources != null) clearResources.invoke(null);
@@ -340,7 +340,7 @@ public class pdfParser extends AbstractParser implements Parser {
             }
         }
     }
-    
+
     /**
      * test
      * @param args
