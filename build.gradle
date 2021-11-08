@@ -2,7 +2,6 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'application'
 apply plugin: 'eclipse'
-apply plugin: 'idea'
 
 sourceSets {
     main {
@@ -44,7 +43,8 @@ dependencies {
     compile group: 'jcifs', name: 'jcifs', version: '1.+'
     compile group: 'org.elasticsearch.client', name: 'transport', version: '6.8.+'
     compile group: 'org.eclipse.jgit', name: 'org.eclipse.jgit', version: '5.+'
-    compile group: 'com.hazelcast', name: 'hazelcast', version: '4.1.+'
+    compile group: 'com.hazelcast', name: 'hazelcast', version: '5.+'
+    compile group: 'io.minio', name: 'minio', version: '8.3.+'
 
     compile group: 'org.jwat', name: 'jwat-warc', version: '1.+'
     compile group: 'org.apache.poi', name: 'poi', version: '4.+'
@@ -63,7 +63,7 @@ dependencies {
     compile group: 'org.jsoup', name: 'jsoup', version: '1.+'
     compile group: 'xerces', name: 'xercesImpl', version: '2.12.0'
     compile group: 'com.drewnoakes', name: 'metadata-extractor', version: '2.13.+'
-    compile group: 'org.bouncycastle', name: 'bcprov-jdk16', version: '1.46'
+    compile group: 'org.bouncycastle', name: 'bcprov-jdk16', version: '1.+'
     compile group: 'org.apache.any23', name: 'apache-any23-core', version: '2.+'
     compile group: 'org.eclipse.rdf4j', name: 'rdf4j-model', version: '3.7.1'
 }

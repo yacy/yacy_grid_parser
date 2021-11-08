@@ -6,12 +6,12 @@
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *  Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program in the file lgpl21.txt
  *  If not, see <http://www.gnu.org/licenses/>.
@@ -42,9 +42,9 @@ import org.jwat.warc.WarcReader;
 import org.jwat.warc.WarcReaderFactory;
 import org.jwat.warc.WarcRecord;
 
-import ai.susi.mind.SusiThought;
 import ai.susi.mind.SusiAction;
 import ai.susi.mind.SusiAction.RenderType;
+import ai.susi.mind.SusiThought;
 import net.yacy.cora.federate.index.WebConfiguration;
 import net.yacy.cora.protocol.RequestHeader;
 import net.yacy.cora.protocol.ResponseHeader;
@@ -71,43 +71,43 @@ import net.yacy.grid.tools.MultiProtocolURL;
  * - (1) within the POST request
  * - (2) as an asset, stored by the mcp
  * - (3) as a source url, hosted somewhere .. maybe also within a file in the file system.
- * 
+ *
  * The target can be returned in several ways as well
  * - (1) as the json result of the request
  * - (2) stored within a remote storage location
  * - (3) as an asset, stored by the mcp
- * 
+ *
  * The whole process may have a steering attached with actions that are used to
  * store processes on the mcp queue.
- * - All i/o combination mentioned above must be available in a queued process. 
+ * - All i/o combination mentioned above must be available in a queued process.
  * Possible post-process steps may be
  * - send the result to an indexer
  * - extract urls and store them in a crawl queue (including a link double-check)
  * - tell a log client to print out the status of the operation
  * - move the WARC file to an archive position
- * 
+ *
  * test:
- * 
+ *
  * - first call
  * cd ~/Downloads
  * wget https://www.land.nrw/ --warc-file=land.nrw
- * 
+ *
  * - (1) post the asset directly and parse it
  * curl --request POST --form "sourcebytes=@land.nrw.warc.gz;type=application/octet-stream" http://127.0.0.1:8500/yacy/grid/parser/parser.json
- * 
+ *
  * - (2) to test with an asset, first store the warc to the asset store:
  * curl --request POST --form "asset=@land.nrw.warc.gz;type=application/octet-stream" --form "path=/test/land.nrw.warc.gz" http://127.0.0.1:8500/yacy/grid/mcp/assets/store.json
- * 
+ *
  * - then read the asset with
  * http://127.0.0.1:8500/yacy/grid/parser/parser.json?sourceasset=test/land.nrw.warc.gz
- * 
+ *
  * - (3) read the warc with
  * http://127.0.0.1:8500/yacy/grid/parser/parser.json?sourceurl=file:///Users/admin/Downloads/land.nrw.warc.gz
- * 
+ *
  * The result can be either a json object or a flat file. A flat file is a text file which has one json object per line.
  * The flat file can be generated with the option flatfile=true
  * Default is no flatfile which is a json object containing a JSONArray for the object key 'documents'.
- * 
+ *
  * Flatfile Example: save the json result as flat file to land.nrw.flatjson
  * curl -X POST -F "sourcebytes=@land.nrw.warc.gz;type=application/octet-stream" -F "flatfile=true" -o land.nrw.flatjson http://127.0.0.1:8500/yacy/grid/parser/parser.json
  */
@@ -115,12 +115,12 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
 
     private static final long serialVersionUID = 8578474303031749879L;
     public static final String NAME = "parser";
-    
+
     @Override
     public String getAPIPath() {
         return "/yacy/grid/parser/" + NAME + ".json";
     }
-    
+
     /**
      * load a WARC from the sourcepath and store json flat file into targetpath
      * source is given by one of the following attributes
@@ -133,9 +133,9 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
 
         boolean flat = call.get("flatfile", false); // if true, the result is a text file with one json object per line each
         boolean elastic = flat && call.get("bulk", false); // if true, the result has per line a index prefix object which is required to feed the result into elasticsearch
-        
+
         InputStream sourceStream = null;
-        
+
         // read the source asset. We have four options:
         // 1) get the asset from the POST request in field 'sourceasset'
         byte[] source = call.get("sourcebytes", new byte[0]);
@@ -157,7 +157,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                 }
             }
         }
-       
+
         // 3) get the asset from an external resource
         if (sourceStream == null) {
             // read from url
@@ -170,14 +170,14 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                 Data.logger.error(e.getMessage(), e);
             }
         }
-        
+
         if (sourceStream == null) {
             JSONObject json = new JSONObject(true);
             json.put(ObjectAPIHandler.SUCCESS_KEY, false);
             json.put(ObjectAPIHandler.COMMENT_KEY, "the request must contain either a sourcebytes, sourceasset or sourceurl attribute");
             return new ServiceResponse(json);
         }
-        
+
         // compute parsed documents
         JSONArray parsedDocuments;
         try {
@@ -191,7 +191,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             } catch (IOException e) {
             }
         }
-        
+
         if (flat) {
             StringBuffer sb = new StringBuffer(2048);
             for (int i = 0; i < parsedDocuments.length(); i++) {
@@ -214,7 +214,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         json.setData(parsedDocuments);
         json.setHits(parsedDocuments.length());
         json.addAction(new SusiAction(new JSONObject().put("type", RenderType.indexer.name())));
-        
+
         /*
         if (targetasset.length > 0 && targetpath.length() > 0) {
             try {
@@ -234,7 +234,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
 
         return new ServiceResponse(json);
     }
-    
+
     /**
      * WARC importer code, original from net.yacy.document.importer.WarcImporter.java
      * TODO: use original WARC request header instead of generated headers
