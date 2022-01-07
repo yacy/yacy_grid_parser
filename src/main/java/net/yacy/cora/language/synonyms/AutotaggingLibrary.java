@@ -30,9 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.yacy.cora.geo.Locations;
 import net.yacy.cora.lod.vocabulary.Tagging;
-
 import net.yacy.document.ProbabilisticClassifier;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 /**
  * Autotagging provides a set of tag/print-name properties which can be used to
@@ -76,7 +75,7 @@ public class AutotaggingLibrary {
                         this.allTags.put(t, PRESENT);
                     }
                 } catch (final IOException e) {
-                    Data.logger.warn(e.getMessage(), e);
+                    Logger.warn(this.getClass(), e.getMessage(), e);
                 }
             }
         }

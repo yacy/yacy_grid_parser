@@ -41,14 +41,14 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import net.yacy.cora.document.WordCache;
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.cora.geo.GeonamesLocation;
 import net.yacy.cora.geo.OpenGeoDBLocation;
 import net.yacy.cora.geo.OverarchingLocation;
 import net.yacy.cora.language.synonyms.AutotaggingLibrary;
-import net.yacy.cora.language.synonyms.SynonymLibrary;
+import net.yacy.cora.language.synonyms.SynonymLibrary;
 import net.yacy.crawler.retrieval.URLRewriterLibrary;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.util.FileUtils;
 
 public class LibraryProvider {
@@ -165,7 +165,7 @@ public class LibraryProvider {
             geoLoc.activateLocation(Dictionary.GEON2.nickname, new GeonamesLocation(geon, dymLib, minPopulation));
             return;
         }
-    }    
+    }
     public static void initDidYouMean() {
         final File dymDict = new File(dictRoot, path_to_did_you_mean_dictionaries);
         if ( !dymDict.exists() ) {
@@ -209,7 +209,7 @@ public class LibraryProvider {
             try {
                 writeWords(derewoOutput, derewo);
             } catch (final IOException e ) {
-                Data.logger.error("Catched Exception", e);
+                Logger.error("Catched Exception", e);
             }
         }
     }
@@ -272,10 +272,10 @@ public class LibraryProvider {
             derewoTxtEntry = zip.getInputStream(zip.getEntry("derewo-v-100000t-2009-04-30-0.1"));
             zip.close();
         } catch (final ZipException e ) {
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
             return list;
         } catch (final IOException e ) {
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
             return list;
         }
 
@@ -315,7 +315,7 @@ public class LibraryProvider {
             }
             reader.close();
         } catch (final IOException e ) {
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
         } finally {
             if ( reader != null ) {
                 try {

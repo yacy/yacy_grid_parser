@@ -55,14 +55,13 @@ import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.cora.lod.vocabulary.Tagging;
 import net.yacy.cora.util.ByteBuffer;
-
-import net.yacy.document.parser.html.Scraper;
 import net.yacy.document.parser.html.IconEntry;
 import net.yacy.document.parser.html.ImageEntry;
-import net.yacy.grid.mcp.Data;
+import net.yacy.document.parser.html.Scraper;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.Classification;
 import net.yacy.grid.tools.Classification.ContentDomain;
+import net.yacy.grid.tools.Logger;
 import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.util.FileUtils;
 
@@ -163,7 +162,7 @@ public class Document {
     public JSONObject ld() {
         return this.ld;
     }
-    
+
     /**
      * Get the content domain of a document. This tries to get the content domain from the mime type
      * and if this fails it uses alternatively the content domain from the file extension.
@@ -197,7 +196,7 @@ public class Document {
      * getScraperObject().
      * This is used for surrogate parsers to set a other source/scraper then ContentScraper
      * used e.g. by htmlParser.
-     * @param scraper 
+     * @param scraper
      */
     public void setScraperObject(Object scraper) {
         if (this.scraperObject != null) {
@@ -221,7 +220,7 @@ public class Document {
     public Map<String, Set<String>> getGenericFacets() {
         return this.generic_facets;
     }
-    
+
     /**
      * compute a set of languages that this document contains
      * the language is not computed using a statistical analysis of the content, only from given metadata that came with the document
@@ -280,7 +279,7 @@ dc_rights
         if (title != null) this.titles.add(title);
     }
 
-    
+
 
     public String dc_creator() {
         return (this.creator == null) ? "" : this.creator.toString();
@@ -349,7 +348,7 @@ dc_rights
     }
 
     public String[] dc_description() {
-        if (descriptions == null) return new String[0];
+        if (this.descriptions == null) return new String[0];
         return this.descriptions.toArray(new String[this.descriptions.size()]);
     }
 
@@ -419,7 +418,7 @@ dc_rights
             assert false : this.text.getClass().toString();
             return null;
         } catch (final Exception e) {
-            Data.logger.warn("", e);
+            Logger.warn(this.getClass(), e);
         }
         return new ByteArrayInputStream(UTF8.getBytes(""));
     }
@@ -440,7 +439,7 @@ dc_rights
             assert this.text instanceof String : this.text.getClass().toString();
             return (String) this.text;
         } catch (final Exception e) {
-            Data.logger.warn("", e);
+            Logger.warn(this.getClass(), e);
         }
         return "";
     }
@@ -462,7 +461,7 @@ dc_rights
             assert false : this.text.getClass().toString();
             return -1;
         } catch (final Exception e) {
-            Data.logger.warn("", e);
+            Logger.warn(this.getClass(), e);
         }
         return -1;
     }
@@ -622,7 +621,7 @@ dc_rights
             // expand the hyperlinks:
             // we add artificial hyperlinks to the hyperlink set
             // that can be calculated from given hyperlinks and imagelinks
-            
+
 			/*
 			 * Should we also include icons ? with
 			 * this.hyperlinks.putAll(allReflinks(this.icons.keySet())); It is
@@ -748,7 +747,7 @@ dc_rights
                         v.put(url, "ref");
                     continue loop;
                 }
-                
+
                 if ((pos = u.toLowerCase().indexOf("/www.", 11)) > 0) { // 11 = skip protocol part + www of source url "http://www."
                     i.remove();
                     u = url.getProtocol()+":/" + u.substring(pos);
@@ -795,14 +794,14 @@ dc_rights
             this.images.putAll(doc.getImages());
         }
     }
-    
+
     /**
      * @return links to icons that belongs to the document (mapped by absolute URL)
      */
     public Map<MultiProtocolURL, IconEntry> getIcons() {
-		return icons;
+		return this.icons;
 	}
-    
+
     /**
      * Set links to icons that belongs to the document (mapped by absolute URL)
      * @param icons
@@ -810,7 +809,7 @@ dc_rights
     public void setIcons(Map<MultiProtocolURL, IconEntry> icons) {
     	/* Better to ensure now icons property will not be null */
     	if(icons != null) {
-    		this.icons = icons;	
+    		this.icons = icons;
     	} else {
     		this.icons = new HashMap<>();
     	}
@@ -857,11 +856,11 @@ dc_rights
     public void setDepth(int depth) {
         this.crawldepth = depth;
     }
-    
+
     public int getDepth() {
         return this.crawldepth;
     }
-    
+
     public void writeXML(final Writer os) throws IOException {
         os.write("<record>\n");
         final String title = dc_title();
@@ -920,7 +919,7 @@ dc_rights
 
     /**
      * merge documents: a helper method for all parsers that return multiple documents.
-     * Note : when docs contains more than one item, eventual icons in each docs are not merged in result doc, 
+     * Note : when docs contains more than one item, eventual icons in each docs are not merged in result doc,
      * as their scope is limited to only one document.
      * @param location url of merged document
      * @param globalMime Mime type of merged document
@@ -982,7 +981,7 @@ dc_rights
                 try {
                     docTextLength += FileUtils.copy(doc.getTextStream(), content);
                 } catch (final IOException e) {
-                    Data.logger.warn("", e);
+                    Logger.warn(e);
                 }
             }
             anchors.addAll(doc.getAnchors());
@@ -990,10 +989,10 @@ dc_rights
             images.putAll(doc.getImages());
             if (doc.lon() != 0.0 && doc.lat() != 0.0) { lon = doc.lon(); lat = doc.lat(); }
             if (doc.lastModified.before(date)) date = doc.lastModified;
-            
+
             if (doc.getDepth() < mindepth) mindepth = doc.getDepth();
             if (doc.dc_language() != null) languages.add(doc.dc_language());
-            
+
             indexingDenied |= doc.indexingDenied;
         }
 
@@ -1037,7 +1036,7 @@ dc_rights
     public final static String IFRAME_MARKER = "iframe";
     public final static String FRAME_MARKER = "frame";
     public final static String EMBED_MARKER = "embed";
-    
+
     public static Map<AnchorURL, String> getHyperlinks(final Document[] documents, boolean includeNofollow) {
         final Map<AnchorURL, String> result = new HashMap<>();
         for (final Document d: documents) {

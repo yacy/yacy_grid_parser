@@ -38,8 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.yacy.cora.date.GenericFormatter;
 import net.yacy.cora.document.encoding.ASCII;
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.Logger;
 
 
 /**
@@ -103,8 +103,8 @@ public class HeaderFramework extends TreeMap<String, String> implements Map<Stri
     /** Added when generating legacy request header to allow template servlets to know the original request scheme : "http" or "https" */
     @Deprecated /** use getScheme() (header not used in any request, 2017-02-22) */
     public static final String X_YACY_REQUEST_SCHEME = "X-YaCy-Request-Scheme";
-    
-    /** Added to responses embedding a hidden HTML field containing a transaction token, 
+
+    /** Added to responses embedding a hidden HTML field containing a transaction token,
      * to allow easier retrieval (without HTML parsing) of the token value by external tools such as bash scripts */
     public static final String X_YACY_TRANSACTION_TOKEN = "X-YaCy-Transaction-Token";
 
@@ -427,7 +427,7 @@ public class HeaderFramework extends TreeMap<String, String> implements Map<Stri
             try {
                 return (int) Long.parseLong(get(CONTENT_LENGTH));
             } catch (final NumberFormatException e) {
-                Data.logger.warn("content-length cannot be parsed: " + get(CONTENT_LENGTH));
+                Logger.warn("content-length cannot be parsed: " + get(CONTENT_LENGTH));
                 return -1;
             }
         }

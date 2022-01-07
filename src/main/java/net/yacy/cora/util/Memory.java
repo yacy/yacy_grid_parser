@@ -23,7 +23,7 @@ package net.yacy.cora.util;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 public class Memory {
 
@@ -76,7 +76,7 @@ public class Memory {
     public static final long cores() {
         return runtime.availableProcessors();
     }
-    
+
     /**
      * get the system load within the last minute
      * @return the system load or a negative number if the load is not available
@@ -84,7 +84,7 @@ public class Memory {
     public static double load() {
         return ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
     }
-    
+
     /**
      * find out the number of thread deadlocks. WARNING: this is a time-consuming task
      * @return the number of deadlocked threads
@@ -94,7 +94,7 @@ public class Memory {
         if (deadlockIDs == null) return 0;
         return deadlockIDs.length;
     }
-    
+
     /**
      * write deadlocked threads as to the log as warning
      */
@@ -103,7 +103,7 @@ public class Memory {
         if (deadlockIDs == null) return;
         ThreadInfo[] infos = ManagementFactory.getThreadMXBean().getThreadInfo(deadlockIDs, true, true);
         for (ThreadInfo ti : infos) {
-            Data.logger.warn(ti.toString());
+            Logger.warn(ti.toString());
         }
     }
 }

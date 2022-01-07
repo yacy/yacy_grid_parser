@@ -27,7 +27,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 
 public class ImageParser {
@@ -46,10 +46,10 @@ public class ImageParser {
 			 * full loading with a MediaTracker
 			 */
 		} catch (IOException e) {
-			Data.logger.debug("IMAGEPARSER.parse : could not parse image " + filename, e);
+			Logger.debug("IMAGEPARSER.parse : could not parse image " + filename, e);
 		}
 		if (image == null) {
-			Data.logger.debug("IMAGEPARSER.parse : ImageIO failed for " + filename);
+			Logger.debug("IMAGEPARSER.parse : ImageIO failed for " + filename);
 			return null;
 		}
 

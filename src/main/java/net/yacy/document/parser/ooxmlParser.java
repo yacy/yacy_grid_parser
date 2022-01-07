@@ -43,19 +43,19 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.xml.sax.SAXException;
+
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
 import net.yacy.document.parser.xml.ODContentHandler;
 import net.yacy.document.parser.xml.ODMetaHandler;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.io.CharBuffer;
 import net.yacy.kelondro.util.FileUtils;
-
-import org.xml.sax.SAXException;
 
 public class ooxmlParser extends AbstractParser implements Parser {
 
@@ -132,7 +132,7 @@ public class ooxmlParser extends AbstractParser implements Parser {
                     } finally {
                         zipFileEntryStream.close();
                     }
-   
+
                 } else if (entryName.equals("docProps/core.xml")) {
                     //  meta.xml contains metadata about the document
                     final InputStream zipFileEntryStream = zipFile.getInputStream(zipEntry);
@@ -199,7 +199,7 @@ public class ooxmlParser extends AbstractParser implements Parser {
                 writer.close();
             } catch (final Exception ex) {/* ignore this */}
 
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
             throw new Parser.Failure("Unexpected error while parsing odt file. " + e.getMessage(),location);
         }
     }
@@ -209,7 +209,7 @@ public class ooxmlParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source) throws Parser.Failure, InterruptedException {
         File dest = null;

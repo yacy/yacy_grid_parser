@@ -4,14 +4,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
+import javax.xml.transform.stream.StreamSource;
+
 import net.yacy.document.parser.rdfa.IRDFaTriple;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 public class RDFaTripleImpl{
 
@@ -50,7 +52,7 @@ public class RDFaTripleImpl{
 		try {
 			this.aTransformer.transform(new StreamSource(this.in), new StreamResult(System.out));
 		} catch (final TransformerException e) {
-			Data.logger.warn("Error while reading RDFa", e);
+			Logger.warn("Error while reading RDFa", e);
 		}
 
 		return this.allRDFaTriples .toArray(new IRDFaTriple[]{});

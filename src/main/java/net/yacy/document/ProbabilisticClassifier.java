@@ -34,31 +34,31 @@ import java.util.Set;
 
 import net.yacy.cora.bayes.BayesClassifier;
 import net.yacy.cora.bayes.Classification;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 public class ProbabilisticClassifier {
 
     public final static String NONE_CATEGORY_NAME = "NONE";
     public final static Category NONE_CATEGORY = new Category(NONE_CATEGORY_NAME);
-    
+
     public static class Category {
-        
+
         String category_name;
-        
+
         public Category(String category_name) {
             this.category_name = category_name;
         }
-        
+
         public String getName() {
             return this.category_name;
         }
     }
-    
+
     public static class Context {
 
         private String context_name;
         private BayesClassifier<String, Category> bayes;
-        
+
         public Context(String context_name, Map<String, File> categoryExampleLinesFiles, File negativeExampleLines) throws IOException {
             this.context_name = context_name;
             int requiredSize = 0;
@@ -72,18 +72,18 @@ public class ProbabilisticClassifier {
             List<String> list = Files.readAllLines(negativeExampleLines.toPath(), charset);
             categoryBuffer.put(NONE_CATEGORY_NAME, Files.readAllLines(negativeExampleLines.toPath(), charset));
             requiredSize += list.size();
-            
+
             this.bayes = new BayesClassifier<>();
             this.bayes.setMemoryCapacity(requiredSize);
-            
+
             for (Map.Entry<String, List<String>> category: categoryBuffer.entrySet()) {
                 Category c = new Category(category.getKey());
                 for (String line: category.getValue()) {
                     List<String> tokens = normalize(line);
-                    bayes.learn(c, tokens);
+                    this.bayes.learn(c, tokens);
                 }
             }
-            bayes.learn(NONE_CATEGORY, categoryBuffer.get(NONE_CATEGORY_NAME));
+            this.bayes.learn(NONE_CATEGORY, categoryBuffer.get(NONE_CATEGORY_NAME));
         }
 
         private List<String> normalize(String phrase) {
@@ -93,7 +93,7 @@ public class ProbabilisticClassifier {
             for (String token: rawtokens) if (token.length() > 2) tokens.add(token);
             return tokens;
         }
-        
+
         public String getName() {
             return this.context_name;
         }
@@ -102,19 +102,19 @@ public class ProbabilisticClassifier {
             List<String> words = normalize(phrase);
             return this.bayes.classify(words);
         }
-        
+
      }
-    
+
     private static Map<String, Context> contexts = new HashMap<>();
 
     public static Set<String> getContextNames() {
         return contexts.keySet();
     }
-    
+
     public static Context getContext(String contextName) {
         return contexts.get(contextName);
     }
-    
+
     /**
      * create a new classifier set.
      * @param path_to_context_directory directory containing contexts wich are directories containing .txt files. One of them must be named 'negative.txt'
@@ -126,10 +126,10 @@ public class ProbabilisticClassifier {
             File ccf = new File(path_to_context_directory, context_candidate);
             if (!ccf.isDirectory()) continue;
             String[] category_candidates = ccf.list();
-            
+
             Map<String, File> categoryExampleLinesFiles = new HashMap<>();
             File negativeExampleLines = null;
-            
+
             for (String category_candidate: category_candidates) {
                 if (!category_candidate.endsWith(".txt")) continue;
                 File catcf = new File(ccf, category_candidate);
@@ -139,18 +139,18 @@ public class ProbabilisticClassifier {
                     categoryExampleLinesFiles.put(category_candidate.substring(0, category_candidate.length() - 4), catcf);
                 }
             }
-            
+
             if (negativeExampleLines != null && categoryExampleLinesFiles.size() > 0) {
                 try {
                     Context context = new Context(context_candidate, categoryExampleLinesFiles, negativeExampleLines);
                     contexts.put(context_candidate, context);
                 } catch (IOException e) {
-                    Data.logger.error("Catched Exception", e);
+                    Logger.error("Catched Exception", e);
                 }
             }
         }
     }
-    
+
     /**
      * compute the classification of a given text. The result is a map with most probable categorizations for each context.
      * @param text the text to be classified
@@ -167,5 +167,5 @@ public class ProbabilisticClassifier {
         }
         return c;
     }
-    
+
 }

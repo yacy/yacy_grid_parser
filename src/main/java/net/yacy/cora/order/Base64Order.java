@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 
 import net.yacy.cora.document.encoding.ASCII;
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 //ATTENTION! THIS CLASS SHALL NOT IMPORT FROM OTHER PACKAGES THAN CORA AND JRE
 //BECAUSE OTHERWISE THE DEBIAN INSTALLER FAILS!
@@ -209,7 +209,7 @@ public class Base64Order extends AbstractOrder<byte[]> implements ByteOrder, Com
         if (!this.rfc1521compliant) rfc1521compliantLength -= in.length % 3 == 2 ? 1 : in.length % 3 == 1 ? 2 : 0; // non-compliant are shorter (!)
         return ASCII.String(encodeSubstring(in, rfc1521compliantLength));
     }
-    
+
     public final byte[] encodeSubstring(final byte[] in, final int sublen) {
         if (in.length == 0) return new byte[0];
         assert sublen <= ((in.length + 2) / 3) * 4 : "sublen = " + sublen + ", expected: " + ((in.length + 2) / 3) * 4;
@@ -218,7 +218,7 @@ public class Base64Order extends AbstractOrder<byte[]> implements ByteOrder, Com
         int pos = 0;
         long l;
         while (in.length - pos >= 3 && writepos < sublen) {
-            l = ((((0XffL & in[pos++]) << 8) | (0XffL & in[pos++])) << 8) | (0XffL & in[pos++]);  
+            l = ((((0XffL & in[pos++]) << 8) | (0XffL & in[pos++])) << 8) | (0XffL & in[pos++]);
             encodeLong(l, out, writepos, 4);
             writepos += 4;
         }
@@ -241,7 +241,7 @@ public class Base64Order extends AbstractOrder<byte[]> implements ByteOrder, Com
         }
         return out;
     }
-    
+
     public final String decodeString(final String in) {
         return UTF8.String(decode(in));
     }
@@ -592,7 +592,7 @@ public class Base64Order extends AbstractOrder<byte[]> implements ByteOrder, Com
             // do some checks
             Random r = new Random(0); // not real random to be able to reproduce the test
 
-            try {                
+            try {
                 // use the class loader to call sun.misc.BASE64Encoder, the sun base64 encoder
                 // we do not instantiate that class here directly since that provokes a
                 // "warning: sun.misc.BASE64Encoder is internal proprietary API and may be removed in a future release"
@@ -635,7 +635,7 @@ public class Base64Order extends AbstractOrder<byte[]> implements ByteOrder, Com
                         String rfc1521Decoded = UTF8.String((byte[]) rfc1521Decoder_decodeBuffer.invoke(rfc1521Decoder, rfc1521));
                         if (!rfc1521Decoded.equals(challenges[i])) System.out.println("Encode enhancedB64 + Decode RFC1521: Fail for " + challenges[i]);
                     }
-                    
+
                     // encode with enhancedCoder, decode with standard RFC 1521 base64
                     // sun.misc.BASE64Encoder rfc1521Encoder = new sun.misc.BASE64Encoder();
                     for (int i = 0; i < count; i++) {
@@ -656,9 +656,9 @@ public class Base64Order extends AbstractOrder<byte[]> implements ByteOrder, Com
                 long time = System.currentTimeMillis() - start;
                 System.out.println("time: " + (time / 1000) + " seconds, " + (1000 * time / count) + " ms / 1000 steps");
             } catch (Throwable e) {
-                Data.logger.warn("", e);
+                Logger.warn(e);
             }
-            
+
         }
     }
 }

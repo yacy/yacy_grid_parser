@@ -32,8 +32,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import net.yacy.cora.storage.Configuration.Entry;
-import net.yacy.grid.mcp.Data;
-import net.yacy.cora.storage.Files;
+import net.yacy.grid.tools.Logger;
 
 /**
  * this class reads configuration attributes as a list of keywords from a list
@@ -52,7 +51,7 @@ import net.yacy.cora.storage.Files;
 public class Configuration extends TreeMap<String, Entry> implements Serializable {
 
     private final static long serialVersionUID=-5961730809008841258L;
-   
+
     private final File file;
     protected boolean lazy;
 
@@ -167,7 +166,7 @@ public class Configuration extends TreeMap<String, Entry> implements Serializabl
         } catch (final IOException e) {}
         return modified;
     }
-    
+
     /**
      * save the configuration back to the file
      * @throws IOException
@@ -318,7 +317,7 @@ public class Configuration extends TreeMap<String, Entry> implements Serializabl
                 if (!k.enabled()) System.out.println(k.toString() );
             }
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn(e);
         }
     }
 

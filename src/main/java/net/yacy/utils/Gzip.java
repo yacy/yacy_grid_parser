@@ -40,7 +40,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 
 
@@ -49,14 +49,14 @@ public class Gzip {
     public static void gzipFile(final String inFile, final String outFile) {
 	try {
 	    final InputStream  fin  = new BufferedInputStream(new FileInputStream(inFile));
-	    final OutputStream fout = new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(outFile)), 65536){{def.setLevel(Deflater.BEST_COMPRESSION);}};
+	    final OutputStream fout = new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(outFile)), 65536){{this.def.setLevel(Deflater.BEST_COMPRESSION);}};
 	    copy(fout, fin, 1024);
 	    fin.close();
 	    fout.close();
 	} catch (final FileNotFoundException e) {
-	    Data.logger.warn("ERROR: file '" + inFile + "' not found", e);
+	    Logger.warn("ERROR: file '" + inFile + "' not found", e);
 	} catch (final IOException e) {
-	    Data.logger.warn("ERROR: IO trouble ",e);
+	    Logger.warn("ERROR: IO trouble ",e);
 	}
     }
 
@@ -76,9 +76,9 @@ public class Gzip {
 	    fin.close();
 	    fout.close();
 	} catch (final FileNotFoundException e) {
-	    Data.logger.warn("ERROR: file '" + inFile + "' not found", e);
+	    Logger.warn("ERROR: file '" + inFile + "' not found", e);
 	} catch (final IOException e) {
-	    Data.logger.warn("ERROR: IO trouble ",e);
+	    Logger.warn("ERROR: IO trouble ",e);
 	}
     }
 
@@ -89,11 +89,11 @@ public class Gzip {
     public static String gunzipString(final byte[] in) {
 	    return UTF8.String(gunzip(in));
     }
-    
+
     public static byte[] gzip(byte[] b) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream(b.length);
-            GZIPOutputStream out = new GZIPOutputStream(baos, Math.min(65536, b.length)){{def.setLevel(Deflater.BEST_COMPRESSION);}};
+            GZIPOutputStream out = new GZIPOutputStream(baos, Math.min(65536, b.length)){{this.def.setLevel(Deflater.BEST_COMPRESSION);}};
             out.write(b, 0, b.length);
             out.finish();
             out.close();
@@ -101,7 +101,7 @@ public class Gzip {
         } catch (IOException e) {}
         return null;
     }
-    
+
     public static byte[] gunzip(byte[] b) {
         byte[] buffer = new byte[Math.min(2^20, b.length)];
         try {
@@ -131,7 +131,7 @@ public class Gzip {
         java.util.zip.GZIPOutputStream gzipout = null;
         try {
             f.getParentFile().mkdirs();
-            gzipout = new java.util.zip.GZIPOutputStream(new FileOutputStream(f), 65536){{def.setLevel(Deflater.BEST_COMPRESSION);}};
+            gzipout = new java.util.zip.GZIPOutputStream(new FileOutputStream(f), 65536){{this.def.setLevel(Deflater.BEST_COMPRESSION);}};
             gzipout.write(content, 0, content.length);
         } finally {
             if (gzipout!=null)try{gzipout.close();}catch(final Exception e){}

@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 import net.yacy.kelondro.util.FileUtils;
 
 
@@ -89,7 +89,7 @@ public final class Records {
                 fos = new FileOutputStream(tablefile);
             } catch (final FileNotFoundException e) {
                 // should not happen
-                Data.logger.warn("", e);
+                Logger.warn("", e);
             }
             try { if (fos != null) fos.close(); } catch (final IOException e) {}
         }
@@ -99,7 +99,7 @@ public final class Records {
             this.raf = new RandomAccessFile(tablefile,"rw");
         } catch (final FileNotFoundException e) {
             // should never happen
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
 
         // initialize write buffer
@@ -112,11 +112,11 @@ public final class Records {
     public void clear() {
         try {
             this.raf.setLength(0);
-            int buffersize = Math.max(1, (maxWriteBuffer / recordsize)) * recordsize;
+            int buffersize = Math.max(1, (maxWriteBuffer / this.recordsize)) * this.recordsize;
             this.buffer = new byte[buffersize];
             this.buffercount = 0;
         } catch (IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
     }
 
@@ -166,7 +166,7 @@ public final class Records {
             records = this.raf.length() / this.recordsize;
         } catch (final NullPointerException e) {
             // This may happen on shutdown while still something is moving on
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
 
         return records;
@@ -195,7 +195,7 @@ public final class Records {
             this.raf.seek(this.raf.length());
             this.raf.write(this.buffer, 0, this.recordsize * this.buffercount);
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         this.buffercount = 0;
     }
@@ -206,7 +206,7 @@ public final class Records {
             flushBuffer();
             this.raf.close();
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         this.raf = null;
         this.buffer = null;
@@ -485,7 +485,7 @@ public final class Records {
 
             t.close();
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
     }
 

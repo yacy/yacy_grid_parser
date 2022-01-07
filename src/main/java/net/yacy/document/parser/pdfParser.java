@@ -56,8 +56,8 @@ import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
-import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
+import net.yacy.grid.tools.Logger;
 import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.io.CharBuffer;
 import net.yacy.kelondro.util.FileUtils;
@@ -70,13 +70,13 @@ public class pdfParser extends AbstractParser implements Parser {
 
     public pdfParser() {
         super("Acrobat Portable Document Parser");
-        SUPPORTED_EXTENSIONS.add("pdf");
-        SUPPORTED_MIME_TYPES.add("application/pdf");
-        SUPPORTED_MIME_TYPES.add("application/x-pdf");
-        SUPPORTED_MIME_TYPES.add("application/acrobat");
-        SUPPORTED_MIME_TYPES.add("applications/vnd.pdf");
-        SUPPORTED_MIME_TYPES.add("text/pdf");
-        SUPPORTED_MIME_TYPES.add("text/x-pdf");
+        this.SUPPORTED_EXTENSIONS.add("pdf");
+        this.SUPPORTED_MIME_TYPES.add("application/pdf");
+        this.SUPPORTED_MIME_TYPES.add("application/x-pdf");
+        this.SUPPORTED_MIME_TYPES.add("application/acrobat");
+        this.SUPPORTED_MIME_TYPES.add("applications/vnd.pdf");
+        this.SUPPORTED_MIME_TYPES.add("text/pdf");
+        this.SUPPORTED_MIME_TYPES.add("text/x-pdf");
     }
 
     static {
@@ -318,25 +318,25 @@ public class pdfParser extends AbstractParser implements Parser {
         private ClassLoader sys;
         public ResourceCleaner() {
             try {
-                findLoadedClass = ClassLoader.class.getDeclaredMethod("findLoadedClass", new Class[] { String.class });
-                findLoadedClass.setAccessible(true);
-                sys = ClassLoader.getSystemClassLoader();
+                this.findLoadedClass = ClassLoader.class.getDeclaredMethod("findLoadedClass", new Class[] { String.class });
+                this.findLoadedClass.setAccessible(true);
+                this.sys = ClassLoader.getSystemClassLoader();
             } catch (Throwable e) {
-                Data.logger.warn("", e);
-                findLoadedClass = null;
-                sys = null;
+                Logger.warn("", e);
+                this.findLoadedClass = null;
+                this.sys = null;
             }
         }
         public void clearClassResources(String name) {
-            if (findLoadedClass == null) return;
+            if (this.findLoadedClass == null) return;
             try {
-                Object pdfparserpainclass = findLoadedClass.invoke(sys, name);
+                Object pdfparserpainclass = this.findLoadedClass.invoke(this.sys, name);
                 if (pdfparserpainclass != null) {
                     Method clearResources = ((Class) pdfparserpainclass).getDeclaredMethod("clearResources", new Class[] {});
                     if (clearResources != null) clearResources.invoke(null);
                 }
             } catch (Throwable e) {
-                Data.logger.warn("", e);
+                Logger.warn("", e);
             }
         }
     }
@@ -361,14 +361,14 @@ public class pdfParser extends AbstractParser implements Parser {
                     document = Document.mergeDocuments(null, "application/pdf", parser.parse(null, "application/pdf", null, new VocabularyScraper(), 0, new FileInputStream(pdfFile)));
                 } catch (final Parser.Failure e) {
                     System.err.println("Cannot parse file " + pdfFile.getAbsolutePath());
-                    Data.logger.error("Catched Exception", e);
+                    Logger.error("Catched Exception", e);
                 } catch (final InterruptedException e) {
                     System.err.println("Interrupted while parsing!");
-                    Data.logger.error("Catched Exception", e);
+                    Logger.error("Catched Exception", e);
                 } catch (final NoClassDefFoundError e) {
                     System.err.println("class not found: " + e.getMessage());
                 } catch (final FileNotFoundException e) {
-                    Data.logger.error("Catched Exception", e);
+                    Logger.error("Catched Exception", e);
                 }
 
                 // statistics
@@ -384,7 +384,7 @@ public class pdfParser extends AbstractParser implements Parser {
                         FileUtils.copy(document.getTextStream(), new File("parsedPdf.txt"));
                     } catch (final IOException e) {
                         System.err.println("error saving parsed document");
-                        Data.logger.error("Catched Exception", e);
+                        Logger.error("Catched Exception", e);
                     }
                 }
             } else {

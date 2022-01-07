@@ -33,7 +33,7 @@ import java.util.TreeSet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 /**
  * implements a stack where elements 'float' on-top of the stack according to a weight value.
@@ -171,7 +171,7 @@ public class WeakPriorityBlockingQueue<E> implements Serializable {
         assert this.queue.size() >= this.enqueued.availablePermits() : "(take) queue.size() = " + this.queue.size() + ", enqueued.availablePermits() = " + this.enqueued.availablePermits();
         return element;
     }
-    
+
     /**
      * remove a drained element
      * @param element
@@ -189,7 +189,7 @@ public class WeakPriorityBlockingQueue<E> implements Serializable {
         this.drained.remove(element);
     }
     */
-    
+
     /**
      * return the element with the smallest weight, but do not remove it
      * @return null if no element is on the queue or the head of the queue
@@ -415,7 +415,7 @@ public class WeakPriorityBlockingQueue<E> implements Serializable {
                 try {
                     while ((e = a.poll(1000)) != null) System.out.println("> " + e.toString());
                 } catch (final InterruptedException e1) {
-                    Data.logger.warn("", e1);
+                    Logger.warn("", e1);
                 }
             }
         }.start();

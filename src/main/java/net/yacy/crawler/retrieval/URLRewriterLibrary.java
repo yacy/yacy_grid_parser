@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import net.yacy.cora.storage.Files;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 public class URLRewriterLibrary {
 
@@ -57,21 +57,21 @@ public class URLRewriterLibrary {
                         if (p > 0) try {
                             this.rewriters.put(Pattern.compile(line.substring(0, p)), line.substring(p + 1));
                         } catch (final PatternSyntaxException e) {
-                            Data.logger.warn("bad pattern: " + line.substring(0, p));
+                            Logger.warn("bad pattern: " + line.substring(0, p));
                         }
                     }
                 }
             } catch (final Throwable e) {
-                Data.logger.warn("cannot read stemming file " + f, e);
+                Logger.warn("cannot read stemming file " + f, e);
             }
         }
     }
-    
+
     public URLRewriterLibrary() {
         this.rewriters = new HashMap<Pattern, String>();
         this.rewritingPath = null;
     }
-    
+
     public String apply(String s) {
         if (this.rewriters == null || this.rewriters.size() == 0) return s;
         for (Map.Entry<Pattern, String> entry: this.rewriters.entrySet()) {

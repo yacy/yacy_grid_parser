@@ -30,7 +30,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 
 
@@ -126,7 +126,7 @@ public final class ByteCountInputStream extends FilterInputStream {
         try {
             super.close();
         } catch (final OutOfMemoryError e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         this.finish();
     }

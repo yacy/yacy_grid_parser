@@ -9,7 +9,7 @@
 // $LastChangedBy$
 //
 // LICENSE
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -29,10 +29,9 @@ package net.yacy.document.parser.xml;
 import java.io.IOException;
 import java.io.Writer;
 
-
 import org.xml.sax.helpers.DefaultHandler;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 /**
  * This is a SAX Handler, which handles the content.xml file
@@ -49,19 +48,19 @@ public class ODContentHandler extends DefaultHandler {
 	@Override
 	public void characters(final char ch[], final int start, final int length) {
 	    try {
-		out.write(ch, start, length);
+		this.out.write(ch, start, length);
 	    } catch (final IOException e) {
-	        Data.logger.error("Catched Exception", e);
+	        Logger.error("Catched Exception", e);
 	    }
 	}
 	@Override
 	public void endElement(final String uri, final String name, final String tag) {
 	    if ("text:p".equals(tag) || "table:table-row".equals(tag) || "w:p".equals(tag)) {
-		// add newlines after paragraphs 
+		// add newlines after paragraphs
 		try {
-		    out.append("\n");
+		    this.out.append("\n");
 		} catch (final IOException e) {
-		    Data.logger.error("Catched Exception", e);
+		    Logger.error("Catched Exception", e);
 		}
 	    }
 	}

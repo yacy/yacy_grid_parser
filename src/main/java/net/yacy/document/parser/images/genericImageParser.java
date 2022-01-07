@@ -54,13 +54,13 @@ import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.drew.metadata.exif.GpsDirectory;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
 import net.yacy.document.parser.html.ImageEntry;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.util.FileUtils;
 
 /**
@@ -73,11 +73,11 @@ public class genericImageParser extends AbstractParser implements Parser {
     public genericImageParser() {
         super("Generic Image Parser");
 
-        SUPPORTED_EXTENSIONS.add("jpe"); // not listed in ImageIO extension but sometimes uses for jpeg
-        SUPPORTED_EXTENSIONS.addAll(Arrays.asList(ImageIO.getReaderFileSuffixes()));
+        this.SUPPORTED_EXTENSIONS.add("jpe"); // not listed in ImageIO extension but sometimes uses for jpeg
+        this.SUPPORTED_EXTENSIONS.addAll(Arrays.asList(ImageIO.getReaderFileSuffixes()));
 
-        SUPPORTED_MIME_TYPES.add("image/jpg"); // this is in fact a 'wrong' mime type. We leave it here because that is a common error that occurs in the internet frequently
-        SUPPORTED_MIME_TYPES.addAll(Arrays.asList(ImageIO.getReaderMIMETypes()));
+        this.SUPPORTED_MIME_TYPES.add("image/jpg"); // this is in fact a 'wrong' mime type. We leave it here because that is a common error that occurs in the internet frequently
+        this.SUPPORTED_MIME_TYPES.addAll(Arrays.asList(ImageIO.getReaderMIMETypes()));
     }
 
     @Override
@@ -85,7 +85,7 @@ public class genericImageParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source) throws Parser.Failure, InterruptedException {
 
@@ -97,7 +97,7 @@ public class genericImageParser extends AbstractParser implements Parser {
         String filename = location.getFileName();
         String ext = MultiProtocolURL.getFileExtension(filename);
         double gpslat = 0;
-        double gpslon = 0;        
+        double gpslon = 0;
         if (mimeType.equals("image/jpeg") || ext.equals("jpg") || ext.equals("jpeg") || ext.equals("jpe")) {
             // use the exif parser from
             // http://www.drewnoakes.com/drewnoakes.com/code/exif/
@@ -114,19 +114,19 @@ public class genericImageParser extends AbstractParser implements Parser {
                     throw new Parser.Failure("File has no jpeg signature", location);
                 }
             } catch (final IOException e) {
-                Data.logger.error("Catched Exception", e);
+                Logger.error("Catched Exception", e);
                 throw new Parser.Failure(e.getMessage(), location);
             }
 
             ii = parseJavaImage(location, new ByteArrayInputStream(b));
 
             try {
-                final Metadata metadata = JpegMetadataReader.readMetadata(new ByteArrayInputStream(b));                   
+                final Metadata metadata = JpegMetadataReader.readMetadata(new ByteArrayInputStream(b));
                 final Iterator<Directory> directories = metadata.getDirectories().iterator();
                 final HashMap<String, String> props = new HashMap<String, String>();
                 while (directories.hasNext()) {
                     final Directory directory = directories.next();
-                    if (directory instanceof GpsDirectory) { // extracting GPS location                    
+                    if (directory instanceof GpsDirectory) { // extracting GPS location
                         GeoLocation geoloc = ((GpsDirectory) directory).getGeoLocation();
                         if (geoloc != null) {
                             gpslat = geoloc.getLatitude();
@@ -162,7 +162,7 @@ public class genericImageParser extends AbstractParser implements Parser {
                 description = props.get("Country/Primary Location"); if (description != null && description.length() > 0) descriptions.add("Location: " + description);
                 description = props.get("Province/State"); if (description != null && description.length() > 0) descriptions.add("State: " + description);
                 description = props.get("Copyright Notice"); if (description != null && description.length() > 0) descriptions.add("Copyright: " + description);
-                
+
             } catch (final Throwable e) {
                 //Log.logException(e);
                 // just ignore
@@ -202,12 +202,12 @@ public class genericImageParser extends AbstractParser implements Parser {
 
     @Override
     public Set<String> supportedMimeTypes() {
-        return SUPPORTED_MIME_TYPES;
+        return this.SUPPORTED_MIME_TYPES;
     }
 
     @Override
     public Set<String> supportedExtensions() {
-        return SUPPORTED_EXTENSIONS;
+        return this.SUPPORTED_EXTENSIONS;
     }
 
     private ImageInfo parseJavaImage(
@@ -304,7 +304,7 @@ public class genericImageParser extends AbstractParser implements Parser {
             final Document[] document = parser.parse(uri, "image/" + MultiProtocolURL.getFileExtension(uri.getFileName()), StandardCharsets.UTF_8.name(), new VocabularyScraper(), 0, new FileInputStream(image));
             System.out.println(document[0].toString());
         } catch (final MalformedURLException|FileNotFoundException|Parser.Failure|InterruptedException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
     }
 

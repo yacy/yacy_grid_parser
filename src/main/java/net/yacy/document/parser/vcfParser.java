@@ -42,15 +42,15 @@ import java.util.List;
 
 import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.AnchorURL;
-import net.yacy.grid.tools.CommonPattern;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.cora.order.Base64Order;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
+import net.yacy.grid.tools.AnchorURL;
+import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 
 /**
  * Vcard specification: http://www.imc.org/pdi/vcard-21.txt
@@ -74,7 +74,7 @@ public class vcfParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source)
             throws Parser.Failure, InterruptedException {
@@ -218,7 +218,7 @@ public class vcfParser extends AbstractParser implements Parser {
                     }
 
                 } else {
-                    Data.logger.debug("Invalid data in vcf file" +
+                    Logger.debug("Invalid data in vcf file" +
                                              "\n\tURL: " + location +
                                              "\n\tLine: " + line +
                                              "\n\tLine-Nr: " + lineNr);

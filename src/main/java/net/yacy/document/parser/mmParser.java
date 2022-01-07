@@ -35,17 +35,17 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
-
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 
 // this is a new implementation of this parser idiom using multiple documents as result set
 
@@ -77,7 +77,7 @@ public class mmParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source)
             throws Parser.Failure, InterruptedException
@@ -103,9 +103,9 @@ public class mmParser extends AbstractParser implements Parser {
             content = UTF8.getBytes(sb.toString());
 
         } catch (final SAXException ex) {
-            Data.logger.warn(ex.getMessage());
+            Logger.warn(ex.getMessage());
         } catch (final IOException ex) {
-            Data.logger.warn(ex.getMessage());
+            Logger.warn(ex.getMessage());
         }
 
         return new Document[]{new Document(

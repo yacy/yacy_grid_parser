@@ -170,7 +170,7 @@ public class RSSFeed implements Iterable<RSSMessage> {
             try {
                 this.lastGUID = this.GUIDiterator.next();
             } catch (final ConcurrentModificationException e) {
-                //Data.logger.warn("", e);
+                //Logger.warn("", e);
                 this.lastGUID = null;
             }
             if (this.lastGUID == null) return null;

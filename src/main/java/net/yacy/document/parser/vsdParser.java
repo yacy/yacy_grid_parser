@@ -33,15 +33,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
+import org.apache.poi.hdgf.extractor.VisioTextExtractor;
+import org.apache.poi.hpsf.SummaryInformation;
+
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
-
-import org.apache.poi.hdgf.extractor.VisioTextExtractor;
-import org.apache.poi.hpsf.SummaryInformation;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 
 
 public class vsdParser extends AbstractParser implements Parser {
@@ -72,7 +72,7 @@ public class vsdParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source)
             throws Parser.Failure, InterruptedException {
@@ -86,7 +86,7 @@ public class vsdParser extends AbstractParser implements Parser {
                 summary = extractor.getSummaryInformation();
                 extractor.close();
             } catch (final Exception e) {
-            	Data.logger.warn(e.getMessage());
+            	Logger.warn(e.getMessage());
             }
 
             String author = null;
@@ -135,7 +135,7 @@ public class vsdParser extends AbstractParser implements Parser {
 
             // if an unexpected error occures just log the error and raise a new ParserException
             final String errorMsg = "Unable to parse the vsd document '" + location + "':" + e.getMessage();
-            Data.logger.error(errorMsg);
+            Logger.error(errorMsg);
             throw new Parser.Failure(errorMsg, location);
         }
     }

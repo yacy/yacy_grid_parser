@@ -17,14 +17,14 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
 import net.yacy.document.parser.htmlParser;
 import net.yacy.document.parser.rdfa.IRDFaTriple;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 
 /**
  * @author fgandon
@@ -40,7 +40,7 @@ public class RDFaParser extends AbstractParser implements Parser {
 
 		this.SUPPORTED_EXTENSIONS.add("html");
                 this.SUPPORTED_EXTENSIONS.add("htm");
-                this.SUPPORTED_EXTENSIONS.add("xhtml");                
+                this.SUPPORTED_EXTENSIONS.add("xhtml");
 		this.SUPPORTED_EXTENSIONS.add("php");
 		this.SUPPORTED_MIME_TYPES.add("text/html");
 		this.SUPPORTED_MIME_TYPES.add("text/xhtml+xml");
@@ -51,7 +51,7 @@ public class RDFaParser extends AbstractParser implements Parser {
             final MultiProtocolURL url,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source) throws Failure,
 			InterruptedException {
@@ -83,7 +83,7 @@ public class RDFaParser extends AbstractParser implements Parser {
 			allTriples = triple.parse();
 
 		} catch (final Exception e) {
-			Data.logger.warn("Triple extraction failed");
+			Logger.warn("Triple extraction failed");
 		}
 
 		Document doc = new Document(url, mimeType, charset, null, null, null, singleList(""), "",
@@ -95,7 +95,7 @@ public class RDFaParser extends AbstractParser implements Parser {
 						allTriples);
 
 		} catch (final Exception e) {
-			Data.logger.warn("Conversion triple to document failed");
+			Logger.warn("Conversion triple to document failed");
 		}
 		return doc;
 	}
@@ -115,7 +115,7 @@ public class RDFaParser extends AbstractParser implements Parser {
 			source.reset();
 
 		} catch (final IOException e1) {
-			Data.logger.warn("Super call failed");
+			Logger.warn("Super call failed");
 		}
 		return htmlDocs;
 	}
@@ -179,7 +179,7 @@ public class RDFaParser extends AbstractParser implements Parser {
                     aReader = new InputStreamReader(aURL.openStream());
                 } catch (final MalformedURLException e) {
                 } catch (final IOException e) {
-                    Data.logger.warn("", e);
+                    Logger.warn("", e);
                     aReader = null;
                 }
 
@@ -190,7 +190,7 @@ public class RDFaParser extends AbstractParser implements Parser {
                 try {
                     aParser.parse(new MultiProtocolURL(args[0]), "", "", new VocabularyScraper(), 0, aURL.openStream());
                 } catch (IOException|Failure|InterruptedException e) {
-                    Data.logger.warn("", e);
+                    Logger.warn("", e);
                 }
             } else
                 System.out.println("File or URL not recognized.");

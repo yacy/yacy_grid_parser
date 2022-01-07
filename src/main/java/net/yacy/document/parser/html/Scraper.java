@@ -6,12 +6,12 @@
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *  Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program in the file lgpl21.txt
  *  If not, see <http://www.gnu.org/licenses/>.
@@ -47,15 +47,14 @@ import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.sorting.ClusteredScoreMap;
 import net.yacy.cora.storage.SizeLimitedMap;
 import net.yacy.cora.storage.SizeLimitedSet;
-
 import net.yacy.cora.util.NumberTools;
 import net.yacy.document.SentenceReader;
 import net.yacy.document.VocabularyScraper;
 import net.yacy.document.parser.html.Evaluation.Element;
 import net.yacy.document.parser.html.Tag.TagName;
-import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.Logger;
 import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.io.CharBuffer;
 import net.yacy.kelondro.util.FileUtils;
@@ -77,7 +76,7 @@ public class Scraper {
     private final List<AnchorURL> anchors;
     private final LinkedHashMap<MultiProtocolURL, String> rss, css;
     private final LinkedHashMap<AnchorURL, EmbedEntry> embeds; // urlhash/embed relation
-    private final List<ImageEntry> images; 
+    private final List<ImageEntry> images;
     private final Set<AnchorURL> script, frames, iframes;
     private final Map<String, String> metas;
     private final Map<String, MultiProtocolURL> hreflang, navigation;
@@ -164,15 +163,15 @@ public class Scraper {
         this.ld = null;
         this.googleoff = false; // if this is false, it means that we are outside of an googleoff event. If it is true, we are just between googleoff and googleon
     }
-    
+
     public void setLd(JSONObject ld) {
         this.ld = ld;
     }
-    
+
     public JSONObject getLd() {
         return this.ld;
     }
-    
+
     public void finish() {
         this.content.trimToSize();
     }
@@ -186,7 +185,7 @@ public class Scraper {
         if (insideTag != null && (TagName.script.name().equals(insideTag) || TagName.style.name().equals(insideTag))) return;
         int p, pl, q, s = 0;
         char[] newtext = CharacterCoding.html2unicode(new String(newtext0)).toCharArray();
-        
+
         // match evaluation pattern
         this.evaluationScores.match(Element.text, newtext);
 
@@ -300,7 +299,7 @@ public class Scraper {
             return null;
         }
     }
-    
+
     public void checkOpts(Tag tag) {
         //System.out.println("### " + tag.toString());
         // vocabulary classes
@@ -343,12 +342,12 @@ public class Scraper {
             }
         }
     }
-    
+
 	/**
 	 * Parses sizes icon link attribute. (see
 	 * http://www.w3.org/TR/html5/links.html#attr-link-sizes) Eventual
 	 * duplicates are removed.
-	 * 
+	 *
 	 * @param sizesAttr
 	 *            sizes attribute string, may be null
 	 * @return a set of sizes eventually empty.
@@ -376,7 +375,7 @@ public class Scraper {
 	 * Parses a space separated tokens attribute value (see
 	 * http://www.w3.org/TR/html5/infrastructure.html#space-separated-tokens).
 	 * Eventual duplicates are removed.
-	 * 
+	 *
 	 * @param attr
 	 *            attribute string, may be null
 	 * @return a set of tokens eventually empty
@@ -391,7 +390,7 @@ public class Scraper {
 		}
 		return tokens;
 	}
-    
+
     /**
      * Retain only icon relations (standard and non standard) from tokens .
      * @param relTokens relationship tokens (parsed from a rel attribute)
@@ -490,7 +489,7 @@ public class Scraper {
                 	String sizesAttr = tag.getProperty("sizes", EMPTY_STRING);
                 	Set<Dimension> sizes = parseSizes(sizesAttr);
                 	IconEntry icon = this.icons.get(newLink);
-                	/* There is already an icon with same URL for this document : 
+                	/* There is already an icon with same URL for this document :
                 	 * they may have different rel attribute or different sizes (multi sizes ico file) or this may be a duplicate */
                 	if(icon != null) {
                 		icon.getRel().addAll(iconRels);
@@ -591,7 +590,7 @@ public class Scraper {
             this.evaluationScores.match(Element.divid, id);
             final String itemtype = tag.getProperty("itemtype", EMPTY_STRING);
             if (itemtype.equals("http://data-vocabulary.org/Breadcrumb")) {
-                breadcrumbs++;
+                this.breadcrumbs++;
             }
         } else if ((tag.hasName("h1")) && (tag.getContenLength() < 1024)) {
             h = cleanLine(CharacterCoding.html2unicode(content_text));
@@ -663,7 +662,7 @@ public class Scraper {
             }
         }
     }
-    
+
     /**
      * Add an anchor to the anchors list, and trigger any eventual listener
      * @param anchor anchor to add. Must not be null.
@@ -694,7 +693,7 @@ public class Scraper {
         try {
             FileUtils.copy(new CharArrayReader(inlineHtml), tokenizer);
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
             return cleanLine(CharacterCoding.html2unicode(Tag.stripAllTags(inlineHtml)));
         } finally {
             try {
@@ -811,11 +810,11 @@ public class Scraper {
     public String[] getDd() {
         return this.dd.toArray(new String[this.dd.size()]);
     }
-    
+
     public List<Date> getStartDates() {
         return this.startDates;
     }
-    
+
     public List<Date> getEndDates() {
         return this.endDates;
     }
@@ -844,12 +843,12 @@ public class Scraper {
     public int breadcrumbCount() {
         return this.breadcrumbs;
     }
-    
+
     public String getText() {
         try {
             return this.content.trim().toString();
         } catch (final OutOfMemoryError e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
             return "";
         }
     }
@@ -894,11 +893,11 @@ public class Scraper {
     public MultiProtocolURL getPublisherLink() {
         return this.publisher;
     }
-    
+
     public Map<String, MultiProtocolURL> getHreflang() {
         return this.hreflang;
     }
-    
+
     public Map<String, MultiProtocolURL> getNavigation() {
         return this.navigation;
     }
@@ -941,7 +940,7 @@ public class Scraper {
         if (s.indexOf("noindex",0) >= 0) return true;
         return false;
     }
-    
+
     public boolean followDenied() {
         final String s = this.metas.get("robots");
         if (s == null) return false;
@@ -980,7 +979,7 @@ public class Scraper {
 
     private final static Pattern commaSepPattern = Pattern.compile(" |,");
     private final static Pattern semicSepPattern = Pattern.compile(" |;");
-    
+
     public Set<String> getContentLanguages() {
         // i.e. <meta name="DC.language" content="en" scheme="DCTERMS.RFC3066">
         // or <meta http-equiv="content-language" content="en">
@@ -1035,10 +1034,10 @@ public class Scraper {
         if (s.toLowerCase().startsWith("url=")) return s.substring(4).trim();
         return EMPTY_STRING;
     }
-    
+
     public Date getDate() {
         String content;
-        
+
         // <meta name="date" content="YYYY-MM-DD..." />
         content = this.metas.get("date");
         if (content != null) try {return ISO8601Formatter.FORMATTER.parse(content, this.timezoneOffset).getTime();} catch (ParseException e) {}
@@ -1046,23 +1045,23 @@ public class Scraper {
         // <meta name="DC.date.modified" content="YYYY-MM-DD" />
         content = this.metas.get("dc.date.modified");
         if (content != null) try {return ISO8601Formatter.FORMATTER.parse(content, this.timezoneOffset).getTime();} catch (ParseException e) {}
-        
+
         // <meta name="DC.date.created" content="YYYY-MM-DD" />
         content = this.metas.get("dc.date.created");
         if (content != null) try {return ISO8601Formatter.FORMATTER.parse(content, this.timezoneOffset).getTime();} catch (ParseException e) {}
-        
+
         // <meta name="DC.date" content="YYYY-MM-DD" />
         content = this.metas.get("dc.date");
         if (content != null) try {return ISO8601Formatter.FORMATTER.parse(content, this.timezoneOffset).getTime();} catch (ParseException e) {}
-        
+
         // <meta name="DC:date" content="YYYY-MM-DD" />
         content = this.metas.get("dc:date");
         if (content != null) try {return ISO8601Formatter.FORMATTER.parse(content, this.timezoneOffset).getTime();} catch (ParseException e) {}
-        
+
         // <meta http-equiv="last-modified" content="YYYY-MM-DD" />
         content = this.metas.get("last-modified");
         if (content != null) try {return ISO8601Formatter.FORMATTER.parse(content, this.timezoneOffset).getTime();} catch (ParseException e) {}
-        
+
         return new Date();
     }
 

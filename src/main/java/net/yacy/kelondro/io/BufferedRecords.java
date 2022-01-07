@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 import net.yacy.kelondro.util.FileUtils;
 
 
@@ -52,7 +52,7 @@ public final class BufferedRecords {
         this.maxEntries = maxEntries;
         this.buffer = new TreeMap<Long, byte[]>();
     }
-    
+
     public synchronized void clear() {
         this.efs.clear();
         this.buffer.clear();
@@ -88,7 +88,7 @@ public final class BufferedRecords {
         try {
             flushBuffer0();
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         if (this.efs != null) this.efs.close();
     }
@@ -199,7 +199,7 @@ public final class BufferedRecords {
 
             t.close();
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
     }
 }

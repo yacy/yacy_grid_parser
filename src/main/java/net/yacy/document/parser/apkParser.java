@@ -43,8 +43,8 @@ import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
-import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
+import net.yacy.grid.tools.Logger;
 import net.yacy.grid.tools.MultiProtocolURL;
 
 public class apkParser extends AbstractParser implements Parser  {
@@ -54,13 +54,13 @@ public class apkParser extends AbstractParser implements Parser  {
         this.SUPPORTED_EXTENSIONS.add("apk");
         this.SUPPORTED_MIME_TYPES.add("application/vnd.android.package-archive");
     }
-    
+
     @Override
     public Document[] parse(
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source) throws Parser.Failure, InterruptedException {
 
@@ -87,11 +87,11 @@ public class apkParser extends AbstractParser implements Parser  {
             docs = parse(location, mimeType, charset, jf);
             tempFile.delete();
         } catch (IOException e) {
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
         }
         return docs;
     }
-    
+
     public Document[] parse(final MultiProtocolURL location, final String mimeType, final String charset, final JarFile jf) {
         StringBuilder sb = new StringBuilder();
         String title = location.getFileName();
@@ -105,7 +105,7 @@ public class apkParser extends AbstractParser implements Parser  {
             sb.append(title).append(". ");
             for (String p: manifest.permissions) sb.append(p).append(". ");
         } catch (IOException e) {
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
         }
 
         Enumeration<JarEntry> je = jf.entries();
@@ -132,8 +132,8 @@ public class apkParser extends AbstractParser implements Parser  {
                 }
             }
         } catch (IOException e) {
-            Data.logger.error("Catched Exception", e);
-        }        
+            Logger.error("Catched Exception", e);
+        }
 
         return new Document[]{new Document(
                 location,
@@ -155,11 +155,11 @@ public class apkParser extends AbstractParser implements Parser  {
                 false,
                 new Date())};
     }
-    
+
     public static class AndroidManifestParser {
         // this is a simplified Android binary XML parser which reads
         // parts of the xml into metadata fields
-    
+
         private boolean debug = false;
         public String versionCode = null;
         public String versionName = null;
@@ -169,34 +169,34 @@ public class apkParser extends AbstractParser implements Parser  {
         public Set<String> permissions = new HashSet<>();
         public Set<String> actions = new HashSet<>();
         public Set<String> categories = new HashSet<>();
-        
+
         public AndroidManifestParser(final byte[] xml, final boolean debug) {
             this.debug = debug;
             decompressXML(xml);
         }
-            
+
         /**
          * code taken from
          * http://stackoverflow.com/questions/2097813/how-to-parse-the-androidmanifest-xml-file-inside-an-apk-package
          * original author: http://stackoverflow.com/users/539612/ribo
          * The author has taken the code snippet from his own application published
          * as "PackageExlorer", see https://play.google.com/store/apps/details?id=org.andr.pkgexp
-         * 
+         *
          * The code was adopted to produce a org.w3c.dom.Document data structure by [MC]
          *
          * documentation about binary xml can be found at:
          * http://justanapplication.wordpress.com/category/android/android-binary-xml/
-         * 
+         *
          * consider to replace this with one of
          * https://github.com/xiaxiaocao/apk-parser
          * http://code.google.com/p/axml/
          * https://github.com/joakime/android-apk-parser
          */
-        
+
         private static final int endDocTag = 0x00100101;
         private static final int startTag = 0x00100102;
         private static final int endTag = 0x00100103;
-    
+
         /**
          * Parse the 'compressed' binary form of Android XML docs such as for AndroidManifest.xml in .apk files
          * @param xml
@@ -210,16 +210,16 @@ public class apkParser extends AbstractParser implements Parser  {
             // WARNING: Sometime I indiscriminently display or refer to word in
             // little endian storage format, or in integer format (ie MSB first).
             int numbStrings = LEW(xml, 4 * 4);
-    
+
             // StringIndexTable starts at offset 24x, an array of 32 bit LE offsets
             // of the length/string data in the StringTable.
             int sitOff = 0x24; // Offset of start of StringIndexTable
-    
+
             // StringTable, each string is represented with a 16 bit little endian
             // character count, followed by that number of 16 bit (LE) (Unicode)
             // chars.
             int stOff = sitOff + numbStrings * 4; // StringTable follows StrIndexTable
-    
+
             // XMLTags, The XML tag tree starts after some unknown content after the
             // StringTable. There is some unknown data after the StringTable, scan
             // forward from this point to the flag for the start of an XML start
@@ -232,7 +232,7 @@ public class apkParser extends AbstractParser implements Parser  {
                     break;
                 }
             } // end of hack, scanning for start of first start tag
-    
+
             // XML tags and attributes:
             // Every XML start and end tag consists of 6 32 bit words:
             // 0th word: 02011000 for startTag and 03011000 for endTag
@@ -242,12 +242,12 @@ public class apkParser extends AbstractParser implements Parser  {
             // 4th word: StringIndex of NameSpace name, or FFFFFFFF for default NS
             // 5th word: StringIndex of Element Name
             // (Note: 01011000 in 0th word means end of XML document, endDocTag)
-    
+
             // Start tags (not end tags) contain 3 more words:
             // 6th word: 14001400 meaning??
             // 7th word: Number of Attributes that follow this tag(follow word 8th)
             // 8th word: 00000000 meaning??
-    
+
             // Attributes consist of 5 words:
             // 0th word: StringIndex of Attribute Name's Namespace, or FFFFFFFF
             // 1st word: StringIndex of Attribute Name
@@ -255,7 +255,7 @@ public class apkParser extends AbstractParser implements Parser  {
             // used
             // 3rd word: Flags?
             // 4th word: str ind of attr value again, or ResourceId of value
-    
+
             // TMP, dump string table to tr for debugging
             // tr.addSelect("strings", null);
             // for (int ii=0; ii<numbStrings; ii++) {
@@ -264,7 +264,7 @@ public class apkParser extends AbstractParser implements Parser  {
             // tr.add(String.valueOf(ii), str);
             // }
             // tr.parent();
-    
+
             // Step through the XML tree element tags and attributes
             int off = xmlTagOff;
             int indent = 0;
@@ -276,7 +276,7 @@ public class apkParser extends AbstractParser implements Parser  {
                 // int tag3 = LEW(xml, off+3*4);
                 //int nameNsSi = LEW(xml, off + 4 * 4);
                 int nameSi = LEW(xml, off + 5 * 4);
-    
+
                 if (tag0 == startTag) { // XML START TAG
                     //int tag6 = LEW(xml, off + 6 * 4); // Expected to be 14001400
                     int numbAttrs = LEW(xml, off + 7 * 4); // Number of Attributes
@@ -286,7 +286,7 @@ public class apkParser extends AbstractParser implements Parser  {
                     String name = compXmlString(xml, sitOff, stOff, nameSi);
                     // tr.addSelect(name, null);
                     //startTagLineNo = lineNo;
-    
+
                     // Look for the Attributes
                     Map<String, String> attributes = new LinkedHashMap<>();
                     for (int ii = 0; ii < numbAttrs; ii++) {
@@ -301,7 +301,7 @@ public class apkParser extends AbstractParser implements Parser  {
                                                                // ResourceId or dup
                                                                // AttrValue StrInd
                         off += 5 * 4; // Skip over the 5 words of an attribute
-    
+
                         String attrName = compXmlString(xml, sitOff, stOff, attrNameSi);
                         String attrValue = attrValueSi != -1 ? compXmlString(xml, sitOff, stOff, attrValueSi) : "resourceID 0x" + Integer.toHexString(attrResId);
                         attributes.put(attrName, attrValue);
@@ -316,20 +316,20 @@ public class apkParser extends AbstractParser implements Parser  {
                     evaluateTag(indent, name, null);
                     // tr.parent(); // Step back up the NobTree
                 } else if (tag0 == endDocTag) { // END OF XML DOC TAG
-                    break;    
+                    break;
                 } else {
                     // prt("  Unrecognized tag code '"+Integer.toHexString(tag0) +"' at offset "+off);
                     break;
                 }
             }
         }
-    
+
         public String compXmlString(byte[] xml, int sitOff, int stOff, int strInd) {
             if (strInd < 0) return null;
             int strOff = stOff + LEW(xml, sitOff + strInd * 4);
             return compXmlStringAt(xml, strOff);
         }
-    
+
         public void evaluateTag(int indent, String tagName, Map<String, String> attributes) {
             if (this.debug) {
                 StringBuilder sb = new StringBuilder(100);
@@ -345,7 +345,7 @@ public class apkParser extends AbstractParser implements Parser  {
                 }
                 //System.out.println(sb.toString());
             }
-            
+
             // evaluate the content
             if (attributes != null) {
                 if ("manifest".equals(tagName)) {
@@ -371,7 +371,7 @@ public class apkParser extends AbstractParser implements Parser  {
                 }
             }
         }
-    
+
         /**
          * Return the string stored in StringTable format at offset strOff.
          * This offset points to the 16 bit string length, which
@@ -390,7 +390,7 @@ public class apkParser extends AbstractParser implements Parser  {
             }
             return new String(chars);
         }
-    
+
         /**
          * @param arr source byte array
          * @param off byte array offset position
@@ -399,9 +399,9 @@ public class apkParser extends AbstractParser implements Parser  {
         public int LEW(byte[] arr, int off) {
             return arr[off + 3] << 24 & 0xff000000 | arr[off + 2] << 16 & 0xff0000 | arr[off + 1] << 8 & 0xff00 | arr[off] & 0xFF;
         } // end of LEW
-    
+
     }
-    
+
     /**
      * this arsc parser is far away from being correct, it's just a hack
      * @param arscStream a stream from the arsc content
@@ -435,7 +435,7 @@ public class apkParser extends AbstractParser implements Parser  {
         }
         return s;
     }
-    
+
     public static void main(String[] args) {
         System.out.println("apk parser test with file " + args[0]);
         System.out.println();
@@ -464,9 +464,9 @@ public class apkParser extends AbstractParser implements Parser  {
             }
             jf.close();
         } catch (Exception e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         System.exit(1);
     }
-    
+
 }

@@ -41,8 +41,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import net.yacy.cora.document.WordCache;
-import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.Logger;
 
 /**
  * The main 'geoname' table has the following fields :
@@ -92,7 +92,7 @@ public class GeonamesLocation implements Locations {
             final ZipEntry ze = zf.getEntry(entryName);
             final InputStream is = zf.getInputStream(ze);
             reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-            
+
             // read the zip content
             String line;
             String[] fields;
@@ -128,7 +128,7 @@ public class GeonamesLocation implements Locations {
             }
             zf.close();
         } catch (final IOException e ) {
-            Data.logger.warn("",e);
+            Logger.warn(this.getClass(), e);
             return;
         }
 
@@ -167,7 +167,7 @@ public class GeonamesLocation implements Locations {
 	public boolean isEmpty() {
 		return this.id2loc.isEmpty();
 	}
-	
+
 	/**
 	 * @param s0 complete string
 	 * @param s1 string part candidate

@@ -7,7 +7,7 @@
 // $LastChangedBy$
 //
 // LICENSE
-// 
+//
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation; either version 2 of the License, or
@@ -34,7 +34,7 @@ import javax.imageio.ImageIO;
 
 import com.twelvemonkeys.imageio.plugins.bmp.ICOImageReader;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 
 /**
@@ -47,87 +47,87 @@ import net.yacy.grid.mcp.Data;
 public class icoParser {
 
     // this is a implementation of http://msdn2.microsoft.com/en-us/library/ms997538(d=printer).aspx
-    
+
     public static final int ICONDIRENTRY_size = 16;
-    
+
     private final int idCount;
     private bmpParser.INFOHEADER[] infoheaders;
     private bmpParser.IMAGEMAP[] imagemaps;
-    
+
     public static final boolean isICO(final byte[] source) {
         // check the file magic
         return (source != null) && (source.length >= 4) && (source[0] == 0) && (source[1] == 0) && (source[2] == 1) && (source[3] == 0);
     }
-    
+
     public icoParser(final byte[] source) {
         // read info-header
-        idCount = bmpParser.WORD(source, 4);
+        this.idCount = bmpParser.WORD(source, 4);
 
         // read the icon directory entry and the image entries
-        final ICONDIRENTRY[] icondirentries = new ICONDIRENTRY[idCount];
-        infoheaders = new bmpParser.INFOHEADER[idCount];
-        final bmpParser.COLORTABLE[] colortables = new bmpParser.COLORTABLE[idCount];
-        imagemaps = new bmpParser.IMAGEMAP[idCount];
-        for (int i = 0; i < idCount; i++) {
+        final ICONDIRENTRY[] icondirentries = new ICONDIRENTRY[this.idCount];
+        this.infoheaders = new bmpParser.INFOHEADER[this.idCount];
+        final bmpParser.COLORTABLE[] colortables = new bmpParser.COLORTABLE[this.idCount];
+        this.imagemaps = new bmpParser.IMAGEMAP[this.idCount];
+        for (int i = 0; i < this.idCount; i++) {
             icondirentries[i] = new ICONDIRENTRY(source, 6 + i * ICONDIRENTRY_size);
-            infoheaders[i] = new bmpParser.INFOHEADER(source, icondirentries[i].dwImageOffset);
-            colortables[i] = new bmpParser.COLORTABLE(source, icondirentries[i].dwImageOffset + bmpParser.INFOHEADER_size, infoheaders[i]);
-            imagemaps[i] = new bmpParser.IMAGEMAP(source, icondirentries[i].dwImageOffset + bmpParser.INFOHEADER_size + colortables[i].colorbytes, icondirentries[i].bWidth, icondirentries[i].bHeight, infoheaders[i].biCompression, infoheaders[i].biBitCount, colortables[i]);
+            this.infoheaders[i] = new bmpParser.INFOHEADER(source, icondirentries[i].dwImageOffset);
+            colortables[i] = new bmpParser.COLORTABLE(source, icondirentries[i].dwImageOffset + bmpParser.INFOHEADER_size, this.infoheaders[i]);
+            this.imagemaps[i] = new bmpParser.IMAGEMAP(source, icondirentries[i].dwImageOffset + bmpParser.INFOHEADER_size + colortables[i].colorbytes, icondirentries[i].bWidth, icondirentries[i].bHeight, this.infoheaders[i].biCompression, this.infoheaders[i].biBitCount, colortables[i]);
         }
     }
-    
-    
+
+
     public static class ICONDIRENTRY {
-        
+
         public int bWidth, bHeight, bColorCount, bReserved, wPlanes, wBitCount, dwBytesInRes, dwImageOffset;
-        
+
         public ICONDIRENTRY(final byte[] s, final int offset) {
             // read info-header
-            bWidth        = bmpParser.BYTE(s, offset + 0);
-            bHeight       = bmpParser.BYTE(s, offset + 1);
-            bColorCount   = bmpParser.BYTE(s, offset + 2);
-            bReserved     = bmpParser.BYTE(s, offset + 3);
-            wPlanes       = bmpParser.WORD(s, offset + 4);
-            wBitCount     = bmpParser.WORD(s, offset + 6);
-            dwBytesInRes  = bmpParser.DWORD(s, offset + 8);
-            dwImageOffset = bmpParser.DWORD(s, offset + 12);
+            this.bWidth        = bmpParser.BYTE(s, offset + 0);
+            this.bHeight       = bmpParser.BYTE(s, offset + 1);
+            this.bColorCount   = bmpParser.BYTE(s, offset + 2);
+            this.bReserved     = bmpParser.BYTE(s, offset + 3);
+            this.wPlanes       = bmpParser.WORD(s, offset + 4);
+            this.wBitCount     = bmpParser.WORD(s, offset + 6);
+            this.dwBytesInRes  = bmpParser.DWORD(s, offset + 8);
+            this.dwImageOffset = bmpParser.DWORD(s, offset + 12);
         }
     }
-    
+
     public int images() {
         // return number of images in icon
-        return idCount;
+        return this.idCount;
     }
-    
+
     public BufferedImage getImage(final int index) {
-    	if (imagemaps == null || index >= imagemaps.length) return null;
-        return imagemaps[index].getImage();
+    	if (this.imagemaps == null || index >= this.imagemaps.length) return null;
+        return this.imagemaps[index].getImage();
     }
-    
+
     public static void main(final String[] args) {
         // read a ICO and write it as png
         System.setProperty("java.awt.headless", "true");
         final File in = new File(args[0]);
         final File out = new File(args[1]);
-        
+
         final byte[] file = new byte[(int) in.length()];
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(in);
             fis.read(file);
         } catch (final FileNotFoundException e) {
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
         } catch (final IOException e) {
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
         }
-        
+
         final icoParser parser = new icoParser(file);
-        
+
         try {
             ImageIO.write(parser.getImage(0), "PNG", out);
         } catch (final IOException e) {
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
         }
     }
-    
+
 }

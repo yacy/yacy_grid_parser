@@ -41,10 +41,9 @@ import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 
 import net.yacy.cora.document.WordCache;
-
 import net.yacy.cora.util.StringBuilderComparator;
-import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.Logger;
 
 /**
  * this class loads and parses database dumps from the OpenGeoDB project files can be loaded from
@@ -53,8 +52,7 @@ import net.yacy.grid.tools.CommonPattern;
  * of more than 100MB! This class will provide a super-fast access to the OpenGeoDB, since all request are
  * evaluated using data in the RAM.
  */
-public class OpenGeoDBLocation implements Locations
-{
+public class OpenGeoDBLocation implements Locations {
 
     private final Map<Integer, GeoLocation> id2loc;
     private final TreeMap<StringBuilder, List<Integer>> name2ids;
@@ -165,7 +163,7 @@ public class OpenGeoDBLocation implements Locations
             }
             reader.close();
         } catch (final IOException e ) {
-            Data.logger.warn("", e);
+            Logger.warn(this.getClass(), e);
         } finally {
             if ( reader != null ) {
                 try {

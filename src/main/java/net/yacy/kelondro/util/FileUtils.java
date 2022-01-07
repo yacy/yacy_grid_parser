@@ -56,14 +56,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
-import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.cora.storage.Files;
-import net.yacy.grid.mcp.Data;
-
 import org.apache.commons.lang3.StringUtils;
-
 import org.mozilla.intl.chardet.nsDetector;
 import org.mozilla.intl.chardet.nsPSMDetector;
+
+import net.yacy.cora.document.encoding.UTF8;
+import net.yacy.cora.storage.Files;
+import net.yacy.grid.tools.Logger;
 
 public final class FileUtils {
 
@@ -251,7 +250,7 @@ public final class FileUtils {
                 try {
                     fos.close();
                 } catch (final Exception e ) {
-                    Data.logger.warn("cannot close FileOutputStream for " + dest + "! " + e.getMessage());
+                    Logger.warn("cannot close FileOutputStream for " + dest + "! " + e.getMessage());
                 }
             }
         }
@@ -495,7 +494,7 @@ public final class FileUtils {
             final byte[] b = read(f);
             return table(strings(b));
         } catch (final IOException e2 ) {
-            Data.logger.error(f.toString() + " not found", e2);
+            Logger.error(f.toString() + " not found", e2);
             return null;
         }
     }
@@ -536,10 +535,10 @@ public final class FileUtils {
             }
             pw.println("# EOF");
         } catch (final  FileNotFoundException e ) {
-            Data.logger.warn(e.getMessage(), e);
+            Logger.warn(e.getMessage(), e);
             err = true;
         } catch (final  UnsupportedEncodingException e ) {
-            Data.logger.warn(e.getMessage(), e);
+            Logger.warn(e.getMessage(), e);
             err = true;
         } finally {
             if ( pw != null ) {
@@ -553,7 +552,7 @@ public final class FileUtils {
             // ignore
         }
     }
-    
+
     public static void saveMapB(final File file, final Map<String, byte[]> props, final String comment) {
         HashMap<String, String> m = new HashMap<String, String>();
         for (Map.Entry<String, byte[]> e: props.entrySet()) m.put(e.getKey(), UTF8.String(e.getValue()));
@@ -765,12 +764,12 @@ public final class FileUtils {
     public static ArrayList<File> getDirsRecursive(final File dir, final String notdir) {
         return getDirsRecursive(dir, notdir, true);
     }
-    
+
     /**
      * @param sourceDir source directory. Must be not null.
      * @param notdir name of dir to exlcude. Can be null
      * @param fileNameFilter filter to apply on file names. Can be null.
-     * @return list of all files passing fileFilter under sourceDir including sub directories 
+     * @return list of all files passing fileFilter under sourceDir including sub directories
      */
     public static List<File> getFilesRecursive(final File sourceDir, final String notdir, final FilenameFilter fileNameFilter) {
 		List<File> dirList = getDirsRecursive(sourceDir,
@@ -915,7 +914,7 @@ public final class FileUtils {
                 (!fileExt.isEmpty()) ? "." + fileExt : fileExt);
         return tempFile;
     }
-    
+
     /**
      * delete files and directories if a directory is not empty, delete also everything inside because
      * deletion sometimes fails on windows, there is also a windows exec included
@@ -979,7 +978,7 @@ public final class FileUtils {
             }
         }
     }
-    
+
     /**
      * Checks if a certain file is in a given directory.
      * @param file the file to check
@@ -987,9 +986,9 @@ public final class FileUtils {
      * @return true if file is contained in directory
      */
     public static boolean isInDirectory(final File file, final File directory) {
-        
+
         boolean inDirectory;
-        
+
         try {
             inDirectory = (
                     directory != null
@@ -1001,10 +1000,10 @@ public final class FileUtils {
         } catch (final IOException e) {
             inDirectory = false;
         }
-        
+
         return inDirectory;
     }
-    
+
     /**
      * auto-detect the charset of a file
      * used code from http://jchardet.sourceforge.net/;
@@ -1035,7 +1034,7 @@ public final class FileUtils {
         }
         return result;
     }
-    
+
     /**
      * Because the checking of very large files for their charset may take some time, we do this concurrently in this method
      * This method does not return anything but it logs an info line if the charset is a good choice
@@ -1051,12 +1050,12 @@ public final class FileUtils {
                 try {
                     List<String> charsets = FileUtils.detectCharset(file);
                     if (charsets.contains(givenCharset)) {
-                        Data.logger.info("appropriate charset '" + givenCharset + "' for import of " + file + ", is part one detected " + charsets);
+                        Logger.info("appropriate charset '" + givenCharset + "' for import of " + file + ", is part one detected " + charsets);
                     } else {
-                        Data.logger.warn("possibly wrong charset '" + givenCharset + "' for import of " + file + ", use one of " + charsets);
+                        Logger.warn("possibly wrong charset '" + givenCharset + "' for import of " + file + ", use one of " + charsets);
                     }
                 } catch (IOException e) {}
-                
+
             }
         };
         if (concurrent) t.start(); else t.run();

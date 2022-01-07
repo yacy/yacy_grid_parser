@@ -6,12 +6,12 @@
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *  Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program in the file lgpl21.txt
  *  If not, see <http://www.gnu.org/licenses/>.
@@ -43,9 +43,9 @@ import net.yacy.document.parser.pdfParser;
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.io.index.CrawlerDocument;
+import net.yacy.grid.io.index.CrawlerDocument.Status;
 import net.yacy.grid.io.index.CrawlerMapping;
 import net.yacy.grid.io.index.WebMapping;
-import net.yacy.grid.io.index.CrawlerDocument.Status;
 import net.yacy.grid.mcp.AbstractBrokerListener;
 import net.yacy.grid.mcp.BrokerListener;
 import net.yacy.grid.mcp.Data;
@@ -57,13 +57,14 @@ import net.yacy.grid.tools.DateParser;
 import net.yacy.grid.tools.Digest;
 import net.yacy.grid.tools.GitTool;
 import net.yacy.grid.tools.JSONList;
+import net.yacy.grid.tools.Logger;
 import net.yacy.grid.tools.Memory;
 
 public class Parser {
 
     private final static YaCyServices PARSER_SERVICE = YaCyServices.parser;
     private final static String DATA_PATH = "data";
- 
+
     // define services
     @SuppressWarnings("unchecked")
     public final static Class<? extends Servlet>[] PARSER_SERVICES = new Class[]{
@@ -110,6 +111,7 @@ public class Parser {
              super(service, Runtime.getRuntime().availableProcessors());
         }
 
+        @Override
         public ActionResult processAction(SusiAction action, JSONArray data, String processName, int processNumber) {
 
             // check short memory status
@@ -131,9 +133,9 @@ public class Parser {
                 Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
                 source = asset.getPayload();
             } catch (Throwable e) {
-                Data.logger.warn("Parser.processAction", e);
+                Logger.warn("Parser.processAction", e);
                 // if we do not get the payload from the storage, we look for attached data in the action
-                Data.logger.warn("Parser.processAction could not load asset: " + sourceasset_path, e);
+                Logger.warn("Parser.processAction could not load asset: " + sourceasset_path, e);
                 return ActionResult.FAIL_IRREVERSIBLE;
             }
             try{
@@ -190,7 +192,7 @@ public class Parser {
                         // check with http://localhost:9200/crawler/_search?q=status_s:parsed
                     } catch (IOException e) {
                         // well that should not happen
-                        Data.logger.warn("could not write crawler index", e);
+                        Logger.warn("could not write crawler index", e);
                     }
 
                     // write graph document
@@ -207,17 +209,17 @@ public class Parser {
                     try {
                         String targetasset = targetasset_object.toString();
                         Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
-                        Data.logger.info("Parser.processAction stored asset " + targetasset_path);
+                        Logger.info("Parser.processAction stored asset " + targetasset_path);
                     } catch (Throwable ee) {
-                        Data.logger.warn("Parser.processAction asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
+                        Logger.warn("Parser.processAction asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
                         storeToMessage = true;
                     }
                     try {
                         String targetgraph = targetgraph_object.toString();
                         Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
-                        Data.logger.info("Parser.processAction stored graph " + targetgraph_path);
+                        Logger.info("Parser.processAction stored graph " + targetgraph_path);
                     } catch (Throwable ee) {
-                        Data.logger.info("Parser.processAction asset " + targetgraph_path + " could not be stored, carrying the asset within the next action", ee);
+                        Logger.warn("Parser.processAction asset " + targetgraph_path + " could not be stored, carrying the asset within the next action", ee);
                         storeToMessage = true;
                     }
                 }
@@ -227,14 +229,14 @@ public class Parser {
                     actions.forEach(a -> {
                         new SusiAction((JSONObject) a).setJSONListAsset(targetasset_path, targetasset_object);
                         new SusiAction((JSONObject) a).setJSONListAsset(targetgraph_path, targetgraph_object);
-                        Data.logger.info("Parser.processAction stored assets " + targetasset_path + ", " + targetgraph_path + " into message");
+                        Logger.info("Parser.processAction stored assets " + targetasset_path + ", " + targetgraph_path + " into message");
                     });
                 }
-                Data.logger.info("Parser.processAction processed message from queue and stored asset " + targetasset_path);
+                Logger.info("Parser.processAction processed message from queue and stored asset " + targetasset_path);
 
                 return ActionResult.SUCCESS;
             } catch (Throwable e) {
-                Data.logger.warn("", e);
+                Logger.warn("", e);
                 return ActionResult.FAIL_IRREVERSIBLE;
             }
         }
@@ -255,8 +257,8 @@ public class Parser {
         new Thread(brokerListener).start();
 
         // start server
-        Data.logger.info("started Parser");
-        Data.logger.info(new GitTool().toString());
+        Logger.info("started Parser");
+        Logger.info(new GitTool().toString());
         Service.runService(null);
         brokerListener.terminate();
     }

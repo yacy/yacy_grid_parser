@@ -35,27 +35,27 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
-import net.yacy.document.AbstractParser;
-import net.yacy.document.Document;
-import net.yacy.document.Parser;
-import net.yacy.document.VocabularyScraper;
-
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 
+import net.yacy.document.AbstractParser;
+import net.yacy.document.Document;
+import net.yacy.document.Parser;
+import net.yacy.document.VocabularyScraper;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
+
 /**
  * this parser can parse id3 tags of mp3 audio files
  */
 public class audioTagParser extends AbstractParser implements Parser {
-	
+
 	public static String EXTENSIONS 	= "mp3,ogg,oga,m4a,m4p,flac,wma";
 	public static String MIME_TYPES 	= "audio/mpeg,audio/MPA,audio/mpa-robust,audio/mp4,audio/flac,audio/x-flac,audio/x-ms-wma,audio/x-ms-asf";
 	public static String SEPERATOR 	= ",";
-	
+
     public audioTagParser() {
         super("Audio File Meta-Tag Parser");
         final String[] extArray = EXTENSIONS.split(SEPERATOR);
@@ -73,7 +73,7 @@ public class audioTagParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source)
             throws Parser.Failure, InterruptedException {
@@ -82,7 +82,7 @@ public class audioTagParser extends AbstractParser implements Parser {
         final String fileext = '.' + MultiProtocolURL.getFileExtension(filename);
         filename = filename.isEmpty() ? location.toTokens() : MultiProtocolURL.unescape(filename);
     	String mime = mimeType;
-   	    
+
     	// fix mimeType
     	if(!this.SUPPORTED_MIME_TYPES.contains(mimeType)) {
     		if(fileext.equals("mp3")) {
@@ -97,37 +97,37 @@ public class audioTagParser extends AbstractParser implements Parser {
     			mime = "audio/mp4";
     		}
     	}
-    	    	
+
     	Document[] docs;
-        BufferedOutputStream fout = null;        
+        BufferedOutputStream fout = null;
         File tempFile = null;
         AudioFile f;
-        
-        try {        	
+
+        try {
         	if (location.isFile()) {
         		f = AudioFileIO.read(location.getFSFile());
         	} else {
-            	// create a temporary file, as jaudiotagger requires a file rather than an input stream 
-            	tempFile = File.createTempFile(filename,fileext);              
-                fout = new BufferedOutputStream(new FileOutputStream(tempFile));  
-                int c;  
-                while ((c = source.read()) != -1) {  
-                    fout.write(c);  
+            	// create a temporary file, as jaudiotagger requires a file rather than an input stream
+            	tempFile = File.createTempFile(filename,fileext);
+                fout = new BufferedOutputStream(new FileOutputStream(tempFile));
+                int c;
+                while ((c = source.read()) != -1) {
+                    fout.write(c);
                 }
                 f = AudioFileIO.read(tempFile);
         	}
-            
+
             Tag tag = f.getTag();
-       
+
             final Set<String> lang = new HashSet<String>();
            	lang.add(tag.getFirst(FieldKey.LANGUAGE));
-           	
+
             // title
             final List<String> titles = new ArrayList<String>();
             titles.add(tag.getFirst(FieldKey.TITLE));
             titles.add(tag.getFirst(FieldKey.ALBUM));
             titles.add(filename);
-             
+
             // text
             final List<String> descriptions = new ArrayList<String>(7);
             final StringBuilder text = new StringBuilder(500);
@@ -135,10 +135,10 @@ public class audioTagParser extends AbstractParser implements Parser {
             String field = tag.getFirst(FieldKey.ARTIST);
             descriptions.add(FieldKey.ARTIST.name() + ": " + field);
             text.append(field); text.append(space);
-            field = tag.getFirst(FieldKey.ALBUM); 
+            field = tag.getFirst(FieldKey.ALBUM);
             descriptions.add(FieldKey.ALBUM.name() + ": " + field);
             text.append(field); text.append(space);
-            field = tag.getFirst(FieldKey.TITLE); 
+            field = tag.getFirst(FieldKey.TITLE);
             descriptions.add(FieldKey.TITLE.name() + ": " + field);
             text.append(field); text.append(space);
             field = tag.getFirst(FieldKey.COMMENT);
@@ -154,7 +154,7 @@ public class audioTagParser extends AbstractParser implements Parser {
             descriptions.add(FieldKey.GENRE.name() + ": " + field);
             text.append(field); text.append(space);
             text.append(location.toTokens());
-            
+
             // dc:subject
             final String[] subject = new String[1];
             subject[0] = tag.getFirst(FieldKey.GENRE);
@@ -178,7 +178,7 @@ public class audioTagParser extends AbstractParser implements Parser {
                     null,
                     false,
                     new Date())
-            };            
+            };
             return docs;
         } catch (final Exception e) {
 			// return a generic document as default
@@ -208,7 +208,7 @@ public class audioTagParser extends AbstractParser implements Parser {
 					fout.close();
 			} catch (final IOException e) {
 				// TODO Auto-generated catch block
-				Data.logger.error("Catched Exception", e);
+				Logger.error("Catched Exception", e);
 			}
             if (tempFile != null)
             	tempFile.delete();

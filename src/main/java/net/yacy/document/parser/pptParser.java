@@ -33,15 +33,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.CommonPattern;
-import net.yacy.grid.tools.MultiProtocolURL;
+import org.apache.poi.hslf.extractor.PowerPointExtractor;
+
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
-
-import org.apache.poi.hslf.extractor.PowerPointExtractor;
+import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 
 public class pptParser extends AbstractParser implements Parser {
 
@@ -68,7 +68,7 @@ public class pptParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source) throws Parser.Failure,
             InterruptedException {
@@ -130,9 +130,9 @@ public class pptParser extends AbstractParser implements Parser {
             /*
              * an unexpected error occurred, log it and throw a Parser.Failure
              */
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
             final String errorMsg = "Unable to parse the ppt document '" + location + "':" + e.getMessage();
-            Data.logger.error(errorMsg);
+            Logger.error(errorMsg);
             throw new Parser.Failure(errorMsg, location);
         }
     }

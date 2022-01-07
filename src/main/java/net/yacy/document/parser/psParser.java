@@ -37,12 +37,12 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.util.FileUtils;
 
 
@@ -81,7 +81,7 @@ public class psParser extends AbstractParser implements Parser {
             final int returnCode = ps2asciiProc.waitFor();
             return (returnCode == 0);
         } catch (final Exception e) {
-            Data.logger.info("ps2ascii not found. Switching to java parser mode.");
+            Logger.info("ps2ascii not found. Switching to java parser mode.");
             return false;
         }
     }
@@ -120,7 +120,7 @@ public class psParser extends AbstractParser implements Parser {
                     null,     // rss
                     null,     // images
                     false,    // indexingdenied
-                    new Date())};  
+                    new Date())};
 
             return docs;
         } catch (final Exception e) {
@@ -250,7 +250,7 @@ public class psParser extends AbstractParser implements Parser {
             execCode = ps2asciiProc.waitFor();
     	} catch (final Exception e) {
             final String errorMsg = "Unable to convert ps to ascii. " + e.getMessage();
-            Data.logger.error(errorMsg);
+            Logger.error(errorMsg);
             throw new Exception(errorMsg);
     	}
 
@@ -262,7 +262,7 @@ public class psParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source)
             throws Parser.Failure, InterruptedException {

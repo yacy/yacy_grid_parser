@@ -63,6 +63,7 @@ import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.Digest;
+import net.yacy.grid.tools.Logger;
 import net.yacy.grid.tools.MultiProtocolURL;
 
 /**
@@ -153,7 +154,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                     sourceStream = new ByteArrayInputStream(source);
                     if (sourceasset_path.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
                 } catch (IOException e) {
-                    Data.logger.error(e.getMessage(), e);
+                    Logger.error(e.getMessage(), e);
                 }
             }
         }
@@ -167,7 +168,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                 sourceStream = url.getInputStream(ClientIdentification.browserAgent, "anonymous", "", true);
                 if (sourceurl.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
             } catch (IOException e) {
-                Data.logger.error(e.getMessage(), e);
+                Logger.error(e.getMessage(), e);
             }
         }
 
@@ -183,7 +184,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         try {
             parsedDocuments = indexWarcRecords(sourceStream, null);
         } catch (IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
             parsedDocuments = new JSONArray();
         } finally {
             try {
@@ -354,7 +355,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                             try {while ((c = istream.read()) >= 0) {
                                 bbuffer.append(c);
                             }} catch (IOException e) {
-                                Data.logger.warn("", e);
+                                Logger.warn("", e);
                             }
                             content = bbuffer.getBytes();
                         } else {*/
@@ -399,7 +400,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
             wrec = localwarcReader.getNextRecord();
         }
         localwarcReader.close();
-        Data.logger.info("Processed " + cnt + " WARC documents");
+        Logger.info("Processed " + cnt + " WARC documents");
 
         // put poison into parser queues and wait for parser thread termination
         for (int i = 0; i < parserThreads.length; i++) try {
@@ -421,7 +422,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         JSONArray parsedDocuments = new JSONArray();
         for (JSONObject object: objectQueue) parsedDocuments.put(object);
 
-        Data.logger.info("Created " + cnt + " JSON objects from " + cnt + " WARC documents");
+        Logger.info("Created " + cnt + " JSON objects from " + cnt + " WARC documents");
 
         return parsedDocuments;
     }

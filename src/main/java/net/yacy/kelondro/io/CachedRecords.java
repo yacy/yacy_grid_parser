@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 import net.yacy.kelondro.util.FileUtils;
 
 
@@ -93,7 +93,7 @@ public final class CachedRecords {
                 fos = new FileOutputStream(tablefile);
             } catch (final FileNotFoundException e) {
                 // should not happen
-                Data.logger.warn("", e);
+                Logger.warn("", e);
             }
             try { if (fos != null) fos.close(); } catch (final IOException e) {}
         }
@@ -103,7 +103,7 @@ public final class CachedRecords {
             this.raf = new RandomAccessFile(tablefile,"rw");
         } catch (final FileNotFoundException e) {
             // should never happen
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
 
         // initialize cache and buffer
@@ -232,7 +232,7 @@ public final class CachedRecords {
             this.raf.seek(this.raf.length());
             this.raf.write(this.buffer, 0, this.recordsize * this.buffercount);
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         this.buffercount = 0;
     }
@@ -244,7 +244,7 @@ public final class CachedRecords {
         if (this.raf != null) try {
             this.raf.close();
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         this.raf = null;
         this.buffer = null;
@@ -571,7 +571,7 @@ public final class CachedRecords {
 
             t.close();
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
     }
 

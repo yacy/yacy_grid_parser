@@ -30,8 +30,8 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 import net.yacy.cora.storage.Files;
-import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.Logger;
 
 /**
  * Stemming library: reads stemming files and creates a mapping from words to synonyms
@@ -89,15 +89,15 @@ public class SynonymLibrary {
                     }
                 }
             } catch (final Throwable e) {
-                Data.logger.warn("cannot read stemming file " + f, e);
+                Logger.warn("cannot read stemming file " + f, e);
             }
         }
     }
-    
+
     public static int size() {
         return lib.size();
     }
-    
+
     /**
      * for a given word, return a list of synonym words
      * @param word
@@ -123,5 +123,5 @@ public class SynonymLibrary {
         }
         return null;
     }
-    
+
 }

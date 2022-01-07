@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 public class ZIPWriter extends AbstractMap<String, ZipEntry> implements Map<String, ZipEntry>, Iterable<Map.Entry<String, ZipEntry>> {
 
@@ -58,7 +58,7 @@ public class ZIPWriter extends AbstractMap<String, ZipEntry> implements Map<Stri
             this.zos.putNextEntry(value);
             this.backup.put(key, value);
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         return null;
     }

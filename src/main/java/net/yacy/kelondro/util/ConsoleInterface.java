@@ -32,24 +32,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 
 public class ConsoleInterface extends Thread {
     private final InputStream stream;
     private final List<String> output = new ArrayList<String>();
     private final Semaphore dataIsRead = new Semaphore(1);
-    
+
 
     private ConsoleInterface(final InputStream stream) {
     	super("ConsoleInterface");
         this.stream = stream;
         // block reading {@see getOutput()}
         try {
-            dataIsRead.acquire();
+            this.dataIsRead.acquire();
         } catch (final InterruptedException e) {
             // this should never happen because this is a constructor
-            Data.logger.error("", e);
+            Logger.error("", e);
         }
     }
 
@@ -57,7 +57,7 @@ public class ConsoleInterface extends Thread {
     public void run() {
         // a second run adds data! a output.clear() maybe needed
         try {
-            final InputStreamReader input = new InputStreamReader(stream);
+            final InputStreamReader input = new InputStreamReader(this.stream);
             final BufferedReader buffer = new BufferedReader(input);
             String line = null;
             int tries = 0;
@@ -73,33 +73,33 @@ public class ConsoleInterface extends Thread {
                     break;
             }
             while((line = buffer.readLine()) != null) {
-                    output.add(line);
+                    this.output.add(line);
             }
-            dataIsRead.release();
+            this.dataIsRead.release();
         } catch (final IOException ix) {
-            Data.logger.warn("logpoint 6 " +  ix.getMessage());
+            Logger.warn("logpoint 6 " +  ix.getMessage());
         } catch (final Exception e) {
-            Data.logger.error("", e);
+            Logger.error("", e);
         }
     }
-    
+
     /**
      * waits until the stream is read and returns all data
-     * 
+     *
      * @return lines of text in stream
      */
     public List<String> getOutput() {
         // wait that data is ready
         try {
-            dataIsRead.acquire();
+            this.dataIsRead.acquire();
         } catch (final InterruptedException e) {
             // after interrupt just return what is available (maybe nothing)
         }
         // is just for checking availability, so release it immediatly
-        dataIsRead.release();
-        return output;
+        this.dataIsRead.release();
+        return this.output;
     }
-    
+
     /**
      * simple interface
      * @return console output
@@ -110,34 +110,34 @@ public class ConsoleInterface extends Thread {
 	    Process process = null;
 	    ConsoleInterface inputStream = null;
 	    ConsoleInterface errorStream = null;
-	
+
 	    try {
 	        process = processBuilder.start();
-	
+
 	        inputStream = new ConsoleInterface(process.getInputStream());
 	        errorStream = new ConsoleInterface(process.getErrorStream());
-	
+
 	        inputStream.start();
 	        errorStream.start();
-	
+
 	        /*int retval =*/ process.waitFor();
-	
+
 	    } catch (final IOException iox) {
-	        Data.logger.warn("logpoint 0 " + iox.getMessage());
+	        Logger.warn("logpoint 0 " + iox.getMessage());
 	        throw new IOException(iox.getMessage());
 	    } catch (final InterruptedException ix) {
-	        Data.logger.warn("logpoint 1 " + ix.getMessage());
+	        Logger.warn("logpoint 1 " + ix.getMessage());
 	        throw new IOException(ix.getMessage());
 	    }
 	    final List<String> list = inputStream.getOutput();
 	    if (list.isEmpty()) {
 	        final String error = errorStream.getOutput().toString();
-	        Data.logger.warn("logpoint 2: "+ error);
+	        Logger.warn("logpoint 2: "+ error);
 	        throw new IOException("empty list: " + error);
 	    }
 	    return list;
 	}
-	
+
 	public static String getLastLineConsoleOutput(final List<String> processArgs) throws IOException {
 		List<String> lines = getConsoleOutput(processArgs);
         String line = "";

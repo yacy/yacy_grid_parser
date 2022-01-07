@@ -40,9 +40,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 
 import net.yacy.cora.sorting.OrderedScoreMap;
-
 import net.yacy.cora.util.StringBuilderComparator;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 /**
  * provide a completion library for the did-you-mean class
@@ -241,7 +240,7 @@ public class WordCache {
                     Dictionary dict = new Dictionary(new File(this.dictionaryPath, f));
                     this.dictionaries.put(f.substring(0, f.length() - 6), dict);
                 } catch (final IOException e) {
-                    Data.logger.warn(e.getMessage(), e);
+                    Logger.warn(this.getClass(), e.getMessage(), e);
                 }
             }
         }
@@ -278,7 +277,7 @@ public class WordCache {
                 }
             }
         } catch (final ConcurrentModificationException e) {
-            Data.logger.warn("",e);
+            Logger.warn(this.getClass(), e);
         }
         return ret;
     }
@@ -328,7 +327,7 @@ public class WordCache {
     public static int sizeCommonWords() {
         return commonWords.size();
     }
-    
+
     public static void clearCommonWords() {
         commonWords.clear();
     }

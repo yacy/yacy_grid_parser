@@ -32,19 +32,19 @@ import java.io.RandomAccessFile;
 import java.util.Date;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.AnchorURL;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.TextParser;
 import net.yacy.document.VocabularyScraper;
+import net.yacy.grid.tools.AnchorURL;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.util.FileUtils;
-
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 // this is a new implementation of this parser idiom using multiple documents as result set
 /**
@@ -69,7 +69,7 @@ public class tarParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             InputStream source) throws Parser.Failure, InterruptedException {
 
@@ -84,7 +84,7 @@ public class tarParser extends AbstractParser implements Parser {
         }
         TarArchiveEntry entry;
         final TarArchiveInputStream tis = new TarArchiveInputStream(source);
-        
+
         // create maindoc for this bzip container
         final Document maindoc = new Document(
                     location,
@@ -122,12 +122,12 @@ public class tarParser extends AbstractParser implements Parser {
                     if (subDocs == null) continue;
                     maindoc.addSubDocuments(subDocs);
                 } catch (final Parser.Failure e) {
-                    Data.logger.warn("tar parser entry " + name + ": " + e.getMessage());
+                    Logger.warn("tar parser entry " + name + ": " + e.getMessage());
                 } finally {
                     if (tmp != null) FileUtils.deletedelete(tmp);
                 }
             } catch (final IOException e) {
-                Data.logger.warn("tar parser:" + e.getMessage());
+                Logger.warn("tar parser:" + e.getMessage());
                 break;
             }
         }

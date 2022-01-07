@@ -1,5 +1,5 @@
 /**
- * svgParser.java 
+ * svgParser.java
  * Copyright 2015 by Burkhard Buelte
  * First released 26.09.2015 at http://yacy.net
  *
@@ -28,18 +28,18 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
 import net.yacy.cora.util.NumberTools;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.VocabularyScraper;
 import net.yacy.document.parser.html.ImageEntry;
-
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 
 /**
  * Metadata parser for svg image files (which are xml files) SVG 1.1 (Second Edition)
@@ -142,7 +142,7 @@ public class svgParser extends AbstractParser implements Parser {
                 throw (Parser.Failure) e;
             }
 
-            Data.logger.error("Catched Exception", e);
+            Logger.error("Catched Exception", e);
             throw new Parser.Failure("Unexpected error while parsing odt file. " + e.getMessage(), location);
         }
     }
@@ -166,24 +166,24 @@ public class svgParser extends AbstractParser implements Parser {
 
         @Override
         public void characters(final char ch[], final int start, final int length) {
-            buffer.append(ch, start, length);
+            this.buffer.append(ch, start, length);
         }
 
         @Override
         public void startElement(final String uri, final String name, final String tag, final Attributes atts) throws SAXException {
-            if (scrapeMetaData) {
+            if (this.scrapeMetaData) {
                 // not implemented yet TODO: interprete RDF content
                 // may contain RDF + DC, DC, CC ...
             } else {
                 if (tag != null) {
                     switch (tag) {
                         case "svg":
-                            svgStartTagFound = true;
-                            imgHeight = atts.getValue("height");
-                            imgWidth = atts.getValue("width");
+                            this.svgStartTagFound = true;
+                            this.imgHeight = atts.getValue("height");
+                            this.imgWidth = atts.getValue("width");
                             break;
                         case "metadata":
-                            scrapeMetaData = true;
+                            this.scrapeMetaData = true;
                             break;
                         // some common graph elements as stop condition (skip reading remainder of input), metadata is expected before graphic content
                         case "g":
@@ -192,56 +192,56 @@ public class svgParser extends AbstractParser implements Parser {
                         case "rect":
                             throw new SAXException("EOF svg Metadata", new EOFException());
                         default : { // K.O. criteria, start tag is not svg, fail parser on none svg
-                            if (!svgStartTagFound) {
+                            if (!this.svgStartTagFound) {
                                 throw new SAXException("not a svg file, start tag "+tag, new Failure());
                             }
                         }
                     }
                 }
             }
-            buffer.delete(0, buffer.length());
+            this.buffer.delete(0, this.buffer.length());
         }
 
         @Override
         public void endElement(final String uri, final String name, final String tag) throws SAXException {
-            if (scrapeMetaData) {
+            if (this.scrapeMetaData) {
                 // stop condition, scrape only first metadata element
                 if ("metadata".equals(tag)) {
-                    scrapeMetaData = false;
-                    buffer.delete(0, buffer.length());
+                    this.scrapeMetaData = false;
+                    this.buffer.delete(0, this.buffer.length());
                     // we have read metadate, other data are not of interest here, end parsing
                     throw new SAXException("EOF svg Metadata", new EOFException());
                 }
             } else if ("title".equals(tag)) {
-                this.docTitle = buffer.toString();
+                this.docTitle = this.buffer.toString();
             } else if ("desc".equals(tag)) {
-                this.docDescription = buffer.toString();
+                this.docDescription = this.buffer.toString();
             }
-            buffer.delete(0, buffer.length());
+            this.buffer.delete(0, this.buffer.length());
         }
 
         /**
          * @return document level title or null
          */
         public String getTitle() {
-            return docTitle;
+            return this.docTitle;
         }
 
         /**
          * @return document level description or null
          */
         public String getDescription() {
-            return docDescription;
+            return this.docDescription;
         }
 
         /**
          * @return image width in pixel or null
          */
         public Integer getWidth() {
-            if (imgWidth != null) {
+            if (this.imgWidth != null) {
                 // return number if given in pixel or a number only, return nothing for size like "100%"
-                if ((imgWidth.indexOf("px") > 0) || ((imgWidth.charAt(imgWidth.length() - 1) >= '0' && imgWidth.charAt(imgWidth.length() - 1) <= '9'))) {
-                    return NumberTools.parseIntDecSubstring(imgWidth);
+                if ((this.imgWidth.indexOf("px") > 0) || ((this.imgWidth.charAt(this.imgWidth.length() - 1) >= '0' && this.imgWidth.charAt(this.imgWidth.length() - 1) <= '9'))) {
+                    return NumberTools.parseIntDecSubstring(this.imgWidth);
                 }
             }
             return null;
@@ -251,10 +251,10 @@ public class svgParser extends AbstractParser implements Parser {
          * @return image height in pixel or null
          */
         public Integer getHeight() {
-            if (imgHeight != null) {
+            if (this.imgHeight != null) {
                 // return number if given in pixel or a number only, return nothing for size like "100%"
-                if ((imgHeight.indexOf("px") > 0) || ((imgHeight.charAt(imgHeight.length() - 1) >= '0' && imgHeight.charAt(imgHeight.length() - 1) <= '9'))) {
-                    return NumberTools.parseIntDecSubstring(imgHeight);
+                if ((this.imgHeight.indexOf("px") > 0) || ((this.imgHeight.charAt(this.imgHeight.length() - 1) >= '0' && this.imgHeight.charAt(this.imgHeight.length() - 1) <= '9'))) {
+                    return NumberTools.parseIntDecSubstring(this.imgHeight);
                 }
             }
             return null;

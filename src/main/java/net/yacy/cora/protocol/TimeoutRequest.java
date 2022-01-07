@@ -38,10 +38,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.kelondro.util.NamePrefixThreadFactory;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
+import net.yacy.grid.tools.Logger;
+import net.yacy.kelondro.util.NamePrefixThreadFactory;
 
 /**
  * TimeoutRequest is a class that can apply a timeout on method calls that may block
@@ -53,7 +53,7 @@ import jcifs.smb.SmbFile;
 public class TimeoutRequest<E> {
 
     public static boolean enable = true; // for tests
-    
+
     private final Callable<E> call;
 
     /**
@@ -102,7 +102,7 @@ public class TimeoutRequest<E> {
                 throw new ExecutionException(e);
             }
         } catch (final OutOfMemoryError e) {
-            Data.logger.warn("OutOfMemoryError / retry follows", e);
+            Logger.warn(this.getClass(), "OutOfMemoryError / retry follows", e);
             // in case that no memory is there to create a new native thread
             try {
                 return this.call.call();
@@ -145,7 +145,7 @@ public class TimeoutRequest<E> {
                     }
                 }
             }).call(timeout).booleanValue();
-            
+
         } catch (ExecutionException ex) { // may happen on Timeout (see call)
             return false;
         }

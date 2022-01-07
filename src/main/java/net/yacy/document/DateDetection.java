@@ -487,7 +487,7 @@ public class DateDetection {
         public LinkedHashSet<Date> parse(final String text) {
             LinkedHashSet<Date> dates = new LinkedHashSet<>();
             Matcher matcher = this.pattern.matcher(text);
-            //Data.logger.info("DateDetection", "applying matcher: " + matcher.toString());
+            //Logger.info("DateDetection", "applying matcher: " + matcher.toString());
             while (matcher.find()) {
                 if (!(matcher.groupCount() == 2)) continue;
                 String entity1 = matcher.group(1); if (entity1 == null) continue;

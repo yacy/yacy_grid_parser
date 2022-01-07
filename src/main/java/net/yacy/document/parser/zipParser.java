@@ -31,13 +31,13 @@ import java.util.Date;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import net.yacy.grid.mcp.Data;
-import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.document.AbstractParser;
 import net.yacy.document.Document;
 import net.yacy.document.Parser;
 import net.yacy.document.TextParser;
 import net.yacy.document.VocabularyScraper;
+import net.yacy.grid.tools.Logger;
+import net.yacy.grid.tools.MultiProtocolURL;
 import net.yacy.kelondro.util.FileUtils;
 
 // this is a new implementation of this parser idiom using multiple documents as result set
@@ -68,7 +68,7 @@ public class zipParser extends AbstractParser implements Parser {
             final MultiProtocolURL location,
             final String mimeType,
             final String charset,
-            final VocabularyScraper scraper, 
+            final VocabularyScraper scraper,
             final int timezoneOffset,
             final InputStream source)
             throws Parser.Failure, InterruptedException {
@@ -117,12 +117,12 @@ public class zipParser extends AbstractParser implements Parser {
                     if (docs == null) continue;
                     maindoc.addSubDocuments(docs);
                 } catch (final Parser.Failure e) {
-                    Data.logger.warn("ZIP parser entry " + name + ": " + e.getMessage());
+                    Logger.warn("ZIP parser entry " + name + ": " + e.getMessage());
                 } finally {
                     if (tmp != null) FileUtils.deletedelete(tmp);
                 }
             } catch (final IOException e) {
-                Data.logger.warn("ZIP parser:" + e.getMessage());
+                Logger.warn("ZIP parser:" + e.getMessage());
                 break;
             }
         }

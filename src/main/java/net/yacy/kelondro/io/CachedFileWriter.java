@@ -1,4 +1,4 @@
-// CachedFileWriter.java 
+// CachedFileWriter.java
 // ---------------------------------
 // part of The Kelondro Database
 // (C) by Michael Peter Christen; mc@yacy.net
@@ -30,7 +30,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 
 
@@ -48,21 +48,21 @@ public final class CachedFileWriter extends AbstractWriter implements Writer {
         this.cache = new byte[32768];
         this.cachestart = 0;
         this.cachelen = 0;
-    }	
-    
+    }
+
     @Override
     public final synchronized long length() throws IOException {
         checkReopen();
         return this.RAFile.length();
     }
-    
+
     @Override
     public final synchronized void setLength(long length) throws IOException {
         checkReopen();
         this.cachelen = 0;
         this.RAFile.setLength(length);
     }
-    
+
     @Override
     public final synchronized long available() throws IOException {
         checkReopen();
@@ -105,7 +105,7 @@ public final class CachedFileWriter extends AbstractWriter implements Writer {
             //System.out.println("*** DEBUG FileRA " + this.file.getName() + ": replace fill " + len + " bytes");
             System.arraycopy(this.cache, 0, b, off, len);
         }
-        
+
     }
 
     @Override
@@ -153,19 +153,19 @@ public final class CachedFileWriter extends AbstractWriter implements Writer {
             this.RAFile.close();
             //System.out.println("***DEBUG*** closed file " + this.file + ", FD is " + ((RAFile.getFD().valid()) ? "VALID" : "VOID") + ", channel is " + ((RAFile.getChannel().isOpen()) ? "OPEN" : "CLOSE"));
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         this.cache = null;
         this.RAFile = null;
     }
-    
+
     private final void checkReopen() {
         if (this.RAFile != null) return;
         // re-open the file
         try {
             this.RAFile = new RandomAccessFile(this.file, "rw");
         } catch (final FileNotFoundException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
         this.cache = new byte[8192];
         this.cachestart = 0;

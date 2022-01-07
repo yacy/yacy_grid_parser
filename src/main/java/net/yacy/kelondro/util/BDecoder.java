@@ -38,7 +38,7 @@ import java.util.Map;
 
 import net.yacy.cora.document.encoding.ASCII;
 import net.yacy.cora.document.encoding.UTF8;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 public class BDecoder {
 
@@ -47,19 +47,19 @@ public class BDecoder {
     private final static byte[] _d = "d".getBytes();
     private final static byte[] _l = "l".getBytes();
     private final static byte[] _p = ":".getBytes();
-    
+
     private final byte[] b;
     private int pos;
-    
+
     public BDecoder(byte[] b) {
         this.b = b;
         this.pos = 0;
     }
-    
+
     public static enum BType {
         string, integer, list, dictionary;
     }
-    
+
     public static interface BObject {
         public BType getType();
         public byte[] getString();
@@ -70,7 +70,7 @@ public class BDecoder {
         public String toString();
         public void toStream(OutputStream os) throws IOException;
     }
-    
+
     private static abstract class BDfltObject implements BObject {
 
         @Override
@@ -102,9 +102,9 @@ public class BDecoder {
         public String toString() {
             throw new UnsupportedOperationException();
         }
-        
+
     }
-    
+
     public static class BStringObject extends BDfltObject implements BObject {
         private byte[] b;
         public BStringObject(byte[] b) {
@@ -137,10 +137,10 @@ public class BDecoder {
             final byte[] b = UTF8.getBytes(s);
             os.write(ASCII.getBytes(Integer.toString(b.length)));
             os.write(_p);
-            os.write(b);   
+            os.write(b);
         }
     }
-    
+
     public static class BListObject extends BDfltObject implements BObject {
         private List<BObject> l;
         public BListObject(List<BObject> l) {
@@ -156,9 +156,9 @@ public class BDecoder {
         }
         @Override
         public String toString() {
-            StringBuilder s = new StringBuilder(l.size() * 40 + 1);
+            StringBuilder s = new StringBuilder(this.l.size() * 40 + 1);
             s.append("[");
-            for (final BObject o: l) s.append(o.toString()).append(",");
+            for (final BObject o: this.l) s.append(o.toString()).append(",");
             s.setLength(s.length() - 1);
             s.append("]");
             return s.toString();
@@ -170,7 +170,7 @@ public class BDecoder {
             os.write(_e);
         }
     }
-    
+
     public static class BDictionaryObject extends BDfltObject implements BObject {
         private Map<String, BObject> m;
         public BDictionaryObject(Map<String, BObject> m) {
@@ -186,9 +186,9 @@ public class BDecoder {
         }
         @Override
         public String toString() {
-            StringBuilder s = new StringBuilder(m.size() * 40 + 1);
+            StringBuilder s = new StringBuilder(this.m.size() * 40 + 1);
             s.append('{');
-            for (final Map.Entry<String, BObject> e: m.entrySet()) s.append(e.getKey()).append(':').append(e.getValue().toString()).append(','); 
+            for (final Map.Entry<String, BObject> e: this.m.entrySet()) s.append(e.getKey()).append(':').append(e.getValue().toString()).append(',');
             s.setLength(s.length() - 1);
             s.append('}');
             return s.toString();
@@ -209,7 +209,7 @@ public class BDecoder {
             os.write(_e);
         }
     }
-    
+
     public static class BIntegerObject extends BDfltObject implements BObject {
         private long i;
         private BIntegerObject(long i) {
@@ -234,7 +234,7 @@ public class BDecoder {
             os.write(_e);
         }
     }
-    
+
     private Map<String, BObject> convertToMap(final List<BObject> list) {
         final Map<String, BObject> m = new LinkedHashMap<String, BObject>();
         final int length = list.size();
@@ -253,48 +253,48 @@ public class BDecoder {
 
     private List<BObject> readList() {
         final List<BObject> list = new ArrayList<BObject>();
-        char ch = (char) b[pos];
+        char ch = (char) this.b[this.pos];
         BObject bo;
         while (ch != 'e') {
             bo = parse();
-            if (bo == null) {pos++; break;}
+            if (bo == null) {this.pos++; break;}
             list.add(bo);
-            ch = (char) b[pos];
+            ch = (char) this.b[this.pos];
         }
-        pos++;
+        this.pos++;
         return list;
     }
-    
+
     public BObject parse() {
-        if (pos >= b.length) return null;
-        char ch = (char) b[pos];
+        if (this.pos >= this.b.length) return null;
+        char ch = (char) this.b[this.pos];
         if ((ch >= '0') && (ch <= '9')) {
-            int end = pos;
+            int end = this.pos;
             end++;
-            while (b[end] != ':') ++end;
-            final int len = Integer.parseInt(ASCII.String(b, pos, end - pos));
+            while (this.b[end] != ':') ++end;
+            final int len = Integer.parseInt(ASCII.String(this.b, this.pos, end - this.pos));
             final byte[] s = new byte[len];
-            System.arraycopy(b, end + 1, s, 0, len);
-            pos = end + len + 1;
+            System.arraycopy(this.b, end + 1, s, 0, len);
+            this.pos = end + len + 1;
             return new BStringObject(s);
         } else if (ch == 'l') {
-            pos++;
+            this.pos++;
             return new BListObject(readList());
         } else if (ch == 'd') {
-            pos++;
+            this.pos++;
             return new BDictionaryObject(convertToMap(readList()));
         } else if (ch == 'i') {
-            pos++;
-            int end = pos;
-            while (b[end] != 'e') ++end;
-            BIntegerObject io = new BIntegerObject(Long.parseLong(UTF8.String(b, pos, end - pos)));
-            pos = end + 1;
+            this.pos++;
+            int end = this.pos;
+            while (this.b[end] != 'e') ++end;
+            BIntegerObject io = new BIntegerObject(Long.parseLong(UTF8.String(this.b, this.pos, end - this.pos)));
+            this.pos = end + 1;
             return io;
         } else {
             return null;
         }
     }
-    
+
     private static void print(BObject bo, int t) {
         for (int i = 0; i < t; i++) System.out.print(" ");
         if (bo.getType() == BType.integer) System.out.println(bo.getInteger());
@@ -327,7 +327,7 @@ public class BDecoder {
             print(o, 0);
             System.out.println("Object: " + o.toString());
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }
     }
 }

@@ -40,8 +40,8 @@ import java.util.regex.Pattern;
 import net.yacy.cora.geo.GeoLocation;
 import net.yacy.cora.geo.Locations;
 import net.yacy.cora.storage.Files;
-import net.yacy.grid.mcp.Data;
 import net.yacy.grid.tools.CommonPattern;
+import net.yacy.grid.tools.Logger;
 
 public class Tagging {
 
@@ -50,10 +50,10 @@ public class Tagging {
 
     private final String navigatorName;
     private final Map<String, String> synonym2term;
-    
+
     /** Terms associated to TagginEntry instances each having a synonym and an eventual object link */
     private final Map<String, TaggingEntry> term2entries;
-    
+
     private File propFile;
     private boolean isFacet; // true if the vocabulary shall generate a navigation facet
 
@@ -139,7 +139,7 @@ public class Tagging {
 			        } else {
 			        	this.term2entries.put(term, new SynonymTaggingEntry(v));
 			        }
-			        	
+
 			        continue vocloop;
 			    }
 			    term = normalizeKey(e.getKey());
@@ -204,7 +204,7 @@ public class Tagging {
         this.predicate = this.namespace + this.navigatorName;
         this.objectspace = null;
 
-        Data.logger.info("Started Vocabulary Initialization for " + this.propFile);
+        Logger.info(this.getClass(), "Started Vocabulary Initialization for " + this.propFile);
         long start = System.currentTimeMillis();
         long count = 0;
         BlockingQueue<String> list = Files.concurentLineReader(this.propFile);
@@ -271,17 +271,17 @@ public class Tagging {
         } catch (final InterruptedException e) {
         }
         long time = Math.max(1, System.currentTimeMillis() - start);
-        Data.logger.info("Finished Vocabulary Initialization for " + this.propFile + "; " + count + " lines; " + time + " milliseconds; " + (1000L * count / time) + " lines / second");
+        Logger.info(this.getClass(), "Finished Vocabulary Initialization for " + this.propFile + "; " + count + " lines; " + time + " milliseconds; " + (1000L * count / time) + " lines / second");
     }
 
     public boolean isFacet() {
         return this.isFacet;
     }
-    
+
     public void setFacet(boolean isFacet) {
         this.isFacet = isFacet;
     }
-    
+
     public int size() {
         return this.term2entries.size();
     }
@@ -373,7 +373,7 @@ public class Tagging {
         tmp.file.renameTo(this.propFile);
         init();
     }
-    
+
     private class TempFile {
         public File file;
         public BufferedWriter writer;
@@ -381,8 +381,8 @@ public class Tagging {
             if (Tagging.this.propFile == null) throw new IOException("propfile = null");
             this.file = new File(Tagging.this.propFile.getAbsolutePath() + ".tmp");
             this.writer = new BufferedWriter(new FileWriter(this.file));
-            if (Tagging.this.namespace != null && !Tagging.this.namespace.equals(DEFAULT_NAMESPACE)) writer.write("#namespace:" + Tagging.this.namespace + "\n");
-            if (Tagging.this.objectspace != null && Tagging.this.objectspace.length() > 0) writer.write("#objectspace:" + Tagging.this.objectspace + "\n");
+            if (Tagging.this.namespace != null && !Tagging.this.namespace.equals(DEFAULT_NAMESPACE)) this.writer.write("#namespace:" + Tagging.this.namespace + "\n");
+            if (Tagging.this.objectspace != null && Tagging.this.objectspace.length() > 0) this.writer.write("#objectspace:" + Tagging.this.objectspace + "\n");
         }
     }
 
@@ -496,11 +496,11 @@ public class Tagging {
     public String getObjectspace() {
         return this.objectspace;
     }
-    
+
     private final static Pattern PATTERN_SPACESLASHPLUS = Pattern.compile(" (/|\\+)");
     private final static Pattern PATTERN_SLASHPLUS = Pattern.compile("/|\\+");
     private final static Pattern PATTERN_SPACESPACE = Pattern.compile("  ");
-    
+
     private final String normalizeKey(String k) {
         k = k.trim();
         // remove symbols that are bad in a query attribute

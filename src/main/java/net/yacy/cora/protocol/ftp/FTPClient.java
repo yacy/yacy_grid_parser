@@ -69,7 +69,7 @@ import java.util.regex.Pattern;
 
 import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.cora.protocol.Domains;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.tools.Logger;
 
 
 public class FTPClient {
@@ -160,7 +160,7 @@ public class FTPClient {
                 command = command.substring(pos + 1);
             }
             if (promptIt) {
-                Data.logger.info(this.prompt + com);
+                Logger.info(this.prompt + com);
             }
             this.cmd = line2args(com);
             try {
@@ -171,14 +171,14 @@ public class FTPClient {
                     if (notConnected()) {
                         // the error was probably caused because there is no
                         // connection
-                        Data.logger.warn("not connected. no effect.", e);
+                        Logger.warn("not connected. no effect.", e);
                     } else {
-                        Data.logger.warn("ftp internal exception: target exception " + e);
+                        Logger.warn("ftp internal exception: target exception " + e);
                     }
                     return ret;
                 }
             } catch (final IllegalAccessException e) {
-                Data.logger.warn("ftp internal exception: wrong access " + e);
+                Logger.warn("ftp internal exception: wrong access " + e);
                 return ret;
             } catch (final NoSuchMethodException e) {
                 // consider first that the user attempted to execute a java
@@ -189,7 +189,7 @@ public class FTPClient {
                     try {
                         javaexec(this.cmd);
                     } catch (final Exception ee) {
-                        Data.logger.warn("Command '" + this.cmd[0] + "' not supported. Try 'HELP'.");
+                        Logger.warn("Command '" + this.cmd[0] + "' not supported. Try 'HELP'.");
                     }
                 } else {
                     // try a remote exec
@@ -289,7 +289,7 @@ public class FTPClient {
             // pr.put("java.class.path", "" + pr.get("user.dir") +
             // pr.get("path.separator") + origPath);
 
-            // Data.logger.warning("System Properties: " + pr.toString());
+            // Logger.warning("System Properties: " + pr.toString());
 
             System.setProperties(pr);
 
@@ -309,38 +309,38 @@ public class FTPClient {
 
             // handle result
             if (result != null) {
-                Data.logger.info("returns " + result);
+                Logger.info("returns " + result);
             }
 
             // set the local path to the user.dir (which may have changed)
             this.currentLocalPath = new File((String) pr.get("user.dir"));
 
         } catch (final ClassNotFoundException e) {
-            // Data.logger.warning("cannot find class file " + obj +
+            // Logger.warning("cannot find class file " + obj +
             // ".class");
             // class file does not exist, go silently over it to not show
             // everybody that the
             // system attempted to load a class file
-            Data.logger.warn("Command '" + obj + "' not supported. Try 'HELP'.");
+            Logger.warn("Command '" + obj + "' not supported. Try 'HELP'.");
         } catch (final NoSuchMethodException e) {
-            Data.logger.warn("no \"public static main(String args[])\" in " + obj);
+            Logger.warn("no \"public static main(String args[])\" in " + obj);
         } catch (final InvocationTargetException e) {
             final Throwable orig = e.getTargetException();
             if (orig.getMessage() != null) {
-                Data.logger.warn("Exception from " + obj + ": " + orig.getMessage(), orig);
+                Logger.warn("Exception from " + obj + ": " + orig.getMessage(), orig);
             }
         } catch (final IllegalAccessException e) {
-            Data.logger.warn("Illegal access for " + obj + ": class is probably not declared as public", e);
+            Logger.warn("Illegal access for " + obj + ": class is probably not declared as public", e);
         } catch (final NullPointerException e) {
-            Data.logger.warn("main(String args[]) is not defined as static for " + obj);
+            Logger.warn("main(String args[]) is not defined as static for " + obj);
             /*
              * } catch (final IOException e) { // class file does not exist, go
              * silently over it to not show everybody that the // system
-             * attempted to load a class file Data.logger.warning("Command '" + obj + "'
+             * attempted to load a class file Logger.warning("Command '" + obj + "'
              * not supported. Try 'HELP'.");
              */
         } catch (final Exception e) {
-            Data.logger.warn("Exception caught: ", e);
+            Logger.warn("Exception caught: ", e);
         }
 
         // set the classpath to its original definition
@@ -352,26 +352,26 @@ public class FTPClient {
 
     public boolean ASCII() {
         if (this.cmd.length != 1) {
-            Data.logger.warn("Syntax: ASCII  (no parameter)");
+            Logger.warn("Syntax: ASCII  (no parameter)");
             return true;
         }
         try {
             literal("TYPE A");
         } catch (final IOException e) {
-            Data.logger.warn("Error: ASCII transfer type not supported by server.");
+            Logger.warn("Error: ASCII transfer type not supported by server.");
         }
         return true;
     }
 
     public boolean BINARY() {
         if (this.cmd.length != 1) {
-            Data.logger.warn("Syntax: BINARY  (no parameter)");
+            Logger.warn("Syntax: BINARY  (no parameter)");
             return true;
         }
         try {
             literal("TYPE I");
         } catch (final IOException e) {
-            Data.logger.warn("Error: BINARY transfer type not supported by server.");
+            Logger.warn("Error: BINARY transfer type not supported by server.");
         }
         return true;
     }
@@ -382,7 +382,7 @@ public class FTPClient {
 
     public boolean CD() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: CD <path>");
+            Logger.warn("Syntax: CD <path>");
             return true;
         }
         if (notConnected()) {
@@ -397,7 +397,7 @@ public class FTPClient {
                 throw new IOException(reply);
             }
         } catch (final IOException e) {
-            Data.logger.warn("Error: change of working directory to path " + this.cmd[1] + " failed.");
+            Logger.warn("Error: change of working directory to path " + this.cmd[1] + " failed.");
         }
         return true;
     }
@@ -442,7 +442,7 @@ public class FTPClient {
 
     public boolean DEL() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: DEL <file>");
+            Logger.warn("Syntax: DEL <file>");
             return true;
         }
         if (notConnected()) {
@@ -451,7 +451,7 @@ public class FTPClient {
         try {
             rmForced(this.cmd[1]);
         } catch (final IOException e) {
-            Data.logger.warn("Error: deletion of file " + this.cmd[1] + " failed.");
+            Logger.warn("Error: deletion of file " + this.cmd[1] + " failed.");
         }
         return true;
     }
@@ -462,7 +462,7 @@ public class FTPClient {
 
     public boolean DIR() {
         if (this.cmd.length > 2) {
-            Data.logger.warn("Syntax: DIR [<path>|<file>]");
+            Logger.warn("Syntax: DIR [<path>|<file>]");
             return true;
         }
         if (notConnected()) {
@@ -477,7 +477,7 @@ public class FTPClient {
             }
             printElements(l);
         } catch (final IOException e) {
-            Data.logger.warn("Error: remote list not available (1): " + e.getMessage());
+            Logger.warn("Error: remote list not available (1): " + e.getMessage());
         }
         return true;
     }
@@ -485,7 +485,7 @@ public class FTPClient {
     public boolean DISCONNECT() {
         try {
             quit();
-            Data.logger.info("---- Connection closed.");
+            Logger.info("---- Connection closed.");
         } catch (final IOException e) {
             // Connection to server lost
             // do not append any error to errPrintln because we can silently go over this error
@@ -525,7 +525,7 @@ public class FTPClient {
 
     public boolean GET() {
         if ((this.cmd.length < 2) || (this.cmd.length > 3)) {
-            Data.logger.warn("Syntax: GET <remote-file> [<local-file>]");
+            Logger.warn("Syntax: GET <remote-file> [<local-file>]");
             return true;
         }
         final String remote = this.cmd[1]; // (new File(cmd[1])).getName();
@@ -535,7 +535,7 @@ public class FTPClient {
         final File local = absoluteLocalFile(localFilename);
 
         if (local.exists()) {
-            Data.logger.warn("Error: local file " + local.toString() + " already exists.\n" + "               File " + remote
+            Logger.warn("Error: local file " + local.toString() + " already exists.\n" + "               File " + remote
                     + " not retrieved. Local file unchanged.");
         } else {
             if (withoutLocalFile) {
@@ -544,7 +544,7 @@ public class FTPClient {
                 try {
                     get(local.getAbsolutePath(), remote);
                 } catch (final IOException e) {
-                    Data.logger.warn("Error: retrieving file " + remote + " failed. (" + e.getMessage() + ")");
+                    Logger.warn("Error: retrieving file " + remote + " failed. (" + e.getMessage() + ")");
                 }
             }
         }
@@ -575,7 +575,7 @@ public class FTPClient {
                     rmForced(remote);
                 }
             } catch (final IOException eee) {
-                Data.logger.warn("Warning: remote file or path " + remote + " cannot be removed.");
+                Logger.warn("Warning: remote file or path " + remote + " cannot be removed.");
             }
         } catch (final IOException e) {
             if (e.getMessage().startsWith("550")) {
@@ -598,13 +598,13 @@ public class FTPClient {
                             rmForced(remote);
                         }
                     } catch (final IOException eee) {
-                        Data.logger.warn("Warning: remote file or path " + remote + " cannot be removed.");
+                        Logger.warn("Warning: remote file or path " + remote + " cannot be removed.");
                     }
                 } else {
-                    Data.logger.warn("Error: remote file or path " + remote + " does not exist.");
+                    Logger.warn("Error: remote file or path " + remote + " does not exist.");
                 }
             } else {
-                Data.logger.warn("Error: retrieving file " + remote + " failed. (" + e.getMessage() + ")");
+                Logger.warn("Error: retrieving file " + remote + " failed. (" + e.getMessage() + ")");
             }
         }
     }
@@ -649,16 +649,16 @@ public class FTPClient {
 
     public boolean GLOB() {
         if (this.cmd.length != 1) {
-            Data.logger.warn("Syntax: GLOB  (no parameter)");
+            Logger.warn("Syntax: GLOB  (no parameter)");
             return true;
         }
         this.glob = !this.glob;
-        Data.logger.info("---- globbing is now turned " + ((this.glob) ? "ON" : "OFF"));
+        Logger.info("---- globbing is now turned " + ((this.glob) ? "ON" : "OFF"));
         return true;
     }
 
     public boolean HASH() {
-        Data.logger.warn("no games implemented");
+        Logger.warn("no games implemented");
         return true;
     }
 
@@ -673,7 +673,7 @@ public class FTPClient {
 
     public boolean JJENCODE() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: JJENCODE <path>");
+            Logger.warn("Syntax: JJENCODE <path>");
             return true;
         }
         final String path = this.cmd[1];
@@ -698,17 +698,17 @@ public class FTPClient {
                 exec("cd ..;jar -cfM \"" + path + ".jj\" \"" + path + ".jar\"", true);
                 exec("rm \"" + path + ".jar\"", true);
             } else {
-                Data.logger.warn("Error: local path " + newPath.toString() + " denotes not to a directory.");
+                Logger.warn("Error: local path " + newPath.toString() + " denotes not to a directory.");
             }
         } else {
-            Data.logger.warn("Error: local path " + newPath.toString() + " does not exist.");
+            Logger.warn("Error: local path " + newPath.toString() + " does not exist.");
         }
         return true;
     }
 
     public boolean JJDECODE() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: JJENCODE <path>");
+            Logger.warn("Syntax: JJENCODE <path>");
             return true;
         }
         final String path = this.cmd[1];
@@ -727,13 +727,13 @@ public class FTPClient {
                     exec("mkdir \"" + path + ".dir\"", true);
 
                 } else {
-                    Data.logger.warn("Error: target dir " + newFolder.toString() + " cannot be created");
+                    Logger.warn("Error: target dir " + newFolder.toString() + " cannot be created");
                 }
             } else {
-                Data.logger.warn("Error: local path " + newPath.toString() + " must denote to jar/jar file");
+                Logger.warn("Error: local path " + newPath.toString() + " must denote to jar/jar file");
             }
         } else {
-            Data.logger.warn("Error: local path " + newPath.toString() + " does not exist.");
+            Logger.warn("Error: local path " + newPath.toString() + " does not exist.");
         }
         return true;
     }
@@ -748,7 +748,7 @@ public class FTPClient {
         final String dest_name = args[1];
         final File dest_file = new File(dest_name);
         if (dest_file.exists()) {
-            Data.logger.warn("join: destination file " + dest_name + " already exists");
+            Logger.warn("join: destination file " + dest_name + " already exists");
             return true;
         }
 
@@ -814,10 +814,10 @@ public class FTPClient {
             for (pc = 0; pc < args.length; pc++) {
                 try {
                     if (!(new File(args[pc])).delete()) {
-                        Data.logger.warn("join: unable to delete file " + args[pc]);
+                        Logger.warn("join: unable to delete file " + args[pc]);
                     }
                 } catch (final SecurityException e) {
-                    Data.logger.warn("join: no permission to delete file " + args[pc]);
+                    Logger.warn("join: no permission to delete file " + args[pc]);
                 }
             }
         } catch (final FileNotFoundException e) {
@@ -841,7 +841,7 @@ public class FTPClient {
             }
 
             // print appropriate message
-            Data.logger.warn("join created output from " + args.length + " source files");
+            Logger.warn("join created output from " + args.length + " source files");
         }
         return true;
     }
@@ -849,7 +849,7 @@ public class FTPClient {
     public boolean COPY(final String[] args) {
         final File dest_file = new File(args[2]);
         if (dest_file.exists()) {
-            Data.logger.warn("copy: destination file " + args[2] + " already exists");
+            Logger.warn("copy: destination file " + args[2] + " already exists");
             return true;
         }
         int bytes_read = 0;
@@ -910,7 +910,7 @@ public class FTPClient {
 
     public boolean LCD() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: LCD <path>");
+            Logger.warn("Syntax: LCD <path>");
             return true;
         }
         final String path = this.cmd[1];
@@ -923,12 +923,12 @@ public class FTPClient {
         if (newPath.exists()) {
             if (newPath.isDirectory()) {
                 this.currentLocalPath = newPath;
-                Data.logger.info("---- New local path: " + this.currentLocalPath.toString());
+                Logger.info("---- New local path: " + this.currentLocalPath.toString());
             } else {
-                Data.logger.warn("Error: local path " + newPath.toString() + " denotes not a directory.");
+                Logger.warn("Error: local path " + newPath.toString() + " denotes not a directory.");
             }
         } else {
-            Data.logger.warn("Error: local path " + newPath.toString() + " does not exist.");
+            Logger.warn("Error: local path " + newPath.toString() + " does not exist.");
         }
         return true;
     }
@@ -939,12 +939,12 @@ public class FTPClient {
 
     public boolean LDIR() {
         if (this.cmd.length != 1) {
-            Data.logger.warn("Syntax: LDIR  (no parameter)");
+            Logger.warn("Syntax: LDIR  (no parameter)");
             return true;
         }
         final String[] name = this.currentLocalPath.list();
         for (String element : name) {
-            Data.logger.info(ls(new File(this.currentLocalPath, element)));
+            Logger.info(ls(new File(this.currentLocalPath, element)));
         }
         return true;
     }
@@ -1055,7 +1055,7 @@ public class FTPClient {
             try {
                 size = Long.parseLong(tokens.group(2));
             } catch (final NumberFormatException e) {
-                Data.logger.warn("not a number in list-entry: ", e);
+                Logger.warn("not a number in list-entry: ", e);
                 return null;
             }
             String time;
@@ -1078,7 +1078,7 @@ public class FTPClient {
             		date = lsDateFormat.parse(dateString);
             	}
             } catch (final ParseException e) {
-                Data.logger.warn("---- Error: not ls date-format '" + dateString, e);
+                Logger.warn("---- Error: not ls date-format '" + dateString, e);
                 date = new Date();
             }
             final String filename = tokens.group(6);
@@ -1204,7 +1204,7 @@ public class FTPClient {
 
     public boolean LITERAL() {
         if (this.cmd.length == 1) {
-            Data.logger.warn("Syntax: LITERAL <ftp-command> [<command-argument>]   (see RFC959)");
+            Logger.warn("Syntax: LITERAL <ftp-command> [<command-argument>]   (see RFC959)");
             return true;
         }
         String s = "";
@@ -1214,7 +1214,7 @@ public class FTPClient {
         try {
             literal(s.substring(1));
         } catch (final IOException e) {
-            Data.logger.warn("Error: Syntax of FTP-command wrong. See RFC959 for details.");
+            Logger.warn("Error: Syntax of FTP-command wrong. See RFC959 for details.");
         }
         return true;
     }
@@ -1229,15 +1229,15 @@ public class FTPClient {
 
     public boolean LMKDIR() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: LMKDIR <folder-name>");
+            Logger.warn("Syntax: LMKDIR <folder-name>");
             return true;
         }
         final File f = new File(this.currentLocalPath, this.cmd[1]);
         if (f.exists()) {
-            Data.logger.warn("Error: local file/folder " + this.cmd[1] + " already exists");
+            Logger.warn("Error: local file/folder " + this.cmd[1] + " already exists");
         } else {
             if (!f.mkdir()) {
-                Data.logger.warn("Error: creation of local folder " + this.cmd[1] + " failed");
+                Logger.warn("Error: creation of local folder " + this.cmd[1] + " failed");
             }
         }
         return true;
@@ -1245,29 +1245,29 @@ public class FTPClient {
 
     public boolean LMV() {
         if (this.cmd.length != 3) {
-            Data.logger.warn("Syntax: LMV <from> <to>");
+            Logger.warn("Syntax: LMV <from> <to>");
             return true;
         }
         final File from = new File(this.cmd[1]);
         final File to = new File(this.cmd[2]);
         if (!to.exists()) {
             if (from.renameTo(to)) {
-                Data.logger.info("---- \"" + from.toString() + "\" renamed to \"" + to.toString() + "\"");
+                Logger.info("---- \"" + from.toString() + "\" renamed to \"" + to.toString() + "\"");
             } else {
-                Data.logger.warn("rename failed");
+                Logger.warn("rename failed");
             }
         } else {
-            Data.logger.warn("\"" + to.toString() + "\" already exists");
+            Logger.warn("\"" + to.toString() + "\" already exists");
         }
         return true;
     }
 
     public boolean LPWD() {
         if (this.cmd.length != 1) {
-            Data.logger.warn("Syntax: LPWD  (no parameter)");
+            Logger.warn("Syntax: LPWD  (no parameter)");
             return true;
         }
-        Data.logger.info("---- Local path: " + this.currentLocalPath.toString());
+        Logger.info("---- Local path: " + this.currentLocalPath.toString());
         return true;
     }
 
@@ -1277,15 +1277,15 @@ public class FTPClient {
 
     public boolean LRMDIR() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: LRMDIR <folder-name>");
+            Logger.warn("Syntax: LRMDIR <folder-name>");
             return true;
         }
         final File f = new File(this.currentLocalPath, this.cmd[1]);
         if (!f.exists()) {
-            Data.logger.warn("Error: local folder " + this.cmd[1] + " does not exist");
+            Logger.warn("Error: local folder " + this.cmd[1] + " does not exist");
         } else {
             if (!f.delete()) {
-                Data.logger.warn("Error: deletion of local folder " + this.cmd[1] + " failed");
+                Logger.warn("Error: deletion of local folder " + this.cmd[1] + " failed");
             }
         }
         return true;
@@ -1293,15 +1293,15 @@ public class FTPClient {
 
     public boolean LRM() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: LRM <file-name>");
+            Logger.warn("Syntax: LRM <file-name>");
             return true;
         }
         final File f = new File(this.currentLocalPath, this.cmd[1]);
         if (!f.exists()) {
-            Data.logger.warn("Error: local file " + this.cmd[1] + " does not exist");
+            Logger.warn("Error: local file " + this.cmd[1] + " does not exist");
         } else {
             if (!f.delete()) {
-                Data.logger.warn("Error: deletion of file " + this.cmd[1] + " failed");
+                Logger.warn("Error: deletion of file " + this.cmd[1] + " failed");
             }
         }
         return true;
@@ -1309,7 +1309,7 @@ public class FTPClient {
 
     public boolean LS() {
         if (this.cmd.length > 2) {
-            Data.logger.warn("Syntax: LS [<path>|<file>]");
+            Logger.warn("Syntax: LS [<path>|<file>]");
             return true;
         }
         if (notConnected()) {
@@ -1324,7 +1324,7 @@ public class FTPClient {
             }
             printElements(l);
         } catch (final IOException e) {
-            Data.logger.warn("Error: remote list not available (2): " + e.getMessage());
+            Logger.warn("Error: remote list not available (2): " + e.getMessage());
         }
         return true;
     }
@@ -1333,11 +1333,11 @@ public class FTPClient {
      * @param list
      */
     private void printElements(final List<String> list) {
-        Data.logger.info("---- v---v---v---v---v---v---v---v---v---v---v---v---v---v---v---v---v---v---v");
+        Logger.info("---- v---v---v---v---v---v---v---v---v---v---v---v---v---v---v---v---v---v---v");
         for (final String element : list) {
-            Data.logger.info(element);
+            Logger.info(element);
         }
-        Data.logger.info("---- ^---^---^---^---^---^---^---^---^---^---^---^---^---^---^---^---^---^---^");
+        Logger.info("---- ^---^---^---^---^---^---^---^---^---^---^---^---^---^---^---^---^---^---^");
     }
 
     public List<String> list(final String path, final boolean extended) throws IOException {
@@ -1382,13 +1382,13 @@ public class FTPClient {
                 }
             }
         } catch (final IOException e1) {
-            Data.logger.warn("", e1);
+            Logger.warn("", e1);
         } finally {try {
             // shutdown data connection
             dataStream.close(); // Closing the returned InputStream will
             closeDataSocket(); // close the associated socket.
         } catch (final IOException e) {
-            Data.logger.warn("", e);
+            Logger.warn("", e);
         }}
         // after stream is empty we should get control completion echo
         reply = receive();
@@ -1406,7 +1406,7 @@ public class FTPClient {
 
     public boolean MKDIR() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: MKDIR <folder-name>");
+            Logger.warn("Syntax: MKDIR <folder-name>");
             return true;
         }
         if (notConnected()) {
@@ -1421,20 +1421,20 @@ public class FTPClient {
                 throw new IOException(reply);
             }
         } catch (final IOException e) {
-            Data.logger.warn("Error: creation of folder " + this.cmd[1] + " failed");
+            Logger.warn("Error: creation of folder " + this.cmd[1] + " failed");
         }
         return true;
     }
 
     public boolean MGET() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: MGET <file-pattern>");
+            Logger.warn("Syntax: MGET <file-pattern>");
             return true;
         }
         try {
             mget(this.cmd[1], false);
         } catch (final IOException e) {
-            Data.logger.warn("Error: mget failed (" + e.getMessage() + ")");
+            Logger.warn("Error: mget failed (" + e.getMessage() + ")");
         }
         return true;
     }
@@ -1446,9 +1446,9 @@ public class FTPClient {
             if (matches(remote, pattern)) {
                 local = new File(this.currentLocalPath, remote);
                 if (local.exists()) {
-                    Data.logger.warn("Warning: local file " + local.toString() + " overwritten.");
+                    Logger.warn("Warning: local file " + local.toString() + " overwritten.");
                     if(!local.delete())
-                        Data.logger.warn("Warning: local file " + local.toString() + " could not be deleted.");
+                        Logger.warn("Warning: local file " + local.toString() + " could not be deleted.");
                 }
                 retrieveFilesRecursively(remote, remove);
             }
@@ -1457,13 +1457,13 @@ public class FTPClient {
 
     public boolean MOVEDOWN() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: MOVEDOWN <file-pattern>");
+            Logger.warn("Syntax: MOVEDOWN <file-pattern>");
             return true;
         }
         try {
             mget(this.cmd[1], true);
         } catch (final IOException e) {
-            Data.logger.warn("Error: movedown failed (" + e.getMessage() + ")");
+            Logger.warn("Error: movedown failed (" + e.getMessage() + ")");
         }
         return true;
     }
@@ -1475,7 +1475,7 @@ public class FTPClient {
      */
     public boolean MV() {
         if (this.cmd.length != 3) {
-            Data.logger.warn("Syntax: MV <from> <to>");
+            Logger.warn("Syntax: MV <from> <to>");
             return true;
         }
         if (notConnected()) {
@@ -1496,27 +1496,27 @@ public class FTPClient {
                 throw new IOException(reply);
             }
         } catch (final IOException e) {
-            Data.logger.warn("Error: rename of " + this.cmd[1] + " to " + this.cmd[2] + " failed.");
+            Logger.warn("Error: rename of " + this.cmd[1] + " to " + this.cmd[2] + " failed.");
         }
         return true;
     }
 
     public boolean NOOP() {
         if (this.cmd.length != 1) {
-            Data.logger.warn("Syntax: NOOP  (no parameter)");
+            Logger.warn("Syntax: NOOP  (no parameter)");
             return true;
         }
         try {
             literal("NOOP");
         } catch (final IOException e) {
-            Data.logger.warn("Error: server does not know how to do nothing");
+            Logger.warn("Error: server does not know how to do nothing");
         }
         return true;
     }
 
     public boolean OPEN() {
         if ((this.cmd.length < 2) || (this.cmd.length > 3)) {
-            Data.logger.warn("Syntax: OPEN <host> [<port>]");
+            Logger.warn("Syntax: OPEN <host> [<port>]");
             return true;
         }
         int port = 21;
@@ -1534,10 +1534,10 @@ public class FTPClient {
         }
         try {
             open(this.cmd[1], port);
-            Data.logger.info("---- Connection to " + this.cmd[1] + " established.");
+            Logger.info("---- Connection to " + this.cmd[1] + " established.");
             this.prompt = "ftp [" + this.cmd[1] + "]>";
         } catch (final IOException e) {
-            Data.logger.warn("Error: connecting " + this.cmd[1] + " on port " + port + " failed: " + e.getMessage());
+            Logger.warn("Error: connecting " + this.cmd[1] + " on port " + port + " failed: " + e.getMessage());
         }
         return true;
     }
@@ -1595,25 +1595,25 @@ public class FTPClient {
     }
 
     public boolean PROMPT() {
-        Data.logger.warn("prompt is always off");
+        Logger.warn("prompt is always off");
         return true;
     }
 
     public boolean PUT() {
         if ((this.cmd.length < 2) || (this.cmd.length > 3)) {
-            Data.logger.warn("Syntax: PUT <local-file> [<remote-file>]");
+            Logger.warn("Syntax: PUT <local-file> [<remote-file>]");
             return true;
         }
         final File local = new File(this.currentLocalPath, this.cmd[1]);
         final String remote = (this.cmd.length == 2) ? local.getName() : this.cmd[2];
         if (!local.exists()) {
-            Data.logger.warn("Error: local file " + local.toString() + " does not exist.");
-            Data.logger.warn("            Remote file " + remote + " not overwritten.");
+            Logger.warn("Error: local file " + local.toString() + " does not exist.");
+            Logger.warn("            Remote file " + remote + " not overwritten.");
         } else {
             try {
                 put(local.getAbsolutePath(), remote);
             } catch (final IOException e) {
-                Data.logger.warn("Error: transmitting file " + local.toString() + " failed.");
+                Logger.warn("Error: transmitting file " + local.toString() + " failed.");
             }
         }
         return true;
@@ -1621,16 +1621,16 @@ public class FTPClient {
 
     public boolean PWD() {
         if (this.cmd.length > 1) {
-            Data.logger.warn("Syntax: PWD  (no parameter)");
+            Logger.warn("Syntax: PWD  (no parameter)");
             return true;
         }
         if (notConnected()) {
             return LPWD();
         }
         try {
-            Data.logger.info("---- Current remote path is: " + pwd());
+            Logger.info("---- Current remote path is: " + pwd());
         } catch (final IOException e) {
-            Data.logger.warn("Error: remote path not available");
+            Logger.warn("Error: remote path not available");
         }
         return true;
     }
@@ -1651,20 +1651,20 @@ public class FTPClient {
 
     public boolean REMOTEHELP() {
         if (this.cmd.length != 1) {
-            Data.logger.warn("Syntax: REMOTEHELP  (no parameter)");
+            Logger.warn("Syntax: REMOTEHELP  (no parameter)");
             return true;
         }
         try {
             literal("HELP");
         } catch (final IOException e) {
-            Data.logger.warn("Error: remote help not supported by server.");
+            Logger.warn("Error: remote help not supported by server.");
         }
         return true;
     }
 
     public boolean RMDIR() {
         if (this.cmd.length != 2) {
-            Data.logger.warn("Syntax: RMDIR <folder-name>");
+            Logger.warn("Syntax: RMDIR <folder-name>");
             return true;
         }
         if (notConnected()) {
@@ -1673,7 +1673,7 @@ public class FTPClient {
         try {
             rmForced(this.cmd[1]);
         } catch (final IOException e) {
-            Data.logger.warn("Error: deletion of folder " + this.cmd[1] + " failed.");
+            Logger.warn("Error: deletion of folder " + this.cmd[1] + " failed.");
         }
         return true;
     }
@@ -1738,180 +1738,180 @@ public class FTPClient {
 
     public boolean USER() {
         if (this.cmd.length != 3) {
-            Data.logger.warn("Syntax: USER <user-name> <password>");
+            Logger.warn("Syntax: USER <user-name> <password>");
             return true;
         }
         try {
             login(this.cmd[1], this.cmd[2]);
-            Data.logger.info("---- Granted access for user " + this.cmd[1] + ".");
+            Logger.info("---- Granted access for user " + this.cmd[1] + ".");
         } catch (final IOException e) {
-            Data.logger.warn("Error: authorization of user " + this.cmd[1] + " failed: " + e.getMessage());
+            Logger.warn("Error: authorization of user " + this.cmd[1] + " failed: " + e.getMessage());
         }
         return true;
     }
 
     public boolean APPEND() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean HELP() {
-        Data.logger.info("---- ftp HELP ----");
-        Data.logger.info("");
-        Data.logger.info("This ftp client shell can act as command shell for the local host as well for the");
-        Data.logger.info("remote host. Commands that point to the local host are preceded by 'L'.");
-        Data.logger.info("");
-        Data.logger.info("Supported Commands:");
-        Data.logger.info("ASCII");
-        Data.logger.info("   switch remote server to ASCII transfer mode");
-        Data.logger.info("BINARY");
-        Data.logger.info("   switch remote server to BINARY transfer mode");
-        Data.logger.info("BYE");
-        Data.logger.info("   quit the command shell (same as EXIT)");
-        Data.logger.info("CD <path>");
-        Data.logger.info("   change remote path");
-        Data.logger.info("CLOSE");
-        Data.logger.info("   close connection to remote host (same as DISCONNECT)");
-        Data.logger.info("DEL <file>");
-        Data.logger.info("   delete file on remote server (same as RM)");
-        Data.logger.info("RM <file>");
-        Data.logger.info("   remove file from remote server (same as DEL)");
-        Data.logger.info("DIR [<path>|<file>] ");
-        Data.logger.info("   print file information for remote directory or file");
-        Data.logger.info("DISCONNECT");
-        Data.logger.info("   disconnect from remote server (same as CLOSE)");
-        Data.logger.info("EXIT");
-        Data.logger.info("   quit the command shell (same as BYE)");
-        Data.logger.info("GET <remote-file> [<local-file>]");
-        Data.logger.info("   load <remote-file> from remote server and store it locally,");
-        Data.logger.info("   optionally to <local-file>. if the <remote-file> is a directory,");
-        Data.logger.info("   then all files in that directory are retrieved,");
-        Data.logger.info("   including recursively all subdirectories.");
-        Data.logger.info("GLOB");
-        Data.logger.info("   toggles globbing: matching with wild cards or not");
-        Data.logger.info("COPY");
-        Data.logger.info("   copies local files");
-        Data.logger.info("LCD <path>");
-        Data.logger.info("   local directory change");
-        Data.logger.info("LDEL <file>");
-        Data.logger.info("   local file delete");
-        Data.logger.info("LDIR");
-        Data.logger.info("   shows local directory content");
-        Data.logger.info("LITERAL <ftp-command> [<command-argument>]");
-        Data.logger.info("   Sends FTP commands as documented in RFC959");
-        Data.logger.info("LLS");
-        Data.logger.info("   as LDIR");
-        Data.logger.info("LMD");
-        Data.logger.info("   as LMKDIR");
-        Data.logger.info("LMV <local-from> <local-to>");
-        Data.logger.info("   copies local files");
-        Data.logger.info("LPWD");
-        Data.logger.info("   prints local path");
-        Data.logger.info("LRD");
-        Data.logger.info("   as LMKDIR");
-        Data.logger.info("LRMD <folder-name>");
-        Data.logger.info("   deletes local directory <folder-name>");
-        Data.logger.info("LRM <file-name>");
-        Data.logger.info("   deletes local file <file-name>");
-        Data.logger.info("LS [<path>|<file>]");
-        Data.logger.info("   prints list of remote directory <path> or information of file <file>");
-        Data.logger.info("MDIR");
-        Data.logger.info("   as MKDIR");
-        Data.logger.info("MGET <file-pattern>");
-        Data.logger.info("   copies files from remote server that fits into the");
-        Data.logger.info("   pattern <file-pattern> to the local path.");
-        Data.logger.info("MOVEDOWN <file-pattern>");
-        Data.logger.info("   copies files from remote server as with MGET");
-        Data.logger.info("   and deletes them afterwards on the remote server");
-        Data.logger.info("MV <from> <to>");
-        Data.logger.info("   moves or renames files on the local host");
-        Data.logger.info("NOOP");
-        Data.logger.info("   sends the NOOP command to the remote server (which does nothing)");
-        Data.logger.info("   This command is usually used to measure the speed of the remote server.");
-        Data.logger.info("OPEN <host[':'port]> [<port>]");
-        Data.logger.info("   connects the ftp shell to the remote server <host>. Optionally,");
-        Data.logger.info("   a port number can be given, the default port number is 21.");
-        Data.logger.info("   Example: OPEN localhost:2121 or OPEN 192.168.0.1 2121");
-        Data.logger.info("PROMPT");
-        Data.logger.info("   compatibility command, that usually toggles beween prompting on or off.");
-        Data.logger.info("   ftp has prompting switched off by default and cannot switched on.");
-        Data.logger.info("PUT <local-file> [<remote-file>]");
-        Data.logger.info("   copies the <local-file> to the remote server to the current remote path or");
-        Data.logger.info("   optionally to the given <remote-file> path.");
-        Data.logger.info("PWD");
-        Data.logger.info("   prints current path on the remote server.");
-        Data.logger.info("REMOTEHELP");
-        Data.logger.info("   asks the remote server to print the help text of the remote server");
-        Data.logger.info("RMDIR <folder-name>");
-        Data.logger.info("   removes the directory <folder-name> on the remote server");
-        Data.logger.info("QUIT");
-        Data.logger.info("   exits the ftp application");
-        Data.logger.info("RECV");
-        Data.logger.info("   as GET");
-        Data.logger.info("USER <user-name> <password>");
-        Data.logger.info("   logs into the remote server with the user <user-name>");
-        Data.logger.info("   and the password <password>");
-        Data.logger.info("");
-        Data.logger.info("");
-        Data.logger.info("EXAMPLE:");
-        Data.logger.info("a standard sessions looks like this");
-        Data.logger.info(">open 192.168.0.1:2121");
-        Data.logger.info(">user anonymous bob");
-        Data.logger.info(">pwd");
-        Data.logger.info(">ls");
-        Data.logger.info(">.....");
-        Data.logger.info("");
-        Data.logger.info("");
+        Logger.info("---- ftp HELP ----");
+        Logger.info("");
+        Logger.info("This ftp client shell can act as command shell for the local host as well for the");
+        Logger.info("remote host. Commands that point to the local host are preceded by 'L'.");
+        Logger.info("");
+        Logger.info("Supported Commands:");
+        Logger.info("ASCII");
+        Logger.info("   switch remote server to ASCII transfer mode");
+        Logger.info("BINARY");
+        Logger.info("   switch remote server to BINARY transfer mode");
+        Logger.info("BYE");
+        Logger.info("   quit the command shell (same as EXIT)");
+        Logger.info("CD <path>");
+        Logger.info("   change remote path");
+        Logger.info("CLOSE");
+        Logger.info("   close connection to remote host (same as DISCONNECT)");
+        Logger.info("DEL <file>");
+        Logger.info("   delete file on remote server (same as RM)");
+        Logger.info("RM <file>");
+        Logger.info("   remove file from remote server (same as DEL)");
+        Logger.info("DIR [<path>|<file>] ");
+        Logger.info("   print file information for remote directory or file");
+        Logger.info("DISCONNECT");
+        Logger.info("   disconnect from remote server (same as CLOSE)");
+        Logger.info("EXIT");
+        Logger.info("   quit the command shell (same as BYE)");
+        Logger.info("GET <remote-file> [<local-file>]");
+        Logger.info("   load <remote-file> from remote server and store it locally,");
+        Logger.info("   optionally to <local-file>. if the <remote-file> is a directory,");
+        Logger.info("   then all files in that directory are retrieved,");
+        Logger.info("   including recursively all subdirectories.");
+        Logger.info("GLOB");
+        Logger.info("   toggles globbing: matching with wild cards or not");
+        Logger.info("COPY");
+        Logger.info("   copies local files");
+        Logger.info("LCD <path>");
+        Logger.info("   local directory change");
+        Logger.info("LDEL <file>");
+        Logger.info("   local file delete");
+        Logger.info("LDIR");
+        Logger.info("   shows local directory content");
+        Logger.info("LITERAL <ftp-command> [<command-argument>]");
+        Logger.info("   Sends FTP commands as documented in RFC959");
+        Logger.info("LLS");
+        Logger.info("   as LDIR");
+        Logger.info("LMD");
+        Logger.info("   as LMKDIR");
+        Logger.info("LMV <local-from> <local-to>");
+        Logger.info("   copies local files");
+        Logger.info("LPWD");
+        Logger.info("   prints local path");
+        Logger.info("LRD");
+        Logger.info("   as LMKDIR");
+        Logger.info("LRMD <folder-name>");
+        Logger.info("   deletes local directory <folder-name>");
+        Logger.info("LRM <file-name>");
+        Logger.info("   deletes local file <file-name>");
+        Logger.info("LS [<path>|<file>]");
+        Logger.info("   prints list of remote directory <path> or information of file <file>");
+        Logger.info("MDIR");
+        Logger.info("   as MKDIR");
+        Logger.info("MGET <file-pattern>");
+        Logger.info("   copies files from remote server that fits into the");
+        Logger.info("   pattern <file-pattern> to the local path.");
+        Logger.info("MOVEDOWN <file-pattern>");
+        Logger.info("   copies files from remote server as with MGET");
+        Logger.info("   and deletes them afterwards on the remote server");
+        Logger.info("MV <from> <to>");
+        Logger.info("   moves or renames files on the local host");
+        Logger.info("NOOP");
+        Logger.info("   sends the NOOP command to the remote server (which does nothing)");
+        Logger.info("   This command is usually used to measure the speed of the remote server.");
+        Logger.info("OPEN <host[':'port]> [<port>]");
+        Logger.info("   connects the ftp shell to the remote server <host>. Optionally,");
+        Logger.info("   a port number can be given, the default port number is 21.");
+        Logger.info("   Example: OPEN localhost:2121 or OPEN 192.168.0.1 2121");
+        Logger.info("PROMPT");
+        Logger.info("   compatibility command, that usually toggles beween prompting on or off.");
+        Logger.info("   ftp has prompting switched off by default and cannot switched on.");
+        Logger.info("PUT <local-file> [<remote-file>]");
+        Logger.info("   copies the <local-file> to the remote server to the current remote path or");
+        Logger.info("   optionally to the given <remote-file> path.");
+        Logger.info("PWD");
+        Logger.info("   prints current path on the remote server.");
+        Logger.info("REMOTEHELP");
+        Logger.info("   asks the remote server to print the help text of the remote server");
+        Logger.info("RMDIR <folder-name>");
+        Logger.info("   removes the directory <folder-name> on the remote server");
+        Logger.info("QUIT");
+        Logger.info("   exits the ftp application");
+        Logger.info("RECV");
+        Logger.info("   as GET");
+        Logger.info("USER <user-name> <password>");
+        Logger.info("   logs into the remote server with the user <user-name>");
+        Logger.info("   and the password <password>");
+        Logger.info("");
+        Logger.info("");
+        Logger.info("EXAMPLE:");
+        Logger.info("a standard sessions looks like this");
+        Logger.info(">open 192.168.0.1:2121");
+        Logger.info(">user anonymous bob");
+        Logger.info(">pwd");
+        Logger.info(">ls");
+        Logger.info(">.....");
+        Logger.info("");
+        Logger.info("");
         return true;
     }
 
     public boolean QUOTE() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean BELL() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean MDELETE() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean SEND() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean DEBUG() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean MLS() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean TRACE() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean MPUT() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean TYPE() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
     public boolean CREATE() {
-        Data.logger.warn("not yet supported");
+        Logger.warn("not yet supported");
         return true;
     }
 
@@ -1921,7 +1921,7 @@ public class FTPClient {
         // checks whether the string name matches with the pattern
         // the pattern may contain characters '*' as wildcard for several
         // characters (also none) and '?' to match exactly one characters
-        // Data.logger.info("MATCH " + name + " " + pattern);
+        // Logger.info("MATCH " + name + " " + pattern);
         if (!this.glob) {
             return name.equals(pattern);
         }
@@ -1974,9 +1974,9 @@ public class FTPClient {
         this.clientOutput.write('\n');
         this.clientOutput.flush();
         if (buf.startsWith("PASS")) {
-            Data.logger.info("> PASS ********");
+            Logger.info("> PASS ********");
         } else {
-            Data.logger.info("> " + buf);
+            Logger.info("> " + buf);
         }
     }
 
@@ -1995,7 +1995,7 @@ public class FTPClient {
                 throw new IOException("Server has presumably shut down the connection.");
             }
 
-            Data.logger.info("< " + reply);
+            Logger.info("< " + reply);
             // serverResponse.addElement(reply);
 
             if (reply.length() >= 4 && Character.isDigit(reply.charAt(0)) && Character.isDigit(reply.charAt(1))
@@ -2263,15 +2263,15 @@ public class FTPClient {
 
             // write statistics
             final long stop = System.currentTimeMillis();
-            Data.logger.info(" ---- downloaded "
+            Logger.info(" ---- downloaded "
                     + ((length < 2048) ? length + " bytes" : (length / 1024) + " kbytes")
                     + " in "
                     + (((stop - start) < 2000) ? (stop - start) + " milliseconds"
                             : (((int) ((stop - start) / 100)) / 10) + " seconds"));
             if (start == stop) {
-                Data.logger.warn("start == stop");
+                Logger.warn("start == stop");
             } else {
-                Data.logger.info(" (" + (length * 1000 / 1024 / (stop - start)) + " kbytes/second)");
+                Logger.info(" (" + (length * 1000 / 1024 / (stop - start)) + " kbytes/second)");
             }
 
         } else {
@@ -2495,7 +2495,7 @@ public class FTPClient {
         try {
             applyDataSocketTimeout();
         } catch (final SocketException e) {
-            Data.logger.warn("setDataSocketTimeout: " + e.getMessage());
+            Logger.warn("setDataSocketTimeout: " + e.getMessage());
         }
     }
 
@@ -2564,12 +2564,12 @@ public class FTPClient {
         }.start();
         return queue;
     }
-    
+
 	/**
 	 * Feed the queue with files under a given path on a ftp server using
 	 * the anonymous account. When path is a file path, only one entry is added
 	 * to the queue.
-	 * 
+	 *
 	 * @param ftpClient
 	 *            fptClient initialized with a host and login information
 	 * @param path
@@ -2592,14 +2592,14 @@ public class FTPClient {
 				if (info != null) {
 					queue.add(info);
 				} else {
-					/* We could not get file information, but this doesn't mean the file does not exist : 
+					/* We could not get file information, but this doesn't mean the file does not exist :
 					 * we add it anyway to the queue */
 					info = new entryInfo();
 					info.name = path;
 					queue.add(info);
 				}
         	} else {
-        	    Data.logger.warn("", e);
+        	    Logger.warn("", e);
         	}
             return;
         }
@@ -2811,7 +2811,7 @@ public class FTPClient {
                 Thread.currentThread().setName("FTP.pt(" + this.host + ")");
                 put(this.host, this.localFile, this.remotePath, this.remoteName, this.account, this.password);
             } catch (final IOException e) {
-                Data.logger.warn(e.getMessage(), e);
+                Logger.warn(e.getMessage(), e);
             }
         }
     }
@@ -2862,9 +2862,9 @@ public class FTPClient {
     					fos.write(UTF8.getBytes(page.toString()));
     					fos.close();
     				} catch (final FileNotFoundException e) {
-    				    Data.logger.warn("", e);
+    				    Logger.warn("", e);
     				} catch (final IOException e) {
-    				    Data.logger.warn("", e);
+    				    Logger.warn("", e);
     				}
     			} else {
     				printHelp();
@@ -2880,11 +2880,11 @@ public class FTPClient {
     						System.out.println(entry.toString());
     					}
     				} catch (final FileNotFoundException e) {
-    				    Data.logger.warn("", e);
+    				    Logger.warn("", e);
     				} catch (final IOException e) {
-    				    Data.logger.warn("", e);
+    				    Logger.warn("", e);
     				} catch (final InterruptedException e) {
-    				    Data.logger.warn("", e);
+    				    Logger.warn("", e);
     				}
     			} else {
     				printHelp();
@@ -2902,7 +2902,7 @@ public class FTPClient {
     				try {
     					put(args[1], new File(args[2]), args[3], "", args[4], args[5]);
     				} catch (final IOException e) {
-    					Data.logger.warn(e.getMessage(), e);
+    					Logger.warn(e.getMessage(), e);
     				}
     			} else {
     				printHelp();
