@@ -73,7 +73,7 @@ public class GeonamesLocation implements Locations {
     private final Map<Integer, GeoLocation> id2loc;
     private final TreeMap<String, List<Integer>> name2ids;
     private final File file;
-    public GeonamesLocation(final File file, WordCache dymLib, long minPopulation) {
+    public GeonamesLocation(final File file, final WordCache dymLib, final long minPopulation) {
         // this is a processing of the cities1000.zip file from http://download.geonames.org/export/dump/
 
         this.file = file;
@@ -217,7 +217,7 @@ public class GeonamesLocation implements Locations {
      */
     @Override
     public Set<String> locationNames() {
-        Set<String> locations = new HashSet<String>();
+        final Set<String> locations = new HashSet<String>();
         locations.addAll(this.name2ids.keySet());
         return locations;
     }

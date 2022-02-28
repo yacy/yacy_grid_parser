@@ -20,6 +20,7 @@
 package net.yacy.grid.parser;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,7 @@ import org.json.JSONObject;
 
 import ai.susi.mind.SusiAction;
 import ai.susi.mind.SusiThought;
+import net.yacy.document.LibraryProvider;
 import net.yacy.document.parser.pdfParser;
 import net.yacy.grid.YaCyServices;
 import net.yacy.grid.io.assets.Asset;
@@ -64,6 +66,7 @@ public class Parser {
 
     private final static YaCyServices PARSER_SERVICE = YaCyServices.parser;
     private final static String DATA_PATH = "data";
+    private final static String LIBRARY_PATH = "conf/libraries/";
 
     // define services
     @SuppressWarnings("unchecked")
@@ -107,21 +110,21 @@ public class Parser {
      */
     public static class ParserListener extends AbstractBrokerListener implements BrokerListener {
 
-        public ParserListener(YaCyServices service) {
+        public ParserListener(final YaCyServices service) {
              super(service, Runtime.getRuntime().availableProcessors());
         }
 
         @Override
-        public ActionResult processAction(SusiAction action, JSONArray data, String processName, int processNumber) {
+        public ActionResult processAction(final SusiAction action, final JSONArray data, final String processName, final int processNumber) {
 
             // check short memory status
             if (Memory.shortStatus()) {
                 pdfParser.clean_up_idiotic_PDFParser_font_cache_which_eats_up_tons_of_megabytes();
             }
 
-            String sourceasset_path = action.getStringAttr("sourceasset");
-            String targetasset_path = action.getStringAttr("targetasset");
-            String targetgraph_path = action.getStringAttr("targetgraph");
+            final String sourceasset_path = action.getStringAttr("sourceasset");
+            final String targetasset_path = action.getStringAttr("targetasset");
+            final String targetgraph_path = action.getStringAttr("targetgraph");
             if (targetasset_path == null || targetasset_path.length() == 0 ||
                 sourceasset_path == null || sourceasset_path.length() == 0) return ActionResult.FAIL_IRREVERSIBLE;
 
@@ -130,9 +133,9 @@ public class Parser {
             	source = action.getBinaryAsset(sourceasset_path);
             }
             if (source == null) try {
-                Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
+                final Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
                 source = asset.getPayload();
-            } catch (Throwable e) {
+            } catch (final Throwable e) {
                 Logger.warn("Parser.processAction", e);
                 // if we do not get the payload from the storage, we look for attached data in the action
                 Logger.warn("Parser.processAction could not load asset: " + sourceasset_path, e);
@@ -143,32 +146,32 @@ public class Parser {
                 sourceStream = new ByteArrayInputStream(source);
                 if (sourceasset_path.endsWith(".gz")) try {
                     sourceStream = new GZIPInputStream(sourceStream);
-                } catch (ZipException e) {
+                } catch (final ZipException e) {
                     // This may actually not be in gzip format in case that a http process unzipped it already.
                     // In that case we simply ignore the exception and the sourcestream stays as it is
                 }
 
                 // compute parsed documents
-                String crawlid = action.getStringAttr("id");
-                JSONObject crawl = SusiThought.selectData(data, "id", crawlid);
+                final String crawlid = action.getStringAttr("id");
+                final JSONObject crawl = SusiThought.selectData(data, "id", crawlid);
                 final Map<String, Pattern> collections = WebMapping.collectionParser(crawl.optString("collection"));
-                JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream, collections);
-                JSONList targetasset_object = new JSONList();
-                JSONList targetgraph_object = new JSONList();
+                final JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream, collections);
+                final JSONList targetasset_object = new JSONList();
+                final JSONList targetgraph_object = new JSONList();
                 for (int i = 0; i < parsedDocuments.length(); i++) {
-                    JSONObject docjson = parsedDocuments.getJSONObject(i);
-                    String url = docjson.getString(WebMapping.url_s.name());
+                    final JSONObject docjson = parsedDocuments.getJSONObject(i);
+                    final String url = docjson.getString(WebMapping.url_s.name());
 
                     // create elasticsearch index line
-                    String urlid = Digest.encodeMD5Hex(url);
-                    JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", urlid));
+                    final String urlid = Digest.encodeMD5Hex(url);
+                    final JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", urlid));
 
                     // omit documents which have a canonical tag and are not self-addressed canonical documents
                     boolean is_canonical = true;
-                    String canonical_url = docjson.optString(WebMapping.canonical_s.name());
+                    final String canonical_url = docjson.optString(WebMapping.canonical_s.name());
                     if (canonical_url.length() > 0 && !url.equals(canonical_url)) is_canonical = false;
 
-                    JSONObject updater = new JSONObject();
+                    final JSONObject updater = new JSONObject();
                     updater.put(CrawlerMapping.status_date_dt.getMapping().name(), DateParser.iso8601MillisFormat.format(new Date()));
                     if (is_canonical) {
                         // write web index document for canonical documents
@@ -190,7 +193,7 @@ public class Parser {
                     try {
                         CrawlerDocument.update(Data.gridIndex, urlid, updater);
                         // check with http://localhost:9200/crawler/_search?q=status_s:parsed
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         // well that should not happen
                         Logger.warn("could not write crawler index", e);
                     }
@@ -198,7 +201,7 @@ public class Parser {
                     // write graph document
                     if (targetgraph_object != null) {
                         targetgraph_object.add(bulkjson);
-                        JSONObject graphjson = ParserService.extractGraph(docjson);
+                        final JSONObject graphjson = ParserService.extractGraph(docjson);
                         //graphjson.put("_id", id);
                         targetgraph_object.add(graphjson);
                     }
@@ -207,25 +210,25 @@ public class Parser {
                 boolean storeToMessage = true; // debug version for now: always true TODO: set to false later
                 if (!storeToMessage) {
                     try {
-                        String targetasset = targetasset_object.toString();
+                        final String targetasset = targetasset_object.toString();
                         Data.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
                         Logger.info("Parser.processAction stored asset " + targetasset_path);
-                    } catch (Throwable ee) {
+                    } catch (final Throwable ee) {
                         Logger.warn("Parser.processAction asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
                         storeToMessage = true;
                     }
                     try {
-                        String targetgraph = targetgraph_object.toString();
+                        final String targetgraph = targetgraph_object.toString();
                         Data.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
                         Logger.info("Parser.processAction stored graph " + targetgraph_path);
-                    } catch (Throwable ee) {
+                    } catch (final Throwable ee) {
                         Logger.warn("Parser.processAction asset " + targetgraph_path + " could not be stored, carrying the asset within the next action", ee);
                         storeToMessage = true;
                     }
                 }
                 // emergency storage to message
                 if (storeToMessage) {
-                    JSONArray actions = action.getEmbeddedActions();
+                    final JSONArray actions = action.getEmbeddedActions();
                     actions.forEach(a -> {
                         new SusiAction((JSONObject) a).setJSONListAsset(targetasset_path, targetasset_object);
                         new SusiAction((JSONObject) a).setJSONListAsset(targetgraph_path, targetgraph_object);
@@ -235,25 +238,33 @@ public class Parser {
                 Logger.info("Parser.processAction processed message from queue and stored asset " + targetasset_path);
 
                 return ActionResult.SUCCESS;
-            } catch (Throwable e) {
+            } catch (final Throwable e) {
                 Logger.warn("", e);
                 return ActionResult.FAIL_IRREVERSIBLE;
             }
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         System.getProperties().put("jdk.xml.totalEntitySizeLimit", "0");
         System.getProperties().put("jdk.xml.entityExpansionLimit", "0");
 
+        // Initialize Libraries
+        new Thread("LibraryProvider.initialize") {
+            @Override
+            public void run() {
+                LibraryProvider.initialize(new File(LIBRARY_PATH));
+            }
+        }.start();
+
         // initialize environment variables
-        List<Class<? extends Servlet>> services = new ArrayList<>();
+        final List<Class<? extends Servlet>> services = new ArrayList<>();
         services.addAll(Arrays.asList(MCP.MCP_SERVICES));
         services.addAll(Arrays.asList(PARSER_SERVICES));
         Service.initEnvironment(PARSER_SERVICE, services, DATA_PATH, false);
 
         // start listener
-        BrokerListener brokerListener = new ParserListener(PARSER_SERVICE);
+        final BrokerListener brokerListener = new ParserListener(PARSER_SERVICE);
         new Thread(brokerListener).start();
 
         // start server

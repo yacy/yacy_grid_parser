@@ -29,12 +29,12 @@ public class IntegerGeoPoint implements GeoPoint {
 
     private final long latlon; // using one variable for the coordinate pair saves some space
 
-    public IntegerGeoPoint(double lat, double lon) {
+    public IntegerGeoPoint(final double lat, final double lon) {
         this.latlon = (((long) coord2int(lat)) << 32) | (coord2int(lon));
     }
 
 
-    public IntegerGeoPoint(int lat, int lon) {
+    public IntegerGeoPoint(final int lat, final int lon) {
         this.latlon = (((long) coord2int(lat / 1e6d)) << 32) | (coord2int(lon / 1e6d));
     }
 
@@ -66,14 +66,14 @@ public class IntegerGeoPoint implements GeoPoint {
         return Math.abs(int2coord(1) - int2coord(2));
     }
 
-    private static final double maxint = new Double(Integer.MAX_VALUE).doubleValue();
+    private static final double maxint = Integer.MAX_VALUE;
     private static final double upscale = maxint / 360.0d;
 
-    private static final int coord2int(double coord) {
+    private static final int coord2int(final double coord) {
         return (int) ((coord + 180.0d) * upscale);
     }
 
-    private static final double int2coord(int z) {
+    private static final double int2coord(final int z) {
         return (z / upscale) - 180.0d;
     }
 
@@ -92,7 +92,7 @@ public class IntegerGeoPoint implements GeoPoint {
     @Override
     public boolean equals(final Object o) {
         if (!(o instanceof IntegerGeoPoint)) return false;
-        IntegerGeoPoint oo = (IntegerGeoPoint) o;
+        final IntegerGeoPoint oo = (IntegerGeoPoint) o;
         return (this.latlon == oo.latlon);
     }
 
@@ -101,10 +101,10 @@ public class IntegerGeoPoint implements GeoPoint {
         return "[" + this.lat() + "," + this.lon() + "]";
     }
 
-    public static void main(String[] args) {
-        double lat = 13.419444d;
-        double lon = 52.548611d;
-        GeoPoint c = new IntegerGeoPoint(lat, lon);
+    public static void main(final String[] args) {
+        final double lat = 13.419444d;
+        final double lon = 52.548611d;
+        final GeoPoint c = new IntegerGeoPoint(lat, lon);
         System.out.println(c.toString() + " #" + c.hashCode());
         System.out.println("error: lat: " + (Math.abs(c.lat() - lat) / meter) + " meter; lon: " + (Math.abs(c.lon() - lon) / meter) + " meter");
         System.out.println("accuracyLat = " + c.accuracyLat() / meter + " meter, accuracyLon = " + c.accuracyLon() / meter + " meter");

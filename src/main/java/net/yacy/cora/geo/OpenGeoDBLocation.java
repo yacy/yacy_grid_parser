@@ -61,7 +61,7 @@ public class OpenGeoDBLocation implements Locations {
     private final Map<String, Integer> zip2id;
     private final File file;
 
-    public OpenGeoDBLocation(final File file, WordCache dymLib) {
+    public OpenGeoDBLocation(final File file, final WordCache dymLib) {
 
         this.file = file;
         this.id2loc = new HashMap<Integer, GeoLocation>();
@@ -249,9 +249,9 @@ public class OpenGeoDBLocation implements Locations {
      */
     @Override
     public Set<String> locationNames() {
-        Set<String> locations = new HashSet<String>();
-        Set<StringBuilder> l = this.name2ids.keySet();
-        for (StringBuilder s: l) {
+        final Set<String> locations = new HashSet<String>();
+        final Set<StringBuilder> l = this.name2ids.keySet();
+        for (final StringBuilder s: l) {
             locations.add(s.toString());
         }
         return locations;

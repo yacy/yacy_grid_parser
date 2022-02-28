@@ -41,6 +41,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import net.yacy.cora.document.WordCache;
+import net.yacy.cora.geo.GeoLocation;
 import net.yacy.cora.geo.GeonamesLocation;
 import net.yacy.cora.geo.OpenGeoDBLocation;
 import net.yacy.cora.geo.OverarchingLocation;
@@ -121,8 +122,8 @@ public class LibraryProvider {
         integrateOpenGeoDB();
         integrateGeonames0(-1);
         integrateGeonames1(-1);
-        integrateGeonames2(100000);
-        Set<String> allTags = new HashSet<String>() ;
+        integrateGeonames2(-1);
+        final Set<String> allTags = new HashSet<String>() ;
         allTags.addAll(autotagging.allTags()); // we must copy this into a clone to prevent circularity
         autotagging.addPlaces(geoLoc);
         //autotagging.addDictionaries(dymLib.getDictionaries()); // strange results with this: normal word lists are 'too full'
@@ -145,27 +146,30 @@ public class LibraryProvider {
         }
     }
 
-    public static void integrateGeonames0(long minPopulation) {
+    public static void integrateGeonames0(final long minPopulation) {
         final File geon = Dictionary.GEON0.file();
         if ( geon.exists() ) {
             geoLoc.activateLocation(Dictionary.GEON0.nickname, new GeonamesLocation(geon, dymLib, minPopulation));
             return;
         }
     }
-    public static void integrateGeonames1(long minPopulation) {
+
+    public static void integrateGeonames1(final long minPopulation) {
         final File geon = Dictionary.GEON1.file();
         if ( geon.exists() ) {
             geoLoc.activateLocation(Dictionary.GEON1.nickname, new GeonamesLocation(geon, dymLib, minPopulation));
             return;
         }
     }
-    public static void integrateGeonames2(long minPopulation) {
+
+    public static void integrateGeonames2(final long minPopulation) {
         final File geon = Dictionary.GEON2.file();
         if ( geon.exists() ) {
             geoLoc.activateLocation(Dictionary.GEON2.nickname, new GeonamesLocation(geon, dymLib, minPopulation));
             return;
         }
     }
+
     public static void initDidYouMean() {
         final File dymDict = new File(dictRoot, path_to_did_you_mean_dictionaries);
         if ( !dymDict.exists() ) {
@@ -181,6 +185,7 @@ public class LibraryProvider {
         }
         autotagging = new AutotaggingLibrary(autotaggingPath);
     }
+
     public static void initSynonyms() {
         final File synonymPath = new File(dictRoot, path_to_synonym_dictionaries);
         if ( !synonymPath.exists() ) {
@@ -188,6 +193,7 @@ public class LibraryProvider {
         }
         SynonymLibrary.init(synonymPath);
     }
+
     public static void initRewriter() {
         final File rewriterPath = new File(dictRoot, path_to_rewriter_dictionaries);
         if ( !rewriterPath.exists() ) {
@@ -195,6 +201,7 @@ public class LibraryProvider {
         }
         urlRewriter = new URLRewriterLibrary(rewriterPath);
     }
+
     public static void activateDeReWo() {
         // translate input files (once..)
         final File dymDict = new File(dictRoot, path_to_did_you_mean_dictionaries);
@@ -220,30 +227,6 @@ public class LibraryProvider {
         final File derewoOutput = new File(dymDict, derewoInput.getName() + ".words");
         FileUtils.deletedelete(derewoOutput);
     }
-
-    /*
-    private static ArrayList<String> loadList(final File file, String comment, boolean toLowerCase) {
-        final ArrayList<String> list = new ArrayList<String>();
-        if (!file.exists()) return list;
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if ((line.length() > 0) && (!(line.startsWith(comment)))) {
-                    list.add((toLowerCase) ? line.trim().toLowerCase() : line.trim());
-                }
-            }
-            reader.close();
-        } catch (final IOException e) {
-            Log.logException(e);
-        } finally {
-            if (reader != null) try { reader.close(); } catch (final Exception e) {}
-        }
-        return list;
-    }
-    */
 
     private static Set<String> sortUnique(final List<String> list) {
         final Set<String> s = new TreeSet<String>();
@@ -329,12 +312,13 @@ public class LibraryProvider {
 
     public static void main(final String[] args) {
         final File here = new File("dummy").getParentFile();
-        initialize(new File(here, "DATA/DICTIONARIES"));
+        initialize(new File(here, "conf/libraries/"));
         System.out.println("dymDict-size = " + dymLib.size());
         final Set<StringBuilder> r = dymLib.recommend(new StringBuilder("da"));
-        for ( final StringBuilder s : r ) {
-            System.out.println("$ " + s);
-        }
+        for (final StringBuilder s: r) System.out.println("$ " + s);
         System.out.println("recommendations: " + r.size());
+
+        final TreeSet<GeoLocation> locations = geoLoc.find("Frankfurt am Main", true);
+        for (final GeoLocation g: locations) System.out.println(g.toString());
     }
 }

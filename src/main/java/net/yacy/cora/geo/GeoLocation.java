@@ -32,18 +32,18 @@ public class GeoLocation extends IntegerGeoPoint implements Comparable<GeoLocati
     private byte[] name;
     private int population;
 
-    public GeoLocation(double lat, double lon) {
+    public GeoLocation(final double lat, final double lon) {
         super(lat, lon);
         this.name = null;
         this.population = 0;
     }
 
-    public GeoLocation(double lat, double lon, String name) {
+    public GeoLocation(final double lat, final double lon, final String name) {
         super(lat, lon);
         this.name = UTF8.getBytes(name);
     }
 
-    public void setName(String name) {
+    public void setName(final String name) {
         this.name = UTF8.getBytes(name);
     }
 
@@ -51,7 +51,7 @@ public class GeoLocation extends IntegerGeoPoint implements Comparable<GeoLocati
         return UTF8.String(this.name);
     }
 
-    public void setPopulation(int population) {
+    public void setPopulation(final int population) {
         this.population = population;
     }
 
@@ -60,7 +60,7 @@ public class GeoLocation extends IntegerGeoPoint implements Comparable<GeoLocati
     }
 
     @Override
-    public boolean equals(Object loc) {
+    public boolean equals(final Object loc) {
         if (!(loc instanceof GeoLocation)) return false;
         if (this.name == null || ((GeoLocation) loc).name == null) return super.equals(loc);
         return super.equals(loc) && this.getName().toLowerCase().equals(((GeoLocation) loc).getName().toLowerCase());
@@ -73,10 +73,10 @@ public class GeoLocation extends IntegerGeoPoint implements Comparable<GeoLocati
      * have the greatest population
      */
     @Override
-    public int compareTo(GeoLocation o) {
+    public int compareTo(final GeoLocation o) {
         if (this.equals(o)) return 0;
-        long s = (ph(this.getPopulation()) << 30) + this.hashCode();
-        long t = (ph(o.getPopulation()) << 30) + o.hashCode();
+        final long s = (ph(this.getPopulation()) << 30) + this.hashCode();
+        final long t = (ph(o.getPopulation()) << 30) + o.hashCode();
         if (s > t) return -1;
         if (s < t) return  1;
         return 0;
@@ -88,11 +88,11 @@ public class GeoLocation extends IntegerGeoPoint implements Comparable<GeoLocati
     }
 
     @Override
-    public int compare(GeoLocation o1, GeoLocation o2) {
+    public int compare(final GeoLocation o1, final GeoLocation o2) {
         return o1.compareTo(o2);
     }
 
-    public static int degreeToKm(double degree) {
+    public static int degreeToKm(final double degree) {
         return (int) (degree * 111.32d);
     }
 
