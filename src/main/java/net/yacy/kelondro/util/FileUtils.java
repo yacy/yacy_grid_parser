@@ -24,7 +24,6 @@
 
 package net.yacy.kelondro.util;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -57,8 +56,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.lang3.StringUtils;
-import org.mozilla.intl.chardet.nsDetector;
-import org.mozilla.intl.chardet.nsPSMDetector;
 
 import net.yacy.cora.document.encoding.UTF8;
 import net.yacy.cora.storage.Files;
@@ -105,7 +102,7 @@ public final class FileUtils {
         }
 
         final byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-        int chunkSize = (int) ((count > 0) ? Math.min(count, DEFAULT_BUFFER_SIZE) : DEFAULT_BUFFER_SIZE);
+        final int chunkSize = (int) ((count > 0) ? Math.min(count, DEFAULT_BUFFER_SIZE) : DEFAULT_BUFFER_SIZE);
 
         int c;
         long total = 0;
@@ -362,7 +359,7 @@ public final class FileUtils {
     		/* source input stream must be closed here in all cases */
     		try {
     			source.close();
-    		} catch(IOException ignoredException) {
+    		} catch(final IOException ignoredException) {
     		}
     	}
     	return content;
@@ -500,10 +497,10 @@ public final class FileUtils {
     }
 
     public static ConcurrentHashMap<String, byte[]> loadMapB(final File f) {
-        ConcurrentHashMap<String, String> m = loadMap(f);
+        final ConcurrentHashMap<String, String> m = loadMap(f);
         if (m == null) return null;
-        ConcurrentHashMap<String, byte[]> mb = new ConcurrentHashMap<String, byte[]>();
-        for (Map.Entry<String, String> e: m.entrySet()) mb.put(e.getKey(), UTF8.getBytes(e.getValue()));
+        final ConcurrentHashMap<String, byte[]> mb = new ConcurrentHashMap<String, byte[]>();
+        for (final Map.Entry<String, String> e: m.entrySet()) mb.put(e.getKey(), UTF8.getBytes(e.getValue()));
         return mb;
     }
 
@@ -554,8 +551,8 @@ public final class FileUtils {
     }
 
     public static void saveMapB(final File file, final Map<String, byte[]> props, final String comment) {
-        HashMap<String, String> m = new HashMap<String, String>();
-        for (Map.Entry<String, byte[]> e: props.entrySet()) m.put(e.getKey(), UTF8.String(e.getValue()));
+        final HashMap<String, String> m = new HashMap<String, String>();
+        for (final Map.Entry<String, byte[]> e: props.entrySet()) m.put(e.getKey(), UTF8.String(e.getValue()));
         saveMap(file, m, comment);
     }
 
@@ -578,8 +575,8 @@ public final class FileUtils {
                 pos = line.indexOf('=', pos + 1);
             } while ( pos > 0 && line.charAt(pos - 1) == '\\' );
             if ( pos > 0 ) try {
-                String key = StringUtils.replaceEach(line.substring(0, pos).trim(), escaped_strings_in, unescaped_strings_out);
-                String value = StringUtils.replaceEach(line.substring(pos + 1).trim(), escaped_strings_in, unescaped_strings_out);
+                final String key = StringUtils.replaceEach(line.substring(0, pos).trim(), escaped_strings_in, unescaped_strings_out);
+                final String value = StringUtils.replaceEach(line.substring(pos + 1).trim(), escaped_strings_in, unescaped_strings_out);
                 //System.out.println("key = " + key + ", value = " + value);
                 props.put(key, value);
             } catch (final IndexOutOfBoundsException e) {
@@ -772,10 +769,10 @@ public final class FileUtils {
      * @return list of all files passing fileFilter under sourceDir including sub directories
      */
     public static List<File> getFilesRecursive(final File sourceDir, final String notdir, final FilenameFilter fileNameFilter) {
-		List<File> dirList = getDirsRecursive(sourceDir,
+		final List<File> dirList = getDirsRecursive(sourceDir,
 				notdir);
 		dirList.add(sourceDir);
-		List<File> files = new ArrayList<>();
+		final List<File> files = new ArrayList<>();
 		for (final File dir : dirList) {
 			Collections.addAll(files, dir.listFiles(fileNameFilter));
 		}
@@ -1002,63 +999,6 @@ public final class FileUtils {
         }
 
         return inDirectory;
-    }
-
-    /**
-     * auto-detect the charset of a file
-     * used code from http://jchardet.sourceforge.net/;
-     * see also: http://www-archive.mozilla.org/projects/intl/chardet.html
-     * @param file
-     * @return a list of probable charsets
-     * @throws IOException
-     */
-    public static List<String> detectCharset(File file) throws IOException {
-        // auto-detect charset, used code from http://jchardet.sourceforge.net/; see also: http://www-archive.mozilla.org/projects/intl/chardet.html
-        List<String> result;
-        try (BufferedInputStream imp = new BufferedInputStream(new FileInputStream(file))) { // try-with-resource to close inputstream
-            nsDetector det = new nsDetector(nsPSMDetector.ALL);
-            byte[] buf = new byte[1024] ;
-            int len;
-            boolean done = false ;
-            boolean isAscii = true ;
-            while ((len = imp.read(buf,0,buf.length)) != -1) {
-                if (isAscii) isAscii = det.isAscii(buf,len);
-                if (!isAscii && !done) done = det.DoIt(buf,len, false);
-            }   det.DataEnd();
-            result = new ArrayList<>();
-            if (isAscii) {
-                result.add(StandardCharsets.US_ASCII.name());
-            } else {
-                for (String c: det.getProbableCharsets()) result.add(c); // worst case this returns "nomatch"
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Because the checking of very large files for their charset may take some time, we do this concurrently in this method
-     * This method does not return anything but it logs an info line if the charset is a good choice
-     * and it logs a warning line if the choice was bad.
-     * @param file the file to be checked
-     * @param givenCharset the charset that we consider to be valid
-     * @param concurrent if this shall run concurrently
-     */
-    public static void checkCharset(final File file, final String givenCharset, final boolean concurrent) {
-        Thread t = new Thread("FileUtils.checkCharset") {
-            @Override
-            public void run() {
-                try {
-                    List<String> charsets = FileUtils.detectCharset(file);
-                    if (charsets.contains(givenCharset)) {
-                        Logger.info("appropriate charset '" + givenCharset + "' for import of " + file + ", is part one detected " + charsets);
-                    } else {
-                        Logger.warn("possibly wrong charset '" + givenCharset + "' for import of " + file + ", use one of " + charsets);
-                    }
-                } catch (IOException e) {}
-
-            }
-        };
-        if (concurrent) t.start(); else t.run();
     }
 
 }
