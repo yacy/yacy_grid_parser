@@ -196,7 +196,7 @@ public class Array {
 
         @Override
         public Integer buffer() {
-            return new Integer(0);
+            return Integer.valueOf(0);
         }
 
         @Override
