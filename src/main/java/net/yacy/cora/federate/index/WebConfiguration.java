@@ -52,7 +52,7 @@ import net.yacy.document.parser.htmlParser;
 import net.yacy.document.parser.html.ImageEntry;
 import net.yacy.document.parser.html.Scraper;
 import net.yacy.grid.io.index.WebMapping;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.mcp.Service;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.Classification.ContentDomain;
 import net.yacy.grid.tools.CommonPattern;
@@ -635,7 +635,7 @@ public class WebConfiguration implements Serializable {
         // LSON-LD object
         final JSONObject ld = document.ld();
         //System.out.println("**** LD for " + digestURL.toNormalform(true) + "\n" + ld.toString(2) + "\n"); // debug
-        if (Data.config.getOrDefault("parser.html.enable_ld_o", "false").equals("true")) add(doc, WebMapping.ld_o, ld);
+        if (Service.instance.config.properties.getOrDefault("parser.html.enable_ld_o", "false").equals("true")) add(doc, WebMapping.ld_o, ld);
         final String lds = ld.toString(0);
         add(doc, WebMapping.ld_s, lds);
         final Collection<String> context = htmlParser.getLdContext(ld);

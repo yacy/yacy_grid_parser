@@ -60,7 +60,7 @@ import net.yacy.grid.http.Query;
 import net.yacy.grid.http.ServiceResponse;
 import net.yacy.grid.io.assets.Asset;
 import net.yacy.grid.io.index.WebMapping;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.mcp.Service;
 import net.yacy.grid.tools.AnchorURL;
 import net.yacy.grid.tools.Digest;
 import net.yacy.grid.tools.Logger;
@@ -130,10 +130,10 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
      * - sourceurl: an url with a path of a hosted WARC file
      */
     @Override
-    public ServiceResponse serviceImpl(Query call, HttpServletResponse response) {
+    public ServiceResponse serviceImpl(final Query call, final HttpServletResponse response) {
 
-        boolean flat = call.get("flatfile", false); // if true, the result is a text file with one json object per line each
-        boolean elastic = flat && call.get("bulk", false); // if true, the result has per line a index prefix object which is required to feed the result into elasticsearch
+        final boolean flat = call.get("flatfile", false); // if true, the result is a text file with one json object per line each
+        final boolean elastic = flat && call.get("bulk", false); // if true, the result has per line a index prefix object which is required to feed the result into elasticsearch
 
         InputStream sourceStream = null;
 
@@ -146,14 +146,14 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         // 2) get the asset from the mcp asset store
         if (sourceStream == null) {
             // read asset from mcp
-            String sourceasset_path = call.get("sourceasset", "");
+            final String sourceasset_path = call.get("sourceasset", "");
             if (sourceasset_path.length() > 0) {
                 try {
-                    Asset<byte[]> asset = Data.gridStorage.load(sourceasset_path);
+                    final Asset<byte[]> asset = Service.instance.config.gridStorage.load(sourceasset_path);
                     source = asset.getPayload();
                     sourceStream = new ByteArrayInputStream(source);
                     if (sourceasset_path.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     Logger.error(e.getMessage(), e);
                 }
             }
@@ -162,18 +162,18 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         // 3) get the asset from an external resource
         if (sourceStream == null) {
             // read from url
-            String sourceurl = call.get("sourceurl", "");
+            final String sourceurl = call.get("sourceurl", "");
             if (sourceurl.length() > 0) try {
-                MultiProtocolURL url = new MultiProtocolURL(sourceurl);
+                final MultiProtocolURL url = new MultiProtocolURL(sourceurl);
                 sourceStream = url.getInputStream(ClientIdentification.browserAgent, "anonymous", "", true);
                 if (sourceurl.endsWith(".gz")) sourceStream = new GZIPInputStream(sourceStream);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 Logger.error(e.getMessage(), e);
             }
         }
 
         if (sourceStream == null) {
-            JSONObject json = new JSONObject(true);
+            final JSONObject json = new JSONObject(true);
             json.put(ObjectAPIHandler.SUCCESS_KEY, false);
             json.put(ObjectAPIHandler.COMMENT_KEY, "the request must contain either a sourcebytes, sourceasset or sourceurl attribute");
             return new ServiceResponse(json);
@@ -183,24 +183,24 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         JSONArray parsedDocuments;
         try {
             parsedDocuments = indexWarcRecords(sourceStream, null);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             Logger.warn("", e);
             parsedDocuments = new JSONArray();
         } finally {
             try {
                 sourceStream.close();
-            } catch (IOException e) {
+            } catch (final IOException e) {
             }
         }
 
         if (flat) {
-            StringBuffer sb = new StringBuffer(2048);
+            final StringBuffer sb = new StringBuffer(2048);
             for (int i = 0; i < parsedDocuments.length(); i++) {
-            	JSONObject docjson = parsedDocuments.getJSONObject(i);
+            	final JSONObject docjson = parsedDocuments.getJSONObject(i);
             	if (elastic) {
-            	    String url = docjson.getString(WebMapping.url_s.name());
-            	    String id = Digest.encodeMD5Hex(url);
-            		JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
+            	    final String url = docjson.getString(WebMapping.url_s.name());
+            	    final String id = Digest.encodeMD5Hex(url);
+            		final JSONObject bulkjson = new JSONObject().put("index", new JSONObject().put("_id", id));
             		sb.append(bulkjson.toString(0)).append("\n");
             	}
                 sb.append(docjson.toString(0)).append("\n");
@@ -209,7 +209,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         }
 
         // store result and return success
-        SusiThought json = new SusiThought();
+        final SusiThought json = new SusiThought();
         json.setProcess(NAME);
         json.put(ObjectAPIHandler.SUCCESS_KEY, true);
         json.setData(parsedDocuments);
@@ -242,19 +242,19 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
      * @param f
      * @throws IOException
      */
-    public static JSONArray indexWarcRecords(InputStream f, final Map<String, Pattern> collections) throws IOException {
+    public static JSONArray indexWarcRecords(final InputStream f, final Map<String, Pattern> collections) throws IOException {
 
         // create worker stacks
-        BlockingQueue<Response> responseQueue = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
-        BlockingQueue<Map.Entry<Response, Document>> bundleQueue = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
-        BlockingQueue<JSONObject> objectQueue = new LinkedBlockingQueue<>();
+        final BlockingQueue<Response> responseQueue = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
+        final BlockingQueue<Map.Entry<Response, Document>> bundleQueue = new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors());
+        final BlockingQueue<JSONObject> objectQueue = new LinkedBlockingQueue<>();
 
         // create POISON objects
-        Response responsePoison = new Response(null, null, null, false, null);
-        Map.Entry<Response, Document> bundlePoison = new AbstractMap.SimpleEntry<>(null, null);
+        final Response responsePoison = new Response(null, null, null, false, null);
+        final Map.Entry<Response, Document> bundlePoison = new AbstractMap.SimpleEntry<>(null, null);
 
         // create concurrent worker
-        Runnable parserWorker = new Runnable() {
+        final Runnable parserWorker = new Runnable() {
             @Override
             public void run() {
                 Response response;
@@ -271,39 +271,39 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                                 0, // no timezone offset
                                 response.depth(),
                                 response.getContent());
-                            for (Document d: documents) {
+                            for (final Document d: documents) {
                                 bundleQueue.put(new AbstractMap.SimpleEntry<>(response, d));
                             }
-                        } catch (Failure e) {
+                        } catch (final Failure e) {
                             e.printStackTrace();
                         }
                     }
-                } catch (InterruptedException e) {
+                } catch (final InterruptedException e) {
                     e.printStackTrace();
                 }
             }
         };
-        Runnable documentCreator = new Runnable() {
+        final Runnable documentCreator = new Runnable() {
             @Override
             public void run() {
                 Map.Entry<Response, Document> bundle;
                 try {
                     while ((bundle = bundleQueue.take()) != bundlePoison) {
-                        JSONObject json = WebConfiguration.yacy2solr(
+                        final JSONObject json = WebConfiguration.yacy2solr(
                                 collections, bundle.getKey().getResponseHeader(),
                                 bundle.getValue(), bundle.getKey().getRequestHeader().referer(), null /* language */, false,
                                 0 /* timezoneOffset */);
                         objectQueue.put(json);
                     }
-                } catch (InterruptedException e) {
+                } catch (final InterruptedException e) {
                     e.printStackTrace();
                 }
             }
         };
 
         // start worker
-        Thread[] parserThreads = new Thread[Runtime.getRuntime().availableProcessors()];
-        Thread[] documentThreads = new Thread[Runtime.getRuntime().availableProcessors()];
+        final Thread[] parserThreads = new Thread[Runtime.getRuntime().availableProcessors()];
+        final Thread[] documentThreads = new Thread[Runtime.getRuntime().availableProcessors()];
         for (int i = 0; i < parserThreads.length; i++) {
             parserThreads[i] = new Thread(parserWorker);
             parserThreads[i].start();
@@ -317,7 +317,7 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         byte[] content;
         int cnt = 0;
 
-        WarcReader localwarcReader = WarcReaderFactory.getReader(f);
+        final WarcReader localwarcReader = WarcReaderFactory.getReader(f);
         WarcRecord wrec = localwarcReader.getNextRecord();
         while (wrec != null) {
 
@@ -333,18 +333,18 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                     }
                     try {
                         location = new MultiProtocolURL(uri);
-                    } catch (MalformedURLException e) {
+                    } catch (final MalformedURLException e) {
                         // ignore this
                     }
                 }
 
-                HttpHeader http = wrec.getHttpHeader();
+                final HttpHeader http = wrec.getHttpHeader();
 
                 if (http != null && http.statusCode == 200) { // process http response header OK (status 200)
 
                     if (TextParser.supportsMime(http.contentType) == null) { // check availability of parser
 
-                        InputStream istream = wrec.getPayloadContent();
+                        final InputStream istream = wrec.getPayloadContent();
                         /*
                         hl = http.getHeader(HeaderFramework.TRANSFER_ENCODING);
                         if (hl != null && hl.value.contains("chunked")) {
@@ -364,10 +364,10 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
                         //}
                         istream.close();
 
-                        RequestHeader requestHeader = new RequestHeader();
+                        final RequestHeader requestHeader = new RequestHeader();
 
-                        ResponseHeader responseHeader = new ResponseHeader(http.statusCode);
-                        for (HeaderLine hx : http.getHeaderList()) { // include all original response headers for parser
+                        final ResponseHeader responseHeader = new ResponseHeader(http.statusCode);
+                        for (final HeaderLine hx : http.getHeaderList()) { // include all original response headers for parser
                             responseHeader.put(hx.name, hx.value);
                         }
 
@@ -389,14 +389,14 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
 
                         try {
                             responseQueue.put(response);
-                        } catch (InterruptedException e1) {
+                        } catch (final InterruptedException e1) {
                             e1.printStackTrace();
                         }
                         cnt++;
                     }
                 }
             }
-            try {wrec.close();} catch (IOException e1) {}
+            try {wrec.close();} catch (final IOException e1) {}
             wrec = localwarcReader.getNextRecord();
         }
         localwarcReader.close();
@@ -405,22 +405,22 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         // put poison into parser queues and wait for parser thread termination
         for (int i = 0; i < parserThreads.length; i++) try {
             responseQueue.put(responsePoison);
-        } catch (InterruptedException e) {}
+        } catch (final InterruptedException e) {}
         for (int i = 0; i < parserThreads.length; i++) try {
             parserThreads[i].join();
-        } catch (InterruptedException e) {}
+        } catch (final InterruptedException e) {}
 
         // put poison into document queues and wait for document thread termination
         for (int i = 0; i < documentThreads.length; i++) try {
             bundleQueue.put(bundlePoison);
-        } catch (InterruptedException e) {}
+        } catch (final InterruptedException e) {}
         for (int i = 0; i < documentThreads.length; i++) try {
             documentThreads[i].join();
-        } catch (InterruptedException e) {}
+        } catch (final InterruptedException e) {}
 
         // collect documents
-        JSONArray parsedDocuments = new JSONArray();
-        for (JSONObject object: objectQueue) parsedDocuments.put(object);
+        final JSONArray parsedDocuments = new JSONArray();
+        for (final JSONObject object: objectQueue) parsedDocuments.put(object);
 
         Logger.info("Created " + cnt + " JSON objects from " + cnt + " WARC documents");
 
@@ -454,10 +454,10 @@ public class ParserService extends ObjectAPIHandler implements APIHandler {
         WebMapping.iframesscount_i
     };
 
-    public static JSONObject extractGraph(JSONObject doc) {
-        JSONObject graph = new JSONObject(true);
-        for (WebMapping mapping: graph_attributes) {
-            String key = mapping.getMapping().name();
+    public static JSONObject extractGraph(final JSONObject doc) {
+        final JSONObject graph = new JSONObject(true);
+        for (final WebMapping mapping: graph_attributes) {
+            final String key = mapping.getMapping().name();
             if (doc.has(key)) graph.put(key, doc.get(key));
         }
         return graph;

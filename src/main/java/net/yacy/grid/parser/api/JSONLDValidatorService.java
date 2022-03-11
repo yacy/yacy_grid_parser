@@ -6,12 +6,12 @@
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
- *  
+ *
  *  This library is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *  Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with this program in the file lgpl21.txt
  *  If not, see <http://www.gnu.org/licenses/>.
@@ -34,7 +34,7 @@ import net.yacy.grid.http.ClientConnection;
 import net.yacy.grid.http.ObjectAPIHandler;
 import net.yacy.grid.http.Query;
 import net.yacy.grid.http.ServiceResponse;
-import net.yacy.grid.mcp.Data;
+import net.yacy.grid.mcp.Service;
 
 /**
  * call examples:
@@ -46,61 +46,61 @@ public class JSONLDValidatorService extends ObjectAPIHandler implements APIHandl
 
     private static final long serialVersionUID = 85784631749879L;
     public static final String NAME = "jsonldvalidator";
-    
+
     @Override
     public String getAPIPath() {
         return "/yacy/grid/parser/" + NAME + ".json";
     }
-    
+
     @Override
-    public ServiceResponse serviceImpl(Query call, HttpServletResponse response) {
+    public ServiceResponse serviceImpl(final Query call, final HttpServletResponse response) {
 
-        String url = call.get("url", "");
-        
-        String etherpad = call.get("etherpad", "");
-        String etherpad_urlstub = Data.config.getOrDefault("parser.etherpad.urlstub", "");
-        String etherpad_apikey = Data.config.getOrDefault("parser.etherpad.apikey", "");
+        final String url = call.get("url", "");
 
-        JSONObject json = new JSONObject(true);
+        final String etherpad = call.get("etherpad", "");
+        final String etherpad_urlstub = Service.instance.config.properties.getOrDefault("parser.etherpad.urlstub", "");
+        final String etherpad_apikey = Service.instance.config.properties.getOrDefault("parser.etherpad.apikey", "");
+
+        final JSONObject json = new JSONObject(true);
         json.put(ObjectAPIHandler.SUCCESS_KEY, false);
         json.put(ObjectAPIHandler.COMMENT_KEY, "you must submit either a 'etherpad' or 'url' object");
-        
+
         if (url.length() > 0) {
             try {
-                byte[] b = ClientConnection.load(url);
-                Document[] docs = htmlParser.parse(url, b);
+                final byte[] b = ClientConnection.load(url);
+                final Document[] docs = htmlParser.parse(url, b);
 
-                String s = htmlParser.RDFa2JSONLDExpandString(url, b);
-                JSONArray jaExpand = new JSONArray(s);
-                JSONArray jaFlatten = new JSONArray(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.FLATTEN));
-                JSONObject jaCompact = new JSONObject(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT));
-                String compactString = jaCompact.toString(2); // store the compact json-ld into a string because compact2tree is destructive
-                JSONObject jaTree = htmlParser.compact2tree(jaCompact);
-                
+                final String s = htmlParser.RDFa2JSONLDExpandString(url, b);
+                final JSONArray jaExpand = new JSONArray(s);
+                final JSONArray jaFlatten = new JSONArray(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.FLATTEN));
+                final JSONObject jaCompact = new JSONObject(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT));
+                final String compactString = jaCompact.toString(2); // store the compact json-ld into a string because compact2tree is destructive
+                final JSONObject jaTree = htmlParser.compact2tree(jaCompact);
+
                 json.put("ld", docs[0].ld());
                 json.put("ldnew-expand", jaExpand);
                 json.put("ldnew-flat", jaFlatten);
                 json.put("ldnew-compact", new JSONObject(compactString));
                 json.put("ldnew-tree", jaTree);
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of url content successfull");
-            } catch (Throwable e) {
+            } catch (final Throwable e) {
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of url content failed: " + e.getMessage());
                 e.printStackTrace();
             }
         }
         if (etherpad.length() > 0 && etherpad_urlstub.length() > 0 && etherpad_apikey.length() > 0) {
             try {
-                String content = ClientConnection.loadFromEtherpad(etherpad_urlstub, etherpad_apikey, etherpad);
-                Document[] docs = htmlParser.parse(content);
+                final String content = ClientConnection.loadFromEtherpad(etherpad_urlstub, etherpad_apikey, etherpad);
+                final Document[] docs = htmlParser.parse(content);
                 json.put("ld", docs[0].ld());
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of etherpad successfull");
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 e.printStackTrace();
                 json.put(ObjectAPIHandler.COMMENT_KEY, "parsing of etherpad failed: " + e.getMessage());
             }
         }
-        
+
         return new ServiceResponse(json);
     }
-    
+
 }
