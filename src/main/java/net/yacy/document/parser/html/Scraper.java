@@ -1058,10 +1058,6 @@ public class Scraper {
         content = this.metas.get("dc:date");
         if (content != null) try {return ISO8601Formatter.FORMATTER.parse(content, this.timezoneOffset).getTime();} catch (ParseException e) {}
 
-        // <meta http-equiv="last-modified" content="YYYY-MM-DD" />
-        content = this.metas.get("last-modified");
-        if (content != null) try {return ISO8601Formatter.FORMATTER.parse(content, this.timezoneOffset).getTime();} catch (ParseException e) {}
-
         return new Date();
     }
 
