@@ -179,7 +179,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 scraper.getDate());
         ppd.setScraperObject(scraper);
         ppd.setIcons(scraper.getIcons());
-        ppd.ld().putAll(scraper.getLd());
+        if (scraper.getLd() != null) ppd.ld().putAll(scraper.getLd());
         return ppd;
     }
 
