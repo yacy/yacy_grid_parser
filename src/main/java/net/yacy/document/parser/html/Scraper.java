@@ -45,6 +45,7 @@ import org.json.JSONObject;
 
 import net.yacy.cora.date.ISO8601Formatter;
 import net.yacy.cora.sorting.ClusteredScoreMap;
+import net.yacy.cora.storage.CaseInsensitiveMap;
 import net.yacy.cora.storage.SizeLimitedMap;
 import net.yacy.cora.storage.SizeLimitedSet;
 import net.yacy.cora.util.NumberTools;
@@ -63,7 +64,7 @@ import net.yacy.kelondro.util.ISO639;
 
 public class Scraper {
 
-	public static final int MAX_DOCSIZE = 40 * 1024 * 1024;
+    public static final int MAX_DOCSIZE = 40 * 1024 * 1024;
 
     private final char degree = '\u00B0';
     private final char[] minuteCharsHTML = "&#039;".toCharArray();
@@ -78,7 +79,7 @@ public class Scraper {
     private final LinkedHashMap<AnchorURL, EmbedEntry> embeds; // urlhash/embed relation
     private final List<ImageEntry> images;
     private final Set<AnchorURL> script, frames, iframes;
-    private final Map<String, String> metas;
+    private final CaseInsensitiveMap<String> metas;
     private final Map<String, MultiProtocolURL> hreflang, navigation;
     private final LinkedHashSet<String> titles;
     private final List<String> articles;
@@ -137,7 +138,7 @@ public class Scraper {
         this.embeds = new SizeLimitedMap<AnchorURL, EmbedEntry>(maxLinks);
         this.frames = new SizeLimitedSet<AnchorURL>(maxLinks);
         this.iframes = new SizeLimitedSet<AnchorURL>(maxLinks);
-        this.metas = new SizeLimitedMap<String, String>(maxLinks);
+        this.metas = new CaseInsensitiveMap<String>();
         this.hreflang = new SizeLimitedMap<String, MultiProtocolURL>(maxLinks);
         this.navigation = new SizeLimitedMap<String, MultiProtocolURL>(maxLinks);
         this.script = new SizeLimitedSet<AnchorURL>(maxLinks);
@@ -343,53 +344,53 @@ public class Scraper {
         }
     }
 
-	/**
-	 * Parses sizes icon link attribute. (see
-	 * http://www.w3.org/TR/html5/links.html#attr-link-sizes) Eventual
-	 * duplicates are removed.
-	 *
-	 * @param sizesAttr
-	 *            sizes attribute string, may be null
-	 * @return a set of sizes eventually empty.
-	 */
-	public static Set<Dimension> parseSizes(final String sizesAttr) {
-		final Set<Dimension> sizes = new HashSet<Dimension>();
-		final Set<String> tokens = parseSpaceSeparatedTokens(sizesAttr);
-		for (final String token : tokens) {
-			/*
-			 * "any" keyword may be present, but doesn't have to produce a
-			 * dimension result
-			 */
-			if (token != null) {
-				final Matcher matcher = IconEntry.SIZE_PATTERN.matcher(token);
-				if (matcher.matches()) {
-					/* With given pattern no NumberFormatException can occur */
-					sizes.add(new Dimension(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2))));
-				}
-			}
-		}
-		return sizes;
-	}
+    /**
+     * Parses sizes icon link attribute. (see
+     * http://www.w3.org/TR/html5/links.html#attr-link-sizes) Eventual
+     * duplicates are removed.
+     *
+     * @param sizesAttr
+     *            sizes attribute string, may be null
+     * @return a set of sizes eventually empty.
+     */
+    public static Set<Dimension> parseSizes(final String sizesAttr) {
+        final Set<Dimension> sizes = new HashSet<Dimension>();
+        final Set<String> tokens = parseSpaceSeparatedTokens(sizesAttr);
+        for (final String token : tokens) {
+            /*
+             * "any" keyword may be present, but doesn't have to produce a
+             * dimension result
+             */
+            if (token != null) {
+                final Matcher matcher = IconEntry.SIZE_PATTERN.matcher(token);
+                if (matcher.matches()) {
+                    /* With given pattern no NumberFormatException can occur */
+                    sizes.add(new Dimension(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2))));
+                }
+            }
+        }
+        return sizes;
+    }
 
-	/**
-	 * Parses a space separated tokens attribute value (see
-	 * http://www.w3.org/TR/html5/infrastructure.html#space-separated-tokens).
-	 * Eventual duplicates are removed.
-	 *
-	 * @param attr
-	 *            attribute string, may be null
-	 * @return a set of tokens eventually empty
-	 */
-	public static Set<String> parseSpaceSeparatedTokens(final String attr) {
-		final Set<String> tokens = new HashSet<>();
-		/* Check attr string is not empty to avoid adding a single empty string
-		 * in result */
-		if (attr != null && !attr.trim().isEmpty()) {
-			final String[] items = attr.trim().split(CommonPattern.SPACES.pattern());
-			Collections.addAll(tokens, items);
-		}
-		return tokens;
-	}
+    /**
+     * Parses a space separated tokens attribute value (see
+     * http://www.w3.org/TR/html5/infrastructure.html#space-separated-tokens).
+     * Eventual duplicates are removed.
+     *
+     * @param attr
+     *            attribute string, may be null
+     * @return a set of tokens eventually empty
+     */
+    public static Set<String> parseSpaceSeparatedTokens(final String attr) {
+        final Set<String> tokens = new HashSet<>();
+        /* Check attr string is not empty to avoid adding a single empty string
+         * in result */
+        if (attr != null && !attr.trim().isEmpty()) {
+            final String[] items = attr.trim().split(CommonPattern.SPACES.pattern());
+            Collections.addAll(tokens, items);
+        }
+        return tokens;
+    }
 
     /**
      * Retain only icon relations (standard and non standard) from tokens .
@@ -397,13 +398,13 @@ public class Scraper {
      * @return a Set of icon relations, eventually empty
      */
     private Set<String> retainIconRelations(final Collection<String> relTokens) {
-    	final HashSet<String> iconRels = new HashSet<>();
-    	for(final String token : relTokens) {
-    		if(IconLinkRelations.isIconRel(token)) {
-    			iconRels.add(token.toLowerCase(Locale.ENGLISH));
-    		}
-    	}
-    	return iconRels;
+        final HashSet<String> iconRels = new HashSet<>();
+        for(final String token : relTokens) {
+            if(IconLinkRelations.isIconRel(token)) {
+                iconRels.add(token.toLowerCase(Locale.ENGLISH));
+            }
+        }
+        return iconRels;
     }
 
     public void scrapeTag0(final Tag tag) {
@@ -430,11 +431,11 @@ public class Scraper {
         } else if (tag.hasName("frame")) {
             final AnchorURL src = absolutePath(tag.getProperty("src", EMPTY_STRING));
             if(src != null) {
-            	tag.setProperty("src", src.toNormalform(true));
-            	src.setAll(tag.getProperties());
-            	//this.addAnchor(src); // don't add the frame to the anchors because the webgraph should not contain such links (by definition)
-            	this.frames.add(src);
-            	this.evaluationScores.match(Element.framepath, src.toNormalform(true));
+                tag.setProperty("src", src.toNormalform(true));
+                src.setAll(tag.getProperties());
+                //this.addAnchor(src); // don't add the frame to the anchors because the webgraph should not contain such links (by definition)
+                this.frames.add(src);
+                this.evaluationScores.match(Element.framepath, src.toNormalform(true));
             }
         } else if (tag.hasName("body")) {
             final String classprop = tag.getProperty("class", EMPTY_STRING);
@@ -464,9 +465,9 @@ public class Scraper {
                 tag.setProperty("name", areatitle);
                 final AnchorURL url = absolutePath(href);
                 if (url != null) {
-                	tag.setProperty("href", url.toNormalform(true));
-                	url.setAll(tag.getProperties());
-                	this.addAnchor(url);
+                    tag.setProperty("href", url.toNormalform(true));
+                    url.setAll(tag.getProperties());
+                    this.addAnchor(url);
                 }
             }
         } else if (tag.hasName("link")) {
@@ -486,18 +487,18 @@ public class Scraper {
                 final Set<String> iconRels = retainIconRelations(relTokens);
                 /* Distinguish icons from images. It will enable for example to later search only images and no icons */
                 if (!iconRels.isEmpty()) {
-                	final String sizesAttr = tag.getProperty("sizes", EMPTY_STRING);
-                	final Set<Dimension> sizes = parseSizes(sizesAttr);
-                	IconEntry icon = this.icons.get(newLink);
-                	/* There is already an icon with same URL for this document :
-                	 * they may have different rel attribute or different sizes (multi sizes ico file) or this may be a duplicate */
-                	if(icon != null) {
-                		icon.getRel().addAll(iconRels);
-                		icon.getSizes().addAll(sizes);
-                	} else {
-                		icon = new IconEntry(newLink, iconRels, sizes);
-                		this.icons.put(newLink, icon);
-                	}
+                    final String sizesAttr = tag.getProperty("sizes", EMPTY_STRING);
+                    final Set<Dimension> sizes = parseSizes(sizesAttr);
+                    IconEntry icon = this.icons.get(newLink);
+                    /* There is already an icon with same URL for this document :
+                     * they may have different rel attribute or different sizes (multi sizes ico file) or this may be a duplicate */
+                    if(icon != null) {
+                        icon.getRel().addAll(iconRels);
+                        icon.getSizes().addAll(sizes);
+                    } else {
+                        icon = new IconEntry(newLink, iconRels, sizes);
+                        this.icons.put(newLink, icon);
+                    }
                 } else if (rel.equalsIgnoreCase("canonical")) {
                     tag.setProperty("name", this.titles.size() == 0 ? "" : this.titles.iterator().next());
                     newLink.setAll(tag.getProperties());
@@ -641,10 +642,10 @@ public class Scraper {
         } else if (tag.hasName("script")) {
             final String src = tag.getProperty("src", EMPTY_STRING);
             if (src.length() > 0) {
-            	final AnchorURL absoluteSrc = absolutePath(src);
-            	if(absoluteSrc != null) {
-            		this.script.add(absoluteSrc);
-            	}
+                final AnchorURL absoluteSrc = absolutePath(src);
+                if(absoluteSrc != null) {
+                    this.script.add(absoluteSrc);
+                }
                 this.evaluationScores.match(Element.scriptpath, src);
             } else {
                 this.evaluationScores.match(Element.scriptcode, LB.matcher(new String(tag.getContent())).replaceAll(" "));
@@ -668,7 +669,7 @@ public class Scraper {
      * @param anchor anchor to add. Must not be null.
      */
     private void addAnchor(final AnchorURL anchor) {
-    	this.anchors.add(anchor);
+        this.anchors.add(anchor);
     }
 
     public void scrapeComment(final char[] comment) {
@@ -1036,45 +1037,64 @@ public class Scraper {
     }
 
     public Date getDate() {
-    	return getDate(this.metas, this.timezoneOffset);
+        return getDate(this.metas, this.timezoneOffset);
     }
 
-    public static Date getDate(final Map<String, String> metas, final int timezoneOffset) {
+    public static Date getDate(final CaseInsensitiveMap<String> metas, final int timezoneOffset) {
         String content;
 
         // <meta name="date" content="YYYY-MM-DD..." />
         content = metas.get("date");
-        if (content != null) try {return verifyDate(ISO8601Formatter.FORMATTER.parse(content, timezoneOffset).getTime());} catch (final ParseException e) {}
+        if (content != null) try {return getDate(content, timezoneOffset);} catch (final ParseException e) {}
 
         // <meta name="DC.date.modified" content="YYYY-MM-DD" />
         content = metas.get("dc.date.modified");
-        if (content != null) try {return verifyDate(ISO8601Formatter.FORMATTER.parse(content, timezoneOffset).getTime());} catch (final ParseException e) {}
+        if (content != null) try {return getDate(content, timezoneOffset);} catch (final ParseException e) {}
 
         // <meta name="DC.date.created" content="YYYY-MM-DD" />
         content = metas.get("dc.date.created");
-        if (content != null) try {return verifyDate(ISO8601Formatter.FORMATTER.parse(content, timezoneOffset).getTime());} catch (final ParseException e) {}
+        if (content != null) try {return getDate(content, timezoneOffset);} catch (final ParseException e) {}
 
         // <meta name="DC.date" content="YYYY-MM-DD" />
         content = metas.get("dc.date");
-        if (content != null) try {return verifyDate(ISO8601Formatter.FORMATTER.parse(content, timezoneOffset).getTime());} catch (final ParseException e) {}
+        if (content != null) try {return getDate(content, timezoneOffset);} catch (final ParseException e) {}
 
         // <meta name="DC:date" content="YYYY-MM-DD" />
         content = metas.get("dc:date");
-        if (content != null) try {return verifyDate(ISO8601Formatter.FORMATTER.parse(content, timezoneOffset).getTime());} catch (final ParseException e) {}
+        if (content != null) try {return getDate(content, timezoneOffset);} catch (final ParseException e) {}
 
         // <meta http-equiv="last-modified" content="YYYY-MM-DD" />
         content = metas.get("last-modified");
-        if (content != null) try {return verifyDate(ISO8601Formatter.FORMATTER.parse(content, timezoneOffset).getTime());} catch (final ParseException e) {}
+        if (content != null) try {return getDate(content, timezoneOffset);} catch (final ParseException e) {}
 
         return new Date();
     }
 
+    public static Date getDate(final String content, final int timezoneOffset) throws ParseException {
+        // for some strange reason some dates are submitted as seconds or milliseconds; try to parse that
+        try {
+            final long d = Long.parseLong(content);
+            try {
+            	// try the number as seconds
+                final Date s = verifyDate(new Date(1000L * d));
+                return s;
+            } catch (final ParseException ee) {
+            	// try the number as milliseconds
+            	return verifyDate(new Date(d));
+            }
+        } catch (final NumberFormatException e) {
+            // we should expect that!
+        	// try the string as ISO 860
+            return verifyDate(ISO8601Formatter.FORMATTER.parse(content, timezoneOffset).getTime());
+        }
+    }
+
     public static Date verifyDate(final Date date) throws ParseException {
-    	final long millis = date.getTime();
-    	if (millis <= 0) throw new ParseException("date is negative", 0);
-    	final Date now = new Date();
-    	if (date.after(now)) throw new ParseException("date is future", 0);
-    	return date;
+        final long millis = date.getTime();
+        if (millis <= 0) throw new ParseException("date is negative", 0);
+        final Date now = new Date();
+        if (date.after(now)) throw new ParseException("date is future", 0);
+        return date;
     }
 
     // parse location
@@ -1203,11 +1223,11 @@ public class Scraper {
     }
 
     public static void main(final String[] args) {
-    	// test getDate()
-    	final HashMap<String, String> testmeta = new HashMap<>();
-    	testmeta.put("last-modified","1648426480");
-    	final Date date = getDate(testmeta, 0);
-    	System.out.println(date.toString());
+        // test getDate()
+        final CaseInsensitiveMap<String> testmeta = new CaseInsensitiveMap<>();
+        testmeta.put("Last-Modified","1648426480");
+        final Date date = getDate(testmeta, 0);
+        System.out.println(date.toString());
     }
 
 }
