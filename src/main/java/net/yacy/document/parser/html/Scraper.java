@@ -426,7 +426,13 @@ public class Scraper {
             this.evaluationScores.match(Element.imgpath, src);
         } else if(tag.hasName("base")) {
             try {
-                this.root = new MultiProtocolURL(tag.getProperty("href", EMPTY_STRING));
+                String href = tag.getProperty("href", EMPTY_STRING);
+                href = CharacterCoding.html2unicode(href);
+
+                AnchorURL url;
+                if ((href.length() > 0) && ((url = absolutePath(href)) != null)) {
+                    this.root = new MultiProtocolURL(url.toString());
+                }
             } catch (final MalformedURLException e) {}
         } else if (tag.hasName("frame")) {
             final AnchorURL src = absolutePath(tag.getProperty("src", EMPTY_STRING));
