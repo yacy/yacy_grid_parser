@@ -275,8 +275,11 @@ public class htmlParser extends AbstractParser implements Parser {
         final String url = location.toNormalform(true);
         try {
             final String s = RDFa2JSONLDExpandString(url, bytes); // read first into EXPAND mode, this is the default (and cannot be changed?)
+            //Logger.info("RDFa2JSONLDExpandString\n" + s);
             final JSONObject jaCompact = new JSONObject(JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT)); // transcode EXPAND into COMPACT
+            //Logger.info("JSONLDExpand2Mode\n" + jaCompact.toString(2));
             final JSONObject jaTree = compact2tree(jaCompact); // transcode COMPACT into TREE
+            //Logger.info("compact2tree\n" + jaTree.toString(2));
             scraper.setLd(jaTree);
         } catch (final IOException e) {
             Logger.error("setting LD failed", e);
@@ -405,7 +408,7 @@ public class htmlParser extends AbstractParser implements Parser {
             jsonb = baos.toByteArray();
             jsons = new String(jsonb, StandardCharsets.UTF_8);
             return jsons;
-        } catch (final UnsupportedRDFormatException e) {
+        } catch (final IOException | UnsupportedRDFormatException e) {
             Logger.error("cannot parse jsonld: " + jsons, e);
             throw new IOException(e.getMessage());
         }
@@ -457,13 +460,15 @@ public class htmlParser extends AbstractParser implements Parser {
 
         // compute the context
         final JSONObject context = new JSONObject(true);
+        final Map<String, String> reverse_context = new HashMap<>();
         contextcollector.forEach((context_name, context_ids) -> {
-            if (context_ids.size() == 1) context.put(context_name, context_ids.iterator().next());
+            context_ids.forEach(ids -> {
+                context.put(context_name, ids);
+                reverse_context.put(ids, context_name);
+            });
         });
 
         // replace all ids with the shortened context name
-        final Map<String, String> reverse_context = new HashMap<>();
-        context.keySet().forEach(key -> reverse_context.put(context.getString(key), key));
         replaceContext(treegraph, reverse_context);
 
         // set up the tree object with the used context
