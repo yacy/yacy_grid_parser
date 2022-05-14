@@ -37,7 +37,7 @@ repositories {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'net.yacy.grid.crawler.Crawler'
+        attributes 'Main-Class': 'net.yacy.grid.parser.Parser'
     }
 }
 
