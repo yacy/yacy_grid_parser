@@ -111,6 +111,13 @@ import net.yacy.grid.tools.MultiProtocolURL;
  *
  * Flatfile Example: save the json result as flat file to land.nrw.flatjson
  * curl -X POST -F "sourcebytes=@land.nrw.warc.gz;type=application/octet-stream" -F "flatfile=true" -o land.nrw.flatjson http://127.0.0.1:8500/yacy/grid/parser/parser.json
+ * 
+ * JSON parsing
+ * To directly parse json inside the result, use jr; i.e. to extract the ld_s parameter you can run
+ * curl --request POST \
+        --form "sourcebytes=@land.nrw.warc.gz;type=application/octet-stream" \
+        -s http://127.0.0.1:8500/yacy/grid/parser/parser.json | \
+        jq -r .data[0].ld_s | jq
  */
 public class ParserService extends ObjectAPIHandler implements APIHandler {
 
