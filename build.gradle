@@ -1,7 +1,7 @@
 plugins {
   id 'java'
   id 'maven-publish'
-  id 'com.github.johnrengelman.shadow' version '5.1.0'
+  id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 apply plugin: 'java'
@@ -44,7 +44,8 @@ jar {
 shadowJar {
     zip64 true
     exclude 'data'
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    mergeServiceFiles()
 }
 
 distTar {
