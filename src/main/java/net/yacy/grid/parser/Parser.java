@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 
 import javax.servlet.Servlet;
 
@@ -115,6 +114,11 @@ public class Parser {
         // run in headless mode
         System.setProperty("java.awt.headless", "true"); // no awt used here so we can switch off that stuff
 
+        // Debug Info
+        boolean assertionenabled = false;
+        assert (assertionenabled = true) == true; // compare to true to remove warning: "Possible accidental assignement"
+        if (assertionenabled) Logger.info("Asserts are enabled");
+
         // XML parser configuration
         System.getProperties().put("jdk.xml.totalEntitySizeLimit", "0");
         System.getProperties().put("jdk.xml.entityExpansionLimit", "0");
@@ -127,14 +131,8 @@ public class Parser {
             }
         }.start();
 
-        // prepare configuration
-        final Properties sysprops = System.getProperties(); // system properties
-        System.getenv().forEach((k,v) -> {
-            if (k.startsWith("YACYGRID_")) sysprops.put(k.substring(9).replace('_', '.'), v);
-        }); // add also environment variables
-
         // first greeting
-        Logger.info("Parser started!");
+        Logger.info("YaCy Grid Parser started!");
         Logger.info(new GitTool().toString());
 
         // run application with cron
@@ -144,7 +142,7 @@ public class Parser {
         cron.cycle();
 
         // this line is reached if the cron process was shut down
-        Logger.info("Parser terminated");
+        Logger.info("YaCy Grid Parser terminated");
     }
 
 }
