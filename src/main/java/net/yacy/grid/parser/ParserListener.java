@@ -44,6 +44,7 @@ import net.yacy.grid.io.index.WebMapping;
 import net.yacy.grid.mcp.AbstractBrokerListener;
 import net.yacy.grid.mcp.BrokerListener;
 import net.yacy.grid.mcp.Configuration;
+import net.yacy.grid.mcp.Service;
 import net.yacy.grid.parser.api.ParserService;
 import net.yacy.grid.tools.CronBox.Telemetry;
 import net.yacy.grid.tools.DateParser;
@@ -101,6 +102,9 @@ public class ParserListener extends AbstractBrokerListener implements BrokerList
         final String sourceasset_path = action.getStringAttr("sourceasset");
         final String targetasset_path = action.getStringAttr("targetasset");
         final String targetgraph_path = action.getStringAttr("targetgraph");
+        final boolean archivewarc = action.getBooleanAttr("archivewarc");
+        final boolean archiveindex = action.getBooleanAttr("archiveindex");
+        final boolean archivegraph = action.getBooleanAttr("archivegraph");
         if (targetasset_path == null || targetasset_path.length() == 0 ||
             sourceasset_path == null || sourceasset_path.length() == 0) return ActionResult.FAIL_IRREVERSIBLE;
 
@@ -184,7 +188,7 @@ public class ParserListener extends AbstractBrokerListener implements BrokerList
             }
 
             boolean storeToMessage = true; // debug version for now: always true TODO: set to false later
-            if (!storeToMessage) {
+            if (!storeToMessage || (archiveindex && Service.instance.config.gridStorage.isS3Connected())) {
                 try {
                     final String targetasset = targetasset_object.toString();
                     super.config.gridStorage.store(targetasset_path, targetasset.getBytes(StandardCharsets.UTF_8));
@@ -193,6 +197,8 @@ public class ParserListener extends AbstractBrokerListener implements BrokerList
                     Logger.warn("Parser.processAction asset " + targetasset_path + " could not be stored, carrying the asset within the next action", ee);
                     storeToMessage = true;
                 }
+            }
+            if (!storeToMessage || (archivegraph && Service.instance.config.gridStorage.isS3Connected())) {
                 try {
                     final String targetgraph = targetgraph_object.toString();
                     super.config.gridStorage.store(targetgraph_path, targetgraph.getBytes(StandardCharsets.UTF_8));
