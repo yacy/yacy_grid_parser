@@ -281,7 +281,7 @@ public class htmlParser extends AbstractParser implements Parser {
             final JSONObject jaTree = compact2tree(jaCompact); // transcode COMPACT into TREE
             //Logger.info("compact2tree\n" + jaTree.toString(2));
             scraper.setLd(jaTree);
-        } catch (final IOException e) {
+        } catch (final Exception e) {
             Logger.error("setting LD failed", e);
         }
 
@@ -437,7 +437,8 @@ public class htmlParser extends AbstractParser implements Parser {
         final String id = compact.optString("@id", "");
 
         // first create a node index to look up tree nodes
-        final JSONArray graph = compact.getJSONArray("@graph");
+        JSONArray graph = compact.optJSONArray("@graph");
+        if (graph == null) graph = new JSONArray();
         for (int i = 0; i < graph.length(); i++) {
             final JSONObject node = graph.getJSONObject(i);
             assert node.has("@id");
