@@ -20,4 +20,8 @@ COPY ./conf /app/conf/
 COPY --from=appbuilder /app/build/libs/ ./app/build/libs/
 WORKDIR /app
 EXPOSE 8500
+
+# for some weird reason the jar file is sometimes not named correctly
+RUN if [ -e /app/build/libs/app-0.0.1-SNAPSHOT-all.jar ] ; then mv /app/build/libs/app-0.0.1-SNAPSHOT-all.jar /app/build/libs/yacy_grid_parser-0.0.1-SNAPSHOT-all.jar; fi
+
 CMD ["java", "-jar", "/app/build/libs/yacy_grid_parser-0.0.1-SNAPSHOT-all.jar"]
