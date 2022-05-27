@@ -9,7 +9,7 @@
 FROM eclipse-temurin:8-jdk-alpine AS appbuilder
 COPY ./ /app
 WORKDIR /app
-RUN ./gradlew assemble
+RUN ./gradlew clean shadowDistTar
 
 # build dist
 FROM eclipse-temurin:8-jre-alpine
