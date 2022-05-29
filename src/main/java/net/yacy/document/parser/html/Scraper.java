@@ -194,7 +194,7 @@ public class Scraper {
         // Opencaching:
         // <nobr>N 50o 05.453&#039;</nobr><nobr>E 008o 30.191&#039;</nobr>
         // N 52o 28.025 E 013o 20.299
-        location: while (s < newtext.length) {
+        location: while (s < newtext.length) try {
             pl = 1;
             p = CharBuffer.indexOf(newtext, s, this.degree);
             if (p < 0) {p = CharBuffer.indexOf(newtext, s, "&deg;".toCharArray()); if (p >= 0) pl = 5;}
@@ -241,6 +241,8 @@ public class Scraper {
                 }
             }
             break location;
+        } catch (final NumberFormatException e) {
+        	// ignore that
         }
         // find tags inside text
         String b = cleanLine(Tag.stripAllTags(newtext));
