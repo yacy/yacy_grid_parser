@@ -132,10 +132,21 @@ public class ParserListener extends AbstractBrokerListener implements BrokerList
             }
 
             // compute parsed documents
-            final String crawlid = action.getStringAttr("id");
-            final JSONObject crawl = SusiThought.selectData(data, "id", crawlid);
+            final String crawl_id = action.getStringAttr("id");
+            final String user_id = action.getStringAttr("user_id");
+
+            final JSONObject crawl = SusiThought.selectData(data, "id", crawl_id);
             final Map<String, Pattern> collections = WebMapping.collectionParser(crawl.optString("collection"));
             final JSONArray parsedDocuments = ParserService.indexWarcRecords(sourceStream, collections);
+
+            // enrich the parsed documents with crawl_id and user_id context
+            for (int i = 0; i < parsedDocuments.length(); i++) {
+            	final JSONObject json = parsedDocuments.getJSONObject(i);
+            	if (crawl_id != null && crawl_id.length() > 0) json.put(WebMapping.crawl_id_s.name(), crawl_id);
+            	if (user_id != null && user_id.length() > 0) json.put(WebMapping.user_id_s.name(), user_id);
+            }
+
+            // store the assets to the indexing queue
             final JSONList targetasset_object = new JSONList();
             final JSONList targetgraph_object = new JSONList();
             for (int i = 0; i < parsedDocuments.length(); i++) {
