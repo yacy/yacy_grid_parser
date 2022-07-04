@@ -134,7 +134,9 @@ public class ParserListener extends AbstractBrokerListener implements BrokerList
             // compute parsed documents
             final String crawl_id = action.getStringAttr("id");
             final String user_id = action.getStringAttr("user_id");
-            final JSONArray user_ids = action.getArrayAttr("user_ids");
+            JSONArray user_ids = action.getArrayAttr("user_ids");
+            if (user_ids == null) user_ids = new JSONArray();
+            if (user_id != null && user_id.length() > 0 && !user_ids.toList().contains(user_id)) user_ids.put(user_id);
 
             final JSONObject crawl = SusiThought.selectData(data, "id", crawl_id);
             final Map<String, Pattern> collections = WebMapping.collectionParser(crawl.optString("collection"));
