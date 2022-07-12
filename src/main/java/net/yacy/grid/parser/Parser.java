@@ -36,7 +36,6 @@ import net.yacy.grid.parser.api.JSONLDValidatorService;
 import net.yacy.grid.parser.api.ParserService;
 import net.yacy.grid.tools.CronBox;
 import net.yacy.grid.tools.CronBox.Telemetry;
-import net.yacy.grid.tools.GitTool;
 import net.yacy.grid.tools.Logger;
 
 public class Parser {
@@ -62,7 +61,6 @@ public class Parser {
 
         public Application() {
             Logger.info("Starting Parser Application...");
-            Logger.info(new GitTool().toString());
 
             // initialize configuration
             final List<Class<? extends Servlet>> services = new ArrayList<>();
@@ -133,7 +131,6 @@ public class Parser {
 
         // first greeting
         Logger.info("YaCy Grid Parser started!");
-        Logger.info(new GitTool().toString());
 
         // run application with cron
         final long cycleDelay = Long.parseLong(System.getProperty("YACYGRID_PARSER_CYCLEDELAY", "" + Long.MAX_VALUE)); // by default, run only in one genesis thread
