@@ -88,7 +88,7 @@ dependencies {
     implementation 'com.ibm.icu:icu4j:65.+'
     implementation 'org:jaudiotagger:2.+'
     implementation 'com.twelvemonkeys.imageio:imageio-bmp:3.+'
-    implementation 'org.apache.any23:apache-any23-core:2.6' // do not upgrade to 2.7 because then poi fails to find org.apache.poi.hslf.extractor.PowerPointExtractor
+    implementation 'org.apache.any23:apache-any23-core:2.4' // maximum version for java 8
 
     implementation 'org.apache.pdfbox:jempbox:1.+'
     implementation 'net.sourceforge.jchardet:jchardet:1.+'
