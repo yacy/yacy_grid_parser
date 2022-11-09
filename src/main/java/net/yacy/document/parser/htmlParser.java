@@ -144,12 +144,12 @@ public class htmlParser extends AbstractParser implements Parser {
      */
     private Document transformScraper(final MultiProtocolURL location, final String mimeType, final String charSet, final Scraper scraper) {
         final String[] sections = new String[
-                 scraper.getHeadlines(1).length +
-                 scraper.getHeadlines(2).length +
-                 scraper.getHeadlines(3).length +
-                 scraper.getHeadlines(4).length +
-                 scraper.getHeadlines(5).length +
-                 scraper.getHeadlines(6).length];
+                                             scraper.getHeadlines(1).length +
+                                             scraper.getHeadlines(2).length +
+                                             scraper.getHeadlines(3).length +
+                                             scraper.getHeadlines(4).length +
+                                             scraper.getHeadlines(5).length +
+                                             scraper.getHeadlines(6).length];
         int p = 0;
         for (int i = 1; i <= 6; i++) {
             for (final String headline : scraper.getHeadlines(i)) {
@@ -233,9 +233,7 @@ public class htmlParser extends AbstractParser implements Parser {
         } else {
             try {
                 detectedcharsetcontainer[0] = Charset.forName(charset);
-            } catch (final IllegalCharsetNameException e) {
-                detectedcharsetcontainer[0] = Charset.defaultCharset();
-            } catch (final UnsupportedCharsetException e) {
+            } catch (final IllegalCharsetNameException | UnsupportedCharsetException e) {
                 detectedcharsetcontainer[0] = Charset.defaultCharset();
             }
         }
@@ -420,10 +418,10 @@ public class htmlParser extends AbstractParser implements Parser {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final JSONLDWriter th = new JSONLDWriter(baos);
         try {
-            any23.extract(ds, th);
+            any23.extract(ds, th); // java.lang.NullPointerException at org.apache.any23.extractor.html.XFNExtractor.extractLink(XFNExtractor.java:89)
             th.close();
             baos.close();
-        } catch (IOException | ExtractionException | TripleHandlerException e) {
+        } catch (IOException | ExtractionException | TripleHandlerException | NullPointerException e) {
             throw new IOException(e.getCause());
         }
         final byte[] jsonb = baos.toByteArray();
@@ -605,10 +603,10 @@ public class htmlParser extends AbstractParser implements Parser {
     public static void printVersion(final Class<?> clazz) {
         final Package p = clazz.getPackage();
         System.out.printf("%s%n  Title: %s%n  Version: %s%n  Vendor: %s%n",
-                          clazz.getName(),
-                          p.getImplementationTitle(),
-                          p.getImplementationVersion(),
-                          p.getImplementationVendor());
+                clazz.getName(),
+                p.getImplementationTitle(),
+                p.getImplementationVersion(),
+                p.getImplementationVendor());
     }
 
     public static void main(final String[] args) {
@@ -639,7 +637,7 @@ public class htmlParser extends AbstractParser implements Parser {
                 }
             }
         }
-        */
+         */
 
         final String[] testurl = new String[] {
                 "https://www.bochum.de/Umwelt--und-Gruenflaechenamt/Dienstleistungen-und-Infos/Abfallentsorgung",
