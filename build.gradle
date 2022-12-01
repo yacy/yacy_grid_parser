@@ -16,6 +16,7 @@ sourceSets {
     }
 }
 
+archivesBaseName = 'yacy_grid_parser'
 mainClassName = "net.yacy.grid.parser.Parser"
 applicationDefaultJvmArgs = ["-Xmx4g"]
 
@@ -28,6 +29,8 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 tasks.withType(JavaCompile) {
+    sourceCompatibility = 8
+    targetCompatibility = 8
     options.encoding = 'UTF-8'
 }
 
@@ -37,7 +40,7 @@ repositories {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'net.yacy.grid.parser.Parser'
+        attributes 'Main-Class': mainClassName
     }
 }
 
@@ -65,35 +68,35 @@ dependencies {
     implementation 'org.apache.httpcomponents:httpmime:4.+'
     implementation 'org.eclipse.jetty:jetty-server:9.4.+'
     implementation 'org.eclipse.jetty:jetty-servlet:9.4.+'
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:5.+'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.3.+'
     implementation 'org.elasticsearch.client:transport:6.8.+'
-    implementation 'org.mapdb:mapdb:3.+'
-    implementation 'org.slf4j:log4j-over-slf4j:1.7.+'
-    implementation 'org.slf4j:slf4j-jdk14:1.7.+'
-    implementation 'org.apache.logging.log4j:log4j-to-slf4j:2.17.+'
+    implementation 'org.mapdb:mapdb:3.0.+'
+    implementation 'org.slf4j:log4j-over-slf4j:2.0.+'
+    implementation 'org.slf4j:slf4j-jdk14:2.0.+'
+    implementation 'org.apache.logging.log4j:log4j-to-slf4j:2.19.+'
     implementation 'io.minio:minio:8.4.+'
     implementation 'com.amazonaws:aws-java-sdk-s3:1.12.+'
     implementation 'io.findify:s3mock_2.13:0.2.+'
 
-    implementation 'org.jwat:jwat-warc:1.+'
+    implementation 'org.jwat:jwat-warc:1.1.+'
     implementation 'org.apache.poi:poi:4.+'
     implementation 'org.apache.poi:poi-scratchpad:4.+'
     implementation 'org.apache.commons:commons-compress:1.+'
     implementation 'org.apache.commons:commons-lang3:3.+'
-    implementation 'org.apache.pdfbox:pdfbox:2.+'
-    implementation 'org.apache.pdfbox:fontbox:2.+'
-    implementation 'org.apache.pdfbox:preflight:2.+'
-    implementation 'org.apache.pdfbox:xmpbox:2.+'
+    implementation 'org.apache.pdfbox:pdfbox:2.0.+'
+    implementation 'org.apache.pdfbox:fontbox:2.0.+'
+    implementation 'org.apache.pdfbox:preflight:2.0.+'
+    implementation 'org.apache.pdfbox:xmpbox:2.0.+'
 
-    implementation 'com.ibm.icu:icu4j:65.+'
-    implementation 'org:jaudiotagger:2.+'
-    implementation 'com.twelvemonkeys.imageio:imageio-bmp:3.+'
+    implementation 'com.ibm.icu:icu4j:72.+'
+    implementation 'org:jaudiotagger:2.0.+'
+    implementation 'com.twelvemonkeys.imageio:imageio-bmp:3.9.+'
     implementation 'org.apache.any23:apache-any23-core:2.4' // maximum version for java 8
 
-    implementation 'org.apache.pdfbox:jempbox:1.+'
+    implementation 'org.apache.pdfbox:jempbox:1.8.+'
     implementation 'net.sourceforge.jchardet:jchardet:1.+'
-    implementation 'org.jsoup:jsoup:1.+'
-    implementation 'xerces:xercesImpl:2.12.0'
+    implementation 'org.jsoup:jsoup:1.15.+'
+    implementation 'xerces:xercesImpl:2.12.+'
     implementation 'org.bouncycastle:bcprov-jdk16:1.+'
     implementation 'org.eclipse.rdf4j:rdf4j-model:3.7.+'
 }
