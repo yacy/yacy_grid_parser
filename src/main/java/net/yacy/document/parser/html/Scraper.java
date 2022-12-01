@@ -242,7 +242,7 @@ public class Scraper {
             }
             break location;
         } catch (final NumberFormatException e) {
-        	// ignore that
+            break location; // don't attempt that again because it could cause an infinite loop
         }
         // find tags inside text
         String b = cleanLine(Tag.stripAllTags(newtext));
