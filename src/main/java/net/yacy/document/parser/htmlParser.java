@@ -272,7 +272,7 @@ public class htmlParser extends AbstractParser implements Parser {
         //scraper.setLd(tokenizer.ld());
         final String url = location.toNormalform(true);
         try {
-            final String s = RDFa2JSONLDExpandString(url, bytes); // read first into EXPAND mode, this is the default (and cannot be changed?)
+            final String s = RDFa2JSONLDExpandString(url, bytes, detectedcharsetcontainer[0].name()); // read first into EXPAND mode, this is the default (and cannot be changed?)
             //Logger.info("RDFa2JSONLDExpandString\n" + s);
             final JSONObject jaCompact = new JSONObject(JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT)); // transcode EXPAND into COMPACT
             //Logger.info("JSONLDExpand2Mode\n" + jaCompact.toString(2));
@@ -412,7 +412,15 @@ public class htmlParser extends AbstractParser implements Parser {
         }
     }
 
-    public static String RDFa2JSONLDExpandString(final String url, final byte[] b) throws IOException {
+    public static String RDFa2JSONLDExpandString(final String url, byte[] b, String encoding) throws IOException {
+        // Any23 is strangely behaving if the encoding is not UTF-8. Essentially it is not using the given encoding
+        // when extraction is called with any23.extract(ds, th, encoding);
+        // Therefore we do a pre-encoding here in case the encoding is not UTF-8
+        if (!StandardCharsets.UTF_8.name().equals(encoding)) {
+            b = new String(b, encoding).getBytes(StandardCharsets.UTF_8);
+        }
+
+        // do the expansion with Any23
         final Any23 any23 = new Any23();
         final ByteArrayDocumentSource ds = new ByteArrayDocumentSource(b, url, "text/html"); // text/html; application/xhtml+xml
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();

@@ -20,6 +20,7 @@
 package net.yacy.grid.parser.api;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -70,7 +71,7 @@ public class JSONLDValidatorService extends ObjectAPIHandler implements APIHandl
                 final byte[] b = ClientConnection.load(url);
                 final Document[] docs = htmlParser.parse(url, b);
 
-                final String s = htmlParser.RDFa2JSONLDExpandString(url, b);
+                final String s = htmlParser.RDFa2JSONLDExpandString(url, b, StandardCharsets.UTF_8.name());
                 final JSONArray jaExpand = new JSONArray(s);
                 final JSONArray jaFlatten = new JSONArray(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.FLATTEN));
                 final JSONObject jaCompact = new JSONObject(htmlParser.JSONLDExpand2Mode(url, s, JSONLDMode.COMPACT));
